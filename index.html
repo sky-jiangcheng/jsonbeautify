@@ -369,56 +369,6 @@
             background: rgba(88, 166, 255, 0.25);
         }
 
-        /* ========== Input Error Area ========== */
-        .input-error-area {
-            flex-shrink: 0;
-            max-height: 35%;
-            overflow-y: auto;
-            border-top: 1px solid var(--red-border);
-            background: var(--red-bg);
-            padding: 10px 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            font-family: var(--font-sans);
-            font-size: 12px;
-            line-height: 1.55;
-            color: var(--red);
-        }
-        .input-error-area .input-error-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--red);
-            font-family: var(--font-sans);
-        }
-        .input-error-area .input-error-msg {
-            font-size: 12px;
-            line-height: 1.55;
-            color: var(--text-secondary);
-            font-family: var(--font-sans);
-        }
-        .input-error-area .input-error-snippet {
-            background: var(--bg-secondary);
-            border-radius: 4px;
-            padding: 6px 10px;
-            font-family: var(--font-mono);
-            font-size: 11px;
-            line-height: 1.5;
-            color: var(--text-primary);
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-        .input-error-area .input-error-marker {
-            color: var(--red);
-            font-weight: bold;
-        }
-        .input-error-area .input-error-hint {
-            font-size: 11px;
-            color: var(--text-muted);
-            font-family: var(--font-sans);
-            line-height: 1.5;
-        }
-
         /* ========== Output Area ========== */
         .output-wrap {
             position: absolute;
@@ -1440,7 +1390,6 @@
                 </div>
                 <div class="panel-body" id="input-body">
                     <textarea id="input" placeholder="在此粘贴 JSON，或拖拽 JSON 文件到此处&#10;&#10;快捷键：&#10;  Ctrl+Enter  格式化&#10;  Ctrl+S      保存&#10;  Ctrl+D      下载" spellcheck="false"></textarea>
-                    <div class="input-error-area" id="input-error-area" style="display:none"></div>
                     <div class="drop-overlay" id="drop-overlay">
                         <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>
                         释放以加载文件
@@ -1701,7 +1650,6 @@
         const input = document.getElementById('input');
         const value = input.value.trim();
         clearNotifications();
-        clearInputError();
         if (!value) {
             renderOutput('', 'empty');
             setStatus('输入为空');
@@ -1753,7 +1701,6 @@
         const input = document.getElementById('input');
         const value = input.value.trim();
         clearNotifications();
-        clearInputError();
         if (!value) {
             showToast('请先输入 JSON', 2000, 'icon-alert-triangle');
             return;
@@ -1846,49 +1793,7 @@
 
     function showError(error, input) {
         renderErrorOutput(error, input);
-        renderInputError(error, input);
         setStatus('JSON 格式错误');
-    }
-
-    function renderInputError(error, input) {
-        const el = document.getElementById('input-error-area');
-        if (!el) return;
-        var msg = getFriendlyJsonError(error, input);
-        var posMatch = error.message.match(/position\s+(\d+)/i);
-        var pos = posMatch ? parseInt(posMatch[1]) : -1;
-
-        var snippetHtml = '';
-        if (pos >= 0 && input) {
-            var start = Math.max(0, pos - 40);
-            var end = Math.min(input.length, pos + 40);
-            var before = escapeHtml(input.substring(start, pos));
-            var at = escapeHtml(input.charAt(pos) || '');
-            var after = escapeHtml(input.substring(pos + 1, end));
-            if (start > 0) snippetHtml += '\u2026';
-            snippetHtml += before + '<span class="input-error-marker">' + at + '</span>' + after;
-            if (end < input.length) snippetHtml += '\u2026';
-        }
-
-        var hints = [
-            '键名和字符串必须用双引号（"）包裹',
-            '对象和数组最后一个元素后不能有逗号',
-            '布尔值只能为 true 或 false（小写）',
-            'null 必须为小写',
-            '括号和花括号必须成对出现'
-        ];
-
-        el.innerHTML = '<div class="input-error-title">JSON 格式错误</div>' +
-            '<div class="input-error-msg">' + escapeHtml(msg.split('\n')[0]) + '</div>' +
-            (snippetHtml ? '<div class="input-error-snippet">' + snippetHtml + '</div>' : '') +
-            '<div class="input-error-hint">' + hints.join(' \u00b7 ') + '</div>';
-        el.style.display = 'flex';
-    }
-
-    function clearInputError() {
-        const el = document.getElementById('input-error-area');
-        if (!el) return;
-        el.style.display = 'none';
-        el.innerHTML = '';
     }
 
     function renderEmptyContent() {
@@ -2180,7 +2085,6 @@
         window.lastParsedJson = null;
         window.lastDetailContent = '';
         clearNotifications();
-        clearInputError();
         renderOutput('', 'empty');
         document.getElementById('input-size').textContent = '';
         document.getElementById('output-status').textContent = '';
@@ -2640,7 +2544,6 @@
             clearTimeout(validateTimer);
             if (!val.trim()) {
                 indicator.style.display = 'none';
-                clearInputError();
                 return;
             }
             validateTimer = setTimeout(() => {
@@ -2649,12 +2552,10 @@
                     indicator.style.display = 'inline-flex';
                     indicator.className = 'validation-indicator valid';
                     indicator.innerHTML = '<span class="dot"></span> 有效';
-                    clearInputError();
                 } catch (e) {
                     indicator.style.display = 'inline-flex';
                     indicator.className = 'validation-indicator invalid';
                     indicator.innerHTML = '<span class="dot"></span> 无效';
-                    renderInputError(e, val);
                 }
             }, 400);
         });
