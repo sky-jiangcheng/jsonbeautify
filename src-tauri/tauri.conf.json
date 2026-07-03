@@ -35,6 +35,9 @@
       "icons/icon.ico",
       "icons/icon.png"
     ],
-    "createUpdaterArtifacts": false
+    "createUpdaterArtifacts": false,
+    "category": "Developer Tools",
+    "shortDescription": "JSON 格式化与验证工具",
+    "longDescription": "JSON 格式化工具支持 JSON 格式化、压缩、树形视图、内容对比和历史记录。适合开发者和日常 JSON 数据处理。"
   }
 }

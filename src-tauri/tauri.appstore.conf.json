@@ -1,0 +1,11 @@
+{
+  "identifier": "com.jsonbeautify.desktop",
+  "bundle": {
+    "macOS": {
+      "entitlements": "./Entitlements.plist",
+      "files": {
+        "embedded.provisionprofile": "path/to/embedded.provisionprofile"
+      }
+    }
+  }
+}
