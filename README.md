@@ -8,15 +8,15 @@
 
 | 格式化 | 压缩 |
 |--------|------|
-| ![格式化](https://raw.githubusercontent.com/sky-jiangcheng/jsonbeautify/main/docs/screenshots/02-formatted.png) | ![压缩](https://raw.githubusercontent.com/sky-jiangcheng/jsonbeautify/main/docs/screenshots/03-minified.png) |
+| ![格式化](docs/screenshots/02-formatted.png) | ![压缩](docs/screenshots/03-minified.png) |
 
 | 暗色模式 | 错误提示 |
 |----------|----------|
-| ![暗色模式](https://raw.githubusercontent.com/sky-jiangcheng/jsonbeautify/main/docs/screenshots/04-dark.png) | ![错误提示](https://raw.githubusercontent.com/sky-jiangcheng/jsonbeautify/main/docs/screenshots/05-error.png) |
+| ![暗色模式](docs/screenshots/04-dark.png) | ![错误提示](docs/screenshots/05-error.png) |
 
 | 历史记录 | 实时验证 |
 |----------|----------|
-| ![历史记录](https://raw.githubusercontent.com/sky-jiangcheng/jsonbeautify/main/docs/screenshots/06-history.png) | ![实时验证](https://raw.githubusercontent.com/sky-jiangcheng/jsonbeautify/main/docs/screenshots/01-empty.png) |
+| ![历史记录](docs/screenshots/06-history.png) | ![实时验证](docs/screenshots/01-empty.png) |
 
 ## 功能
 
