@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   linux:
     runs-on: ubuntu-latest
@@ -48,6 +51,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Generate macOS icons
+        run: npx tauri icon src-tauri/icons/icon.png
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -77,4 +83,4 @@ jobs:
           releaseName: "${{ github.ref_name }}"
           releaseDraft: false
           prerelease: false
-          args: --bundles msi,nsis
+          args: --bundles nsis
