@@ -1,15 +1,31 @@
 # JSON 格式化工具
 
-一个现代化的 JSON 格式化与对比工具，纯前端单文件实现，无需后端。
+一个现代化的 JSON 格式化与验证工具，纯前端单文件实现，支持桌面端。
 
 **在线使用**: https://sky-jiangcheng.github.io/jsonbeautify/
 
+## 截图
+
+| 格式化 | 压缩 |
+|--------|------|
+| ![格式化](docs/screenshots/02-formatted.png) | ![压缩](docs/screenshots/03-minified.png) |
+
+| 暗色模式 | 错误提示 |
+|----------|----------|
+| ![暗色模式](docs/screenshots/04-dark.png) | ![错误提示](docs/screenshots/05-error.png) |
+
+| 历史记录 | 实时验证 |
+|----------|----------|
+| ![历史记录](docs/screenshots/06-history.png) | ![实时验证](docs/screenshots/01-empty.png) |
+
 ## 功能
 
-### 格式化与压缩
+### JSON 处理
 - **格式化** — 2 空格缩进，语法高亮，可交互的 collapsible 树形视图
 - **压缩** — 单行紧凑输出
-- **自动修复** — 缺失括号时自动补全
+- **转义** — JSON 字符串转义/反转义
+- **自动修复** — 缺失括号时自动补全，未加引号的键名自动修复
+- **实时验证** — 红/绿灯指示 JSON 有效性（400ms 防抖）
 
 ### 交互式 JSON 树
 - 对象/数组节点可展开/折叠（`▼` / `▶` 切换）
@@ -52,34 +68,39 @@ macOS 上使用 `Cmd` 替代 `Ctrl`。
 ### 拖放
 支持拖拽 `.json` 文件到输入区域自动加载并格式化。
 
-## 技术栈
-
-- 纯 HTML/CSS/JavaScript，无框架依赖
-- 语法高亮: highlight.js
-- 存储: localStorage
-
 ## 桌面应用 (Tauri)
 
-支持打包为原生桌面应用（macOS `.dmg`、Windows `.msi/.exe`、Linux `.deb/.AppImage`）。
+支持打包为原生桌面应用，每次推送 `v*` tag 自动构建三平台安装包。
 
-**构建前需安装**:
+[![Release Build](https://github.com/sky-jiangcheng/jsonbeautify/actions/workflows/release.yml/badge.svg)](https://github.com/sky-jiangcheng/jsonbeautify/releases)
+
+### 本地构建
+
+**依赖**:
 - [Rust](https://rustup.rs/)
 - [Node.js](https://nodejs.org/)
 - Linux: `sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libssl-dev`
 - macOS: Xcode Command Line Tools
 - Windows: Microsoft Visual Studio C++ Build Tools + WebView2
 
-**构建步骤**:
+**构建**:
 ```bash
 npm install
 npm run build
 ```
 
-构建产物在 `src-tauri/target/release/bundle/` 目录。
+产物在 `src-tauri/target/release/bundle/` 目录。
+
+## 技术栈
+
+- 纯 HTML/CSS/JavaScript，无框架依赖
+- 语法高亮: highlight.js
+- 存储: localStorage
+- 桌面端: Tauri v2 (Rust)
 
 ## 部署
 
-本项目为纯静态站点，部署到任意静态托管服务即可：
+纯静态站点，部署到任意托管服务：
 
 ```bash
 # 本地开发
@@ -91,6 +112,8 @@ python3 -m http.server 8000
 ## 文件结构
 
 ```
-index.html   — 完整应用 (HTML + CSS + JS)
-README.md    — 项目说明
+index.html                  — 完整应用 (HTML + CSS + JS)
+src-tauri/                  — Tauri v2 桌面应用 (Rust)
+docs/screenshots/           — 截图
+.github/workflows/          — CI/CD (GitHub Pages + Release)
 ```
