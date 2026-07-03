@@ -1,6 +1,6 @@
 {
   "name": "json-formatter",
-  "version": "1.2.1",
+  "version": "1.2.5",
   "description": "JSON 格式化工具 - Tauri 桌面应用",
   "private": true,
   "scripts": {
