@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicedoc/nicedoc/master/web.json",
-  "productName": "JSON 格式化工具",
+  "productName": "JSON Beautify Tool",
   "version": "1.2.9",
   "identifier": "com.jsonbeautify.desktop",
   "build": {
