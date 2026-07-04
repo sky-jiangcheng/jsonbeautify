@@ -1,5 +1,5 @@
 {
-  "identifier": "com.jsonbeautify.desktop",
+  "identifier": "com.jsonbeautify.desktop.appstore",
   "bundle": {
     "macOS": {
       "entitlements": "./Entitlements.plist",
