@@ -1527,7 +1527,7 @@
     function showToast(msg, duration, iconId) {
         const t = document.getElementById('toast');
         const iconSvg = iconId ? `<svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#${iconId}"/></svg>` : '';
-        t.innerHTML = iconSvg + msg;
+        t.innerHTML = iconSvg + escapeHtml(msg);
         t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), duration || 2000);
     }
