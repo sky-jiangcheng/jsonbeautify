@@ -1,0 +1,328 @@
+# Tauri + 静态前端项目优化清单
+
+本文档总结 JSON 格式化工具项目在开发、CI/CD、安全、UI 等方面踩过的坑和最终方案，可直接复用到其他类似项目。
+
+---
+
+## 1. CI/CD：GitHub Actions 多平台 Release 构建
+
+### 1.1 权限配置
+
+Release 构建需要上传产物到 Release，必须显式声明权限：
+
+```yaml
+permissions:
+  contents: write   # 允许创建 Release 和上传 assets
+```
+
+遗漏此项会导致 `tauri-action` 上传产物时 403。
+
+### 1.2 Linux 系统依赖
+
+ubuntu runner 缺少 Tauri 编译依赖，需手动安装：
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libglib2.0-dev
+```
+
+常见遗漏：`libglib2.0-dev`、`librsvg2-dev`（图标生成需要）、`patchelf`（AppImage 需要）。
+
+### 1.3 macOS 多架构
+
+macOS 需要同时支持 Intel 和 Apple Silicon：
+
+```bash
+rustup target add x86_64-apple-darwin aarch64-apple-darwin
+npx tauri icon src-tauri/icons/icon.png   # CI 中需重新生成 .icns
+```
+
+Tauri action 参数：`--target universal-apple-darwin --bundles dmg,app`
+
+### 1.4 Windows 打包策略
+
+Wix 工具链（MSI）极不稳定，频繁报错。**推荐仅使用 NSIS**：
+
+```yaml
+args: --bundles nsis
+```
+
+NSIS 产物为 `.exe` 安装包，满足绝大多数分发场景。如需 MSI，建议在本地 Windows 环境手动构建。
+
+### 1.5 资源缓存
+
+`npm ci` 优于 `npm install`（更快、确定性构建）。Node 版本锁定为 20（Tauri v2 兼容性最佳）。
+
+### 1.6 完整模板
+
+```yaml
+name: Release Build
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libglib2.0-dev
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - uses: tauri-apps/tauri-action@v0
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "${{ github.ref_name }}"
+          releaseDraft: false
+          prerelease: false
+          args: --bundles deb,rpm,appimage
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - run: npx tauri icon src-tauri/icons/icon.png
+      - uses: tauri-apps/tauri-action@v0
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "${{ github.ref_name }}"
+          releaseDraft: false
+          prerelease: false
+          args: --target universal-apple-darwin --bundles dmg,app
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - uses: tauri-apps/tauri-action@v0
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "${{ github.ref_name }}"
+          releaseDraft: false
+          prerelease: false
+          args: --bundles nsis
+```
+
+---
+
+## 2. Tauri v2 桌面应用
+
+### 2.1 macOS App Store 上架准备
+
+**Entitlements.plist**（`src-tauri/Entitlements.plist`）：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+</dict>
+</plist>
+```
+
+**App Store 专用配置**（`src-tauri/tauri.appstore.conf.json`）：在 `tauri.conf.json` 基础上覆盖 identifier（加 `.appstore` 后缀区分），并引用 Entitlements。
+
+### 2.2 图标规范
+
+- **macOS**：图标需预留约 **12% 透明边距**，避免在 Dock 中视觉过大
+- **尺寸**：16x16、32x32、64x64、128x128、256x256、512x512（PNG）+ icon.icns + icon.ico
+- **生成命令**：`npx tauri icon <source-png>`，CI 中亦需执行
+- 源图推荐 1024x1024 PNG
+
+### 2.3 分支策略：免费版 vs 收费版
+
+如果同一代码库需要维护两个分发版本（如开源免费版 + App Store 收费版）：
+
+- `main` 分支：免费开源版，可包含 PWA、自动更新等
+- `appstore` 分支：收费版，差异化配置（identifier、Entitlements、功能开关）
+- 大多数 commit 在 `main`，定期 merge 到 `appstore`（`git merge main`）
+
+注意两分支的 `tauri.conf.json` 中 `identifier` 必须不同。
+
+---
+
+## 3. 前端安全
+
+### 3.1 toast/通知的 XSS 防护
+
+任何将用户可控数据插入 DOM 的 `innerHTML` 操作都是 XSS 向量。常见入口：
+
+| 来源 | 示例 | 风险 |
+|------|------|------|
+| 用户输入 | 文件名输入框 | 高 |
+| localStorage | 历史记录名称 | 中 |
+| 文件上传 | 上传文件文件名 | 高 |
+| URL 参数 | `?name=xxx` | 中 |
+
+**修复**：对插入 toast/通知的字符串做 HTML 转义：
+
+```javascript
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function showToast(msg) {
+  toast.innerHTML = escapeHtml(msg);
+  // ...
+}
+```
+
+检查清单：全局搜索 `innerHTML` / `insertAdjacentHTML`，确认每个调用点的数据来源是否可能包含用户输入。
+
+---
+
+## 4. UI/UX 优化
+
+### 4.1 错误提示策略
+
+不要在输入区实时显示详细错误信息（干扰性强）。采用两级策略：
+
+- **输入区**：仅显示红/绿状态指示器（圆点），表示 JSON 有效/无效
+- **输出区**：点击"格式化"后，在输出区显示具体错误信息和位置
+
+这避免了用户边输入边看到错误弹跳的焦虑感，同时保证需要时能获取完整诊断信息。
+
+### 4.2 深色/浅色模式对比度
+
+浅色和深色模式需要独立的色值方案，不能简单反色。参考 GitHub 官方配色：
+
+- 浅色：文字 `#1F2328`，背景 `#FFFFFF`，注释 `#6E7781`
+- 深色：文字 `#E6EDF3`，背景 `#0D1117`，注释 `#8B949E`
+
+关键检查点：
+- 错误/警告色在两种模式下对比度均 >= 4.5:1
+- 代码高亮在深色模式下不能过亮（刺眼）或过暗（不可读）
+- 使用 Chrome DevTools 的 CSS Overview 面板检查对比度
+
+### 4.3 输入区 debounce 防抖
+
+JSON 验证使用 debounce（本项目 400ms），避免每次按键都触发解析，减少不必要的高亮闪烁。
+
+---
+
+## 5. 版本管理与发布流程
+
+### 5.1 版本号一致性
+
+当前版本号需要同步以下位置：
+
+- `package.json` → `version` 字段
+- `src-tauri/tauri.conf.json` → `version` 字段
+- `src-tauri/Cargo.toml` → `version` 字段
+- `index.html` → 页面显示的版本号
+- Git tag → `vX.Y.Z` 格式
+
+建议使用脚本统一更新（`npm version` + sed 批量替换），或 CI 中从 tag 自动注入。
+
+### 5.2 Tag 清理
+
+废弃的 tag（如构建失败的中间版本）应及时删除，避免 Release 列表混乱：
+
+```bash
+# 删除远程 tag
+git push origin :refs/tags/v1.2.2
+
+# 删除本地 tag
+git tag -d v1.2.2
+```
+
+**原则**：每个 tag 应对应一个成功的 Release，无对应 Release 的 tag 应清理。
+
+### 5.3 Workflow Badge 与 Trigger 对齐
+
+GitHub Actions badge 显示的是**默认分支（main）**上该 workflow 的最新状态。
+
+如果 workflow 仅在 tag 推送时触发，main 分支上无运行记录，badge 会显示 failed/no status。
+
+**修复方案**：
+1. 改用其他常驻运行的 workflow badge（如 GitHub Pages deploy）
+2. 或添加 `push: branches: [main]` 触发器 + 条件跳过实际构建
+
+本项目选择了方案 1。
+
+---
+
+## 6. GitHub Pages 部署
+
+### 6.1 纯静态站点部署
+
+使用官方 `actions/configure-pages` + `actions/deploy-pages` 组合：
+
+```yaml
+name: Deploy to GitHub Pages
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v4
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: '.' }
+      - uses: actions/deploy-pages@v4
+```
+
+注意 `upload-pages-artifact` 的 `path` 指向站点根目录（本项目即仓库根目录）。
+
+### 6.2 PWA 支持
+
+纯静态项目可添加 PWA 支持，只需 3 个文件：
+
+- `manifest.json`：应用名称、图标、主题色
+- `sw.js`：Service Worker（缓存策略）
+- `index.html` 中注册：`<link rel="manifest">` + `<script>` 注册 SW
+
+---
+
+## 快速自查清单
+
+开始一个新 Tauri + 静态前端项目时，逐项检查：
+
+- [ ] CI 中 `permissions: contents: write` 已设置
+- [ ] Linux 构建安装了全部 5 个系统依赖
+- [ ] macOS 构建添加了两个 Rust target + 图标生成步骤
+- [ ] Windows 构建仅使用 NSIS
+- [ ] 所有 `innerHTML` 调用点已审计、用户输入已转义
+- [ ] 深色/浅色模式色值已独立定义（非简单反色）
+- [ ] 版本号在 5 个位置保持一致
+- [ ] Workflow badge 指向的 workflow 在 main 分支有成功运行
+- [ ] 图标预留 12% 边距、多尺寸完整
+- [ ] macOS App Store 版本与开源版 identifier 已区分

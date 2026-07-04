@@ -6,21 +6,17 @@
 
 ## 截图
 
-| 格式化 | 压缩 |
-|--------|------|
-| ![格式化](docs/screenshots/02-formatted.png) | ![压缩](docs/screenshots/03-minified.png) |
+| 实时验证 | 格式化 | 压缩 |
+|----------|--------|------|
+| ![实时验证](docs/screenshots/01-empty.png) | ![格式化](docs/screenshots/02-formatted.png) | ![压缩](docs/screenshots/03-minified.png) |
 
-| 列表/详情视图 | JSON 对比 |
-|--------------|-----------|
-| ![列表视图](docs/screenshots/04-list-view.png) | ![对比](docs/screenshots/06-compare.png) |
+| 列表/详情视图 | JSON 对比 | 历史记录 |
+|--------------|-----------|----------|
+| ![列表视图](docs/screenshots/04-list-view.png) | ![对比](docs/screenshots/06-compare.png) | ![历史记录](docs/screenshots/05-history.png) |
 
-| 历史记录 | 暗色模式 |
+| 暗色模式 | 错误提示 |
 |----------|----------|
-| ![历史记录](docs/screenshots/05-history.png) | ![暗色模式](docs/screenshots/07-dark.png) |
-
-| 错误提示 |
-|----------|
-| ![错误提示](docs/screenshots/08-error.png) |
+| ![暗色模式](docs/screenshots/07-dark.png) | ![错误提示](docs/screenshots/08-error.png) |
 
 ## 功能
 
@@ -76,14 +72,14 @@ macOS 上使用 `Cmd` 替代 `Ctrl`。
 
 支持打包为原生桌面应用，每次推送 `v*` tag 自动构建三平台安装包。
 
-[![Release Build](https://github.com/sky-jiangcheng/jsonbeautify/actions/workflows/release.yml/badge.svg)](https://github.com/sky-jiangcheng/jsonbeautify/releases)
+[![Deploy Status](https://github.com/sky-jiangcheng/jsonbeautify/actions/workflows/pages.yml/badge.svg)](https://github.com/sky-jiangcheng/jsonbeautify/actions/workflows/pages.yml)
 
 ### 本地构建
 
 **依赖**:
 - [Rust](https://rustup.rs/)
 - [Node.js](https://nodejs.org/)
-- Linux: `sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libssl-dev`
+- Linux: `sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libglib2.0-dev librsvg2-dev`
 - macOS: Xcode Command Line Tools
 - Windows: Microsoft Visual Studio C++ Build Tools + WebView2
 
@@ -116,8 +112,11 @@ python3 -m http.server 8000
 ## 文件结构
 
 ```
-index.html                  — 完整应用 (HTML + CSS + JS)
-src-tauri/                  — Tauri v2 桌面应用 (Rust)
-docs/screenshots/           — 截图
-.github/workflows/          — CI/CD (GitHub Pages + Release)
+index.html                  — 核心应用 (HTML + CSS + JS)
+dist/index.html              — 同步副本
+package.json                 — 项目配置与脚本
+src-tauri/                   — Tauri v2 桌面应用 (Rust)
+docs/screenshots/            — 截图
+.github/workflows/           — CI/CD (GitHub Pages + Release)
+LICENSE                      — MIT 许可证
 ```
