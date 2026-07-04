@@ -205,6 +205,66 @@ git push origin appstore
 
 注意 `tauri.appstore.conf.json` 中的 `identifier` 必须与免费版不同（如加 `.appstore` 后缀），否则 Apple 会视为同一应用。
 
+### 2.4 macOS App Store 上架流程
+
+#### 前置条件（一次性）
+
+**1. Apple Developer Program**
+注册 [developer.apple.com](https://developer.apple.com)，年费 $99。
+
+**2. 创建 App ID**
+[Apple Developer Account](https://developer.apple.com/account) → Certificates, Identifiers & Profiles → Identifiers → +：
+- 类型：App
+- Bundle ID：`com.jsonbeautify.desktop.appstore`
+
+**3. 创建分发证书**
+Certificates → + → Developer ID Application，用本地 Keychain Access 生成 CSR 上传，下载 `.cer` 安装。
+
+**4. 创建 Provisioning Profile**
+Profiles → + → App Store，关联 App ID + 证书，下载后放入 `src-tauri/` 目录，更新 `tauri.appstore.conf.json` 中的 `embedded.provisionprofile` 路径。
+
+**5. App Store Connect 创建 App**
+[appstoreconnect.apple.com](https://appstoreconnect.apple.com) → 我的 App → +：
+- 平台：macOS
+- Bundle ID：上面创建的
+- 名称："JSON 格式化工具"
+
+#### 构建与上传
+
+```bash
+# 1. 切换到 appstore 分支
+git checkout appstore
+
+# 2. 构建（使用合并配置覆盖 identifier + entitlements）
+npm run tauri build -- --config src-tauri/tauri.appstore.conf.json
+
+# 3. 产物在 src-tauri/target/release/bundle/macos/
+#    使用 Transporter 或 xcrun 上传到 App Store Connect
+xcrun altool --upload-app \
+  -f src-tauri/target/release/bundle/macos/*.pkg \
+  -t macos \
+  -u <AppleID> \
+  -p <App-Specific-Password>
+```
+
+#### App Store Connect 填写元数据
+
+上传后在 App Store Connect 补全：
+- 应用截图（macOS 需要 1280x800、1440x900、2560x1600、2880x1800 至少一套）
+- 描述、关键词、技术支持 URL、隐私政策 URL
+- 定价（选择价格或免费）
+
+#### 提审
+
+所有信息填写完毕后，点击"提交审核"。首次审核通常 1-2 天。
+
+#### 注意事项
+
+- **Entitlements 权限最小化**：只申请应用实际使用的权限（本项目仅需读取/写入用户选择的文件）
+- **App Sandbox 强制开启**：`com.apple.security.app-sandbox` 必须为 `true`，这是 App Store 上架的硬性要求
+- **CI 无法全自动**：签名证书和 provisionprofile 存储在 CI Secrets 中可实现自动构建，但首次上传和提审仍需人工操作
+- **版本号每次递增**：提交新版本前确保 `tauri.conf.json` 和 `Cargo.toml` 中 version 已更新
+
 ---
 
 ## 3. 前端安全
