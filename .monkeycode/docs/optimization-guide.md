@@ -157,11 +157,53 @@ jobs:
 
 如果同一代码库需要维护两个分发版本（如开源免费版 + App Store 收费版）：
 
-- `main` 分支：免费开源版，可包含 PWA、自动更新等
-- `appstore` 分支：收费版，差异化配置（identifier、Entitlements、功能开关）
-- 大多数 commit 在 `main`，定期 merge 到 `appstore`（`git merge main`）
+**分支角色**：
+- `main` 分支：免费开源版
+- `appstore` 分支：收费版
 
-注意两分支的 `tauri.conf.json` 中 `identifier` 必须不同。
+**推荐策略：共享基础配置 + 合并配置覆盖**
+
+`tauri.conf.json` 在两分支中保持一致（免费版 identifier），`appstore` 分支额外提供 `tauri.appstore.conf.json`，通过 Tauri 的 config merge 机制覆盖差异化字段。
+
+`tauri.appstore.conf.json` 内容：
+
+```json
+{
+  "identifier": "com.example.app.appstore",
+  "bundle": {
+    "macOS": {
+      "entitlements": "./Entitlements.plist"
+    }
+  }
+}
+```
+
+**构建命令区分**：
+
+```bash
+# 免费版
+npm run tauri build
+
+# 收费版（合并 appstore 配置覆盖 identifier + entitlements）
+npm run tauri build -- --config src-tauri/tauri.appstore.conf.json
+```
+
+**同步流程**：
+
+```bash
+# 在 main 上开发，完成后同步到 appstore
+git checkout appstore
+git merge main
+git push origin appstore
+```
+
+**为什么用合并配置而不是直接改 `tauri.conf.json`**：
+- main 和 appstore 的 `tauri.conf.json` 保持完全一致，减少合并冲突
+- identifier 覆盖逻辑集中在 `tauri.appstore.conf.json` 一个文件中
+- 不参与免费版构建，构建产物天然不带 App Store 标记
+- 新开发者只需看 `tauri.appstore.conf.json` 就能理解两个版本的全部差异
+
+注意 `tauri.appstore.conf.json` 中的 `identifier` 必须与免费版不同（如加 `.appstore` 后缀），否则 Apple 会视为同一应用。
 
 ---
 
