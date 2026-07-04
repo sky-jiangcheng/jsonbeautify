@@ -4,7 +4,7 @@
     "macOS": {
       "entitlements": "./Entitlements.plist",
       "files": {
-        "embedded.provisionprofile": "path/to/embedded.provisionprofile"
+        "embedded.provisionprofile": "./appstore.provisionprofile"
       }
     }
   }
