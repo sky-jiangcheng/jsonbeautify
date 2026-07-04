@@ -72,7 +72,7 @@ macOS 上使用 `Cmd` 替代 `Ctrl`。
 
 支持打包为原生桌面应用，每次推送 `v*` tag 自动构建三平台安装包。
 
-[![Release Build](https://github.com/sky-jiangcheng/jsonbeautify/actions/workflows/release.yml/badge.svg)](https://github.com/sky-jiangcheng/jsonbeautify/releases)
+[![Deploy Status](https://github.com/sky-jiangcheng/jsonbeautify/actions/workflows/pages.yml/badge.svg)](https://github.com/sky-jiangcheng/jsonbeautify/actions/workflows/pages.yml)
 
 ### 本地构建
 
