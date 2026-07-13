@@ -1444,25 +1444,25 @@
         }
 
         /* JS-detected mobile layout (fallback if media query fails) */
-        .mobile-layout .mobile-tabs { display: flex; }
-        .mobile-layout .mobile-bar { display: flex; }
+        .mobile-layout .mobile-tabs { display: flex !important; }
+        .mobile-layout .mobile-bar { display: flex !important; }
         .mobile-layout .mobile-sidebar-btn { display: inline-flex !important; }
-        .mobile-layout .toolbar { flex: 1; justify-content: flex-end; gap: 2px; overflow-x: auto; }
-        .mobile-layout .toolbar .sep { margin: 0 3px; height: 16px; }
-        .mobile-layout .btn .btn-text { display: none; }
-        .mobile-layout .btn .shortcut { display: none; }
-        .mobile-layout .btn { padding: 4px 6px; height: 28px; min-width: unset; font-size: 0; gap: 0; }
-        .mobile-layout .btn .svg-icon { margin: 0; }
-        .mobile-layout .logo span { display: none; }
-        .mobile-layout .statusbar { display: none; }
-        .mobile-layout .editor-area { flex-direction: column; }
-        .mobile-layout .panel-left { border-right: none; border-bottom: none; flex: 1 !important; }
-        .mobile-layout .panel { flex: 1; }
+        .mobile-layout .toolbar { flex: 1 !important; justify-content: flex-end !important; gap: 2px !important; overflow-x: auto !important; }
+        .mobile-layout .toolbar .sep { margin: 0 3px !important; height: 16px !important; }
+        .mobile-layout .btn .btn-text { display: none !important; }
+        .mobile-layout .btn .shortcut { display: none !important; }
+        .mobile-layout .btn { padding: 4px 6px !important; height: 28px !important; min-width: unset !important; font-size: 0 !important; gap: 0 !important; }
+        .mobile-layout .btn .svg-icon { margin: 0 !important; }
+        .mobile-layout .logo span { display: none !important; }
+        .mobile-layout .statusbar { display: none !important; }
+        .mobile-layout .editor-area { flex-direction: column !important; }
+        .mobile-layout .panel-left { border-right: none !important; border-bottom: none !important; flex: 1 !important; }
+        .mobile-layout .panel { flex: 1 !important; }
         .mobile-layout .panel-left[data-mobile-hidden="true"],
-        .mobile-layout #output-panel[data-mobile-hidden="true"] { display: none; }
-        .mobile-layout .sidebar { position: fixed; top: 0; right: 0; bottom: 0; width: 85%; max-width: 320px; max-height: none; z-index: 200; border-left: 1px solid var(--border); border-top: none; box-shadow: var(--shadow-lg); transform: translateX(100%); transition: transform 0.25s ease; }
-        .mobile-layout .sidebar.mobile-open { transform: translateX(0); }
-        .mobile-layout .sidebar.collapsed { transform: translateX(100%); }
+        .mobile-layout #output-panel[data-mobile-hidden="true"] { display: none !important; }
+        .mobile-layout .sidebar { position: fixed !important; top: 0 !important; right: 0 !important; bottom: 0 !important; width: 85% !important; max-width: 320px !important; max-height: none !important; z-index: 200 !important; border-left: 1px solid var(--border) !important; border-top: none !important; box-shadow: var(--shadow-lg) !important; transform: translateX(100%) !important; transition: transform 0.25s ease !important; }
+        .mobile-layout .sidebar.mobile-open { transform: translateX(0) !important; }
+        .mobile-layout .sidebar.collapsed { transform: translateX(100%) !important; }
         .mobile-layout .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 199; }
         .mobile-layout .sidebar-overlay.active { display: block; }
         .mobile-layout .mobile-menu-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 300; }
@@ -1470,11 +1470,14 @@
         .mobile-layout .mobile-menu { display: none; position: fixed; bottom: 60px; left: 8px; right: 8px; z-index: 301; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 8px; flex-wrap: wrap; gap: 6px; box-shadow: var(--shadow-lg); }
         .mobile-layout .mobile-menu.active { display: flex; }
         .mobile-layout .mobile-menu .btn { flex: 1 1 calc(50% - 6px); justify-content: center; font-size: 12px; padding: 8px; height: auto; }
-        .mobile-layout .toast { bottom: 70px; left: 12px; right: 12px; max-width: none; }
-        .mobile-layout .modal { width: 90%; max-width: 340px; margin: 0 16px; padding: 16px; }
-        .mobile-layout .compare-body { flex-direction: column; }
-        .mobile-layout .compare-divider { width: 100%; height: 2px; }
-        .mobile-layout .compare-col { flex: 1; min-height: 40vh; }
+        .mobile-layout .toast { bottom: 70px !important; left: 12px !important; right: 12px !important; max-width: none !important; }
+        .mobile-layout .modal { width: 90% !important; max-width: 340px !important; margin: 0 16px !important; padding: 16px !important; }
+        .mobile-layout .compare-body { flex-direction: column !important; }
+        .mobile-layout .compare-divider { width: 100% !important; height: 2px !important; }
+        .mobile-layout .compare-col { flex: 1 !important; min-height: 40vh !important; }
+
+        /* DEBUG: Mobile indicator */
+        .mobile-layout header { background: #1a3a5c !important; }
     </style>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
