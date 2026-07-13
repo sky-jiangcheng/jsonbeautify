@@ -1320,6 +1320,7 @@
             #output-panel[data-mobile-hidden="true"] {
                 display: none;
             }
+            .panel-header { display: none !important; }
             .panel-header { height: 28px; padding: 0 10px; font-size: 10px; }
 
             /* Sidebar as slide-over */
@@ -1460,6 +1461,8 @@
         .mobile-layout .panel { flex: 1 !important; }
         .mobile-layout .panel-left[data-mobile-hidden="true"],
         .mobile-layout #output-panel[data-mobile-hidden="true"] { display: none !important; }
+        .mobile-layout .panel-header { display: none !important; }
+        .mobile-layout .panel-body { padding-bottom: 0 !important; }
         .mobile-layout .sidebar { position: fixed !important; top: 0 !important; right: 0 !important; bottom: 0 !important; width: 85% !important; max-width: 320px !important; max-height: none !important; z-index: 200 !important; border-left: 1px solid var(--border) !important; border-top: none !important; box-shadow: var(--shadow-lg) !important; transform: translateX(100%) !important; transition: transform 0.25s ease !important; }
         .mobile-layout .sidebar.mobile-open { transform: translateX(0) !important; }
         .mobile-layout .sidebar.collapsed { transform: translateX(100%) !important; }
@@ -1475,9 +1478,6 @@
         .mobile-layout .compare-body { flex-direction: column !important; }
         .mobile-layout .compare-divider { width: 100% !important; height: 2px !important; }
         .mobile-layout .compare-col { flex: 1 !important; min-height: 40vh !important; }
-
-        /* DEBUG: Mobile indicator */
-        .mobile-layout header { background: #1a3a5c !important; }
     </style>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1640,14 +1640,14 @@
                     <span id="input-size" style="font-weight:400;text-transform:none;letter-spacing:0;font-family:var(--font-mono)"></span>
                 </div>
                 <div class="panel-body" id="input-body">
-                    <textarea id="input" placeholder="在此粘贴 JSON，或拖拽 JSON 文件到此处&#10;&#10;快捷键：&#10;  Ctrl+Enter  格式化&#10;  Ctrl+S      保存&#10;  Ctrl+D      下载" spellcheck="false"></textarea>
+                    <textarea id="input" placeholder="在此粘贴 JSON，或点击底部「上传」按钮加载文件" spellcheck="false"></textarea>
                     <div class="drop-overlay" id="drop-overlay">
                         <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>
                         释放以加载文件
                     </div>
                 </div>
             </div>
-            <div class="panel" id="output-panel">
+            <div class="panel" id="output-panel" data-mobile-hidden="true">
                 <div class="panel-header">
                     <span class="label">
                         <svg class="svg-icon-xs" viewBox="0 0 24 24"><use href="#icon-code"/></svg>
