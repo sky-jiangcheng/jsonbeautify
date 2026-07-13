@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>JSON 格式化工具</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" id="hljs-dark">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css" id="hljs-light" disabled>
@@ -90,12 +90,14 @@
             font-family: var(--font-sans);
             background: var(--bg-primary);
             color: var(--text-primary);
+            min-height: 100dvh;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
         /* ========== SVG Icon Styles ========== */
@@ -1241,6 +1243,8 @@
             .logo { font-size: 12px; }
         }
     </style>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0d1117">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=8">
     <link rel="icon" type="image/svg+xml" href="icon.svg?v=8">

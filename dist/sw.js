@@ -1,4 +1,4 @@
-const CACHE_NAME = 'json-formatter-v11';
+const CACHE_NAME = 'json-formatter-v12';
 const urlsToCache = [
   '/jsonbeautify/',
   '/jsonbeautify/index.html',
@@ -8,11 +8,19 @@ const urlsToCache = [
   '/jsonbeautify/icon-512.png?v=8',
   '/jsonbeautify/favicon-32.png?v=7'
 ];
+const cdnUrls = [
+  'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css',
+  'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css'
+];
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache);
+      return Promise.all([
+        cache.addAll(urlsToCache),
+        ...cdnUrls.map(url => cache.add(url))
+      ]);
     })
   );
   self.skipWaiting();
