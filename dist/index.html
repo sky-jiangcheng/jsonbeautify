@@ -2,6 +2,9 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>JSON 格式化工具</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" id="hljs-dark">
@@ -1439,6 +1442,39 @@
             .compare-divider { width: 100%; height: 2px; }
             .compare-col { flex: 1; min-height: 40vh; }
         }
+
+        /* JS-detected mobile layout (fallback if media query fails) */
+        .mobile-layout .mobile-tabs { display: flex; }
+        .mobile-layout .mobile-bar { display: flex; }
+        .mobile-layout .mobile-sidebar-btn { display: inline-flex !important; }
+        .mobile-layout .toolbar { flex: 1; justify-content: flex-end; gap: 2px; overflow-x: auto; }
+        .mobile-layout .toolbar .sep { margin: 0 3px; height: 16px; }
+        .mobile-layout .btn .btn-text { display: none; }
+        .mobile-layout .btn .shortcut { display: none; }
+        .mobile-layout .btn { padding: 4px 6px; height: 28px; min-width: unset; font-size: 0; gap: 0; }
+        .mobile-layout .btn .svg-icon { margin: 0; }
+        .mobile-layout .logo span { display: none; }
+        .mobile-layout .statusbar { display: none; }
+        .mobile-layout .editor-area { flex-direction: column; }
+        .mobile-layout .panel-left { border-right: none; border-bottom: none; flex: 1 !important; }
+        .mobile-layout .panel { flex: 1; }
+        .mobile-layout .panel-left[data-mobile-hidden="true"],
+        .mobile-layout #output-panel[data-mobile-hidden="true"] { display: none; }
+        .mobile-layout .sidebar { position: fixed; top: 0; right: 0; bottom: 0; width: 85%; max-width: 320px; max-height: none; z-index: 200; border-left: 1px solid var(--border); border-top: none; box-shadow: var(--shadow-lg); transform: translateX(100%); transition: transform 0.25s ease; }
+        .mobile-layout .sidebar.mobile-open { transform: translateX(0); }
+        .mobile-layout .sidebar.collapsed { transform: translateX(100%); }
+        .mobile-layout .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 199; }
+        .mobile-layout .sidebar-overlay.active { display: block; }
+        .mobile-layout .mobile-menu-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 300; }
+        .mobile-layout .mobile-menu-backdrop.active { display: block; }
+        .mobile-layout .mobile-menu { display: none; position: fixed; bottom: 60px; left: 8px; right: 8px; z-index: 301; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 8px; flex-wrap: wrap; gap: 6px; box-shadow: var(--shadow-lg); }
+        .mobile-layout .mobile-menu.active { display: flex; }
+        .mobile-layout .mobile-menu .btn { flex: 1 1 calc(50% - 6px); justify-content: center; font-size: 12px; padding: 8px; height: auto; }
+        .mobile-layout .toast { bottom: 70px; left: 12px; right: 12px; max-width: none; }
+        .mobile-layout .modal { width: 90%; max-width: 340px; margin: 0 16px; padding: 16px; }
+        .mobile-layout .compare-body { flex-direction: column; }
+        .mobile-layout .compare-divider { width: 100%; height: 2px; }
+        .mobile-layout .compare-col { flex: 1; min-height: 40vh; }
     </style>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1680,25 +1716,25 @@
     <div class="mobile-bar" id="mobile-bar">
         <button class="mobile-bar-btn" onclick="formatJSON()" title="格式化">
             <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-code"/></svg>
-            格式化
+            <span>格式化</span>
         </button>
         <button class="mobile-bar-btn" onclick="copyOutput()" title="复制">
             <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-copy"/></svg>
-            复制
+            <span>复制</span>
         </button>
         <button class="mobile-bar-btn" onclick="uploadFile()" title="上传">
             <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>
-            上传
+            <span>上传</span>
         </button>
         <button class="mobile-bar-btn" onclick="saveHistory()" title="保存">
             <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-save"/></svg>
-            保存
+            <span>保存</span>
         </button>
         <button class="mobile-bar-btn" onclick="showMobileMenu()" title="更多">
             <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                 <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
             </svg>
-            更多
+            <span>更多</span>
         </button>
     </div>
 
@@ -2915,6 +2951,34 @@
 
     (function() {
         document.documentElement.setAttribute('data-theme', getTheme());
+    })();
+
+    /* ==============================================================
+       Screen Detection
+    ============================================================== */
+    (function() {
+        function updateLayout() {
+            var w = window.innerWidth;
+            var body = document.body;
+            if (w <= 600) {
+                body.classList.add('mobile-layout');
+                body.classList.remove('tablet-layout');
+                body.classList.remove('desktop-layout');
+            } else if (w <= 900) {
+                body.classList.add('tablet-layout');
+                body.classList.remove('mobile-layout');
+                body.classList.remove('desktop-layout');
+            } else {
+                body.classList.add('desktop-layout');
+                body.classList.remove('mobile-layout');
+                body.classList.remove('tablet-layout');
+            }
+        }
+        updateLayout();
+        window.addEventListener('resize', updateLayout);
+        window.addEventListener('orientationchange', function() {
+            setTimeout(updateLayout, 100);
+        });
     })();
 
     /* ==============================================================
