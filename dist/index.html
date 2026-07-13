@@ -1263,8 +1263,8 @@
 
         /* ========== Responsive: Mobile (<=600px) ========== */
         @media (max-width: 600px) {
-            /* Body: allow vertical scroll, prevent clipping */
-            body { overflow-x: hidden; overflow-y: auto; }
+            /* Body: lock to exact viewport height, no body scroll */
+            body { height: 100dvh; overflow: hidden; }
 
             /* Header */
             header { height: auto; padding: 8px 12px; gap: 10px; flex-wrap: nowrap; }
@@ -1466,7 +1466,7 @@
         }
 
         /* JS-detected mobile layout (fallback) */
-        .mobile-layout body { overflow-x: hidden; overflow-y: auto; }
+        .mobile-layout body { height: 100dvh; overflow: hidden; }
         .mobile-layout .mobile-tabs { display: flex !important; }
         .mobile-layout .mobile-bar { display: flex !important; }
         .mobile-layout .mobile-sidebar-btn { display: inline-flex !important; }
