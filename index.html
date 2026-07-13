@@ -1224,12 +1224,13 @@
             color: var(--text-primary) !important;
         }
 
-        /* ========== Mobile Toolbar ========== */
+        /* ========== Desktop-only / Mobile-only elements ========== */
         .mobile-tabs { display: none; }
         .mobile-bar { display: none; }
         .mobile-menu-backdrop { display: none; }
         .mobile-menu { display: none; }
         .mobile-sidebar-btn { display: none; }
+        .menu-btn { display: none; }
 
         /* ========== Responsive: Tablet ========== */
         @media (max-width: 900px) {
@@ -1250,36 +1251,43 @@
 
         /* ========== Responsive: Mobile (<=600px) ========== */
         @media (max-width: 600px) {
-            /* Header */
-            header { height: auto; padding: 6px 10px; gap: 8px; flex-wrap: nowrap; }
-            .logo { font-size: 12px; }
-            .logo span { display: none; }
-            .logo-icon { width: 20px; height: 20px; }
+            /* Body: allow vertical scroll, prevent clipping */
+            body { overflow-x: hidden; overflow-y: auto; }
 
-            /* Toolbar: icon-only compact row */
+            /* Header */
+            header { height: auto; padding: 8px 12px; gap: 10px; flex-wrap: nowrap; }
+            .logo { font-size: 13px; }
+            .logo span { display: none; }
+            .logo-icon { width: 22px; height: 22px; }
+
+            /* Toolbar */
             .toolbar {
                 flex: 1;
                 justify-content: flex-end;
-                gap: 2px;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
+                gap: 6px;
             }
-            .toolbar .sep { margin: 0 3px; height: 16px; }
+            .toolbar .sep { margin: 0 4px; height: 18px; }
             .btn .btn-text { display: none; }
             .btn .shortcut { display: none; }
             .btn {
-                padding: 4px 6px;
-                height: 28px;
-                min-width: unset;
+                padding: 6px 8px;
+                height: 34px;
+                min-width: 34px;
                 font-size: 0;
                 gap: 0;
+                border-radius: 8px;
             }
-            .btn .svg-icon { margin: 0; }
+            .btn .svg-icon { margin: 0; width: 18px; height: 18px; }
+            .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+            .btn-primary:hover { background: var(--accent-hover); }
 
-            /* Show mobile sidebar toggle button in header */
+            /* Desktop-only elements hidden */
+            .btn-desktop-only { display: none !important; }
+            /* Menu button visible */
+            .menu-btn { display: inline-flex !important; }
             .mobile-sidebar-btn { display: inline-flex !important; }
 
-            /* Mobile tabs for input/output switching */
+            /* Mobile tabs */
             .mobile-tabs {
                 display: flex;
                 background: var(--bg-secondary);
@@ -1288,17 +1296,18 @@
             }
             .mobile-tab {
                 flex: 1;
-                padding: 8px 0;
+                padding: 10px 0;
                 border: none;
                 background: transparent;
                 color: var(--text-muted);
                 font-family: var(--font-sans);
-                font-size: 13px;
+                font-size: 14px;
                 font-weight: 500;
                 cursor: pointer;
                 text-align: center;
                 border-bottom: 2px solid transparent;
                 transition: all var(--transition-fast);
+                -webkit-tap-highlight-color: transparent;
             }
             .mobile-tab.active {
                 color: var(--accent);
@@ -1308,30 +1317,19 @@
             /* Main layout */
             .main-layout { flex: 1; position: relative; }
 
-            /* Editor area - single panel visible at a time */
+            /* Editor area */
             .editor-area { flex-direction: column; }
-            .panel-left {
-                border-right: none;
-                border-bottom: none;
-                flex: 1 !important;
-            }
+            .panel-left { border-right: none; border-bottom: none; flex: 1 !important; }
             .panel { flex: 1; }
             .panel-left[data-mobile-hidden="true"],
-            #output-panel[data-mobile-hidden="true"] {
-                display: none;
-            }
+            #output-panel[data-mobile-hidden="true"] { display: none; }
             .panel-header { display: none !important; }
-            .panel-header { height: 28px; padding: 0 10px; font-size: 10px; }
 
-            /* Sidebar as slide-over */
+            /* Sidebar */
             .sidebar {
                 position: fixed;
-                top: 0;
-                right: 0;
-                bottom: 0;
-                width: 85%;
-                max-width: 320px;
-                max-height: none;
+                top: 0; right: 0; bottom: 0;
+                width: 85%; max-width: 320px; max-height: none;
                 z-index: 200;
                 border-left: 1px solid var(--border);
                 border-top: none;
@@ -1340,33 +1338,25 @@
                 transition: transform 0.25s ease;
                 background: var(--bg-secondary);
             }
-            .sidebar.mobile-open {
-                transform: translateX(0);
-            }
-            .sidebar.collapsed {
-                width: 85%;
-                max-width: 320px;
-                border-left-color: var(--border);
-                opacity: 1;
-                transform: translateX(100%);
-            }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .sidebar.collapsed { transform: translateX(100%); opacity: 1; }
             .sidebar-overlay {
                 display: none;
-                position: fixed;
-                inset: 0;
+                position: fixed; inset: 0;
                 background: rgba(0,0,0,0.4);
                 z-index: 199;
             }
             .sidebar-overlay.active { display: block; }
 
-            /* Bottom action bar */
+            /* Bottom bar */
             .mobile-bar {
                 display: flex;
                 background: var(--bg-secondary);
                 border-top: 1px solid var(--border);
                 flex-shrink: 0;
-                padding: 4px 6px;
-                gap: 2px;
+                padding: 6px 8px;
+                padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+                gap: 8px;
             }
             .mobile-bar-btn {
                 flex: 1;
@@ -1374,86 +1364,108 @@
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 1px;
-                padding: 4px 2px;
+                gap: 2px;
+                padding: 6px 4px;
                 border: none;
                 background: transparent;
                 color: var(--text-secondary);
                 font-family: var(--font-sans);
-                font-size: 10px;
+                font-size: 11px;
+                font-weight: 500;
                 cursor: pointer;
-                border-radius: var(--radius);
+                border-radius: 10px;
                 transition: all var(--transition-fast);
-                white-space: nowrap;
+                -webkit-tap-highlight-color: transparent;
             }
-            .mobile-bar-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
-            .mobile-bar-btn .svg-icon { width: 18px; height: 18px; }
+            .mobile-bar-btn:active { background: var(--bg-hover); }
+            .mobile-bar-btn .svg-icon { width: 22px; height: 22px; }
+            .mobile-bar-primary .svg-icon { color: var(--accent); }
+            .mobile-bar-primary span { color: var(--accent); font-weight: 600; }
 
-            /* Mobile menu overlay */
+            /* Mobile menu */
             .mobile-menu-backdrop {
                 display: none;
-                position: fixed;
-                inset: 0;
-                background: rgba(0,0,0,0.4);
+                position: fixed; inset: 0;
+                background: rgba(0,0,0,0.5);
                 z-index: 300;
             }
             .mobile-menu-backdrop.active { display: block; }
             .mobile-menu {
                 display: none;
                 position: fixed;
-                bottom: 60px;
-                left: 8px;
-                right: 8px;
+                bottom: 0; left: 0; right: 0;
                 z-index: 301;
                 background: var(--bg-elevated);
-                border: 1px solid var(--border);
-                border-radius: var(--radius-lg);
-                padding: 8px;
-                flex-wrap: wrap;
-                gap: 6px;
-                box-shadow: var(--shadow-lg);
+                border-radius: 16px 16px 0 0;
+                padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 12px) 0;
+                box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
+                flex-direction: column;
             }
             .mobile-menu.active { display: flex; }
-            .mobile-menu .btn {
-                flex: 1 1 calc(50% - 6px);
-                justify-content: center;
-                min-width: 0;
-                font-size: 12px;
-                padding: 8px;
-                height: auto;
+            .mobile-menu-header {
+                text-align: center;
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--text-secondary);
+                padding: 14px 0 8px;
+                border-bottom: 1px solid var(--border-light);
+                margin: 0 16px 4px;
             }
+            .mobile-menu-btn {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 20px;
+                border: none;
+                background: transparent;
+                color: var(--text-primary);
+                font-family: var(--font-sans);
+                font-size: 14px;
+                cursor: pointer;
+                transition: background var(--transition-fast);
+                -webkit-tap-highlight-color: transparent;
+                text-align: left;
+                width: 100%;
+            }
+            .mobile-menu-btn:active { background: var(--bg-hover); }
+            .mobile-menu-btn .svg-icon { width: 20px; height: 20px; color: var(--text-secondary); flex-shrink: 0; }
+            .mobile-menu-danger { color: var(--red) !important; }
+            .mobile-menu-danger .svg-icon { color: var(--red) !important; }
 
-            /* Status bar */
+            /* Hide status bar & floating sidebar toggle */
             .statusbar { display: none; }
             #sidebar-open-btn { display: none !important; }
 
-            /* Editor tweaks */
-            #input { font-size: 12px; padding: 10px 12px; }
-            .json-tree { font-size: 12px; padding: 10px 12px; }
-            #input::placeholder { font-size: 11px; }
+            /* Editor */
+            #input { font-size: 13px; padding: 12px 14px; }
+            .json-tree { font-size: 12px; padding: 12px 14px; }
+            #input::placeholder { font-size: 12px; color: var(--text-muted); }
 
-            /* Toast on mobile */
-            .toast { bottom: 70px; left: 12px; right: 12px; max-width: none; font-size: 12px; }
+            /* Toast */
+            .toast { bottom: 80px; left: 16px; right: 16px; max-width: none; font-size: 13px; border-radius: 10px; }
 
-            /* Modal on mobile */
-            .modal { width: 90%; max-width: 340px; margin: 0 16px; padding: 16px; }
+            /* Modal */
+            .modal { width: 88%; max-width: 340px; margin: 0 16px; padding: 20px; border-radius: 14px; }
 
-            /* Compare on mobile */
+            /* Compare */
             .compare-body { flex-direction: column; }
             .compare-divider { width: 100%; height: 2px; }
             .compare-col { flex: 1; min-height: 40vh; }
         }
 
-        /* JS-detected mobile layout (fallback if media query fails) */
+        /* JS-detected mobile layout (fallback) */
+        .mobile-layout body { overflow-x: hidden; overflow-y: auto; }
         .mobile-layout .mobile-tabs { display: flex !important; }
         .mobile-layout .mobile-bar { display: flex !important; }
         .mobile-layout .mobile-sidebar-btn { display: inline-flex !important; }
-        .mobile-layout .toolbar { flex: 1 !important; justify-content: flex-end !important; gap: 2px !important; overflow-x: auto !important; }
-        .mobile-layout .toolbar .sep { margin: 0 3px !important; height: 16px !important; }
+        .mobile-layout .menu-btn { display: inline-flex !important; }
+        .mobile-layout .btn-desktop-only { display: none !important; }
+        .mobile-layout .toolbar { flex: 1 !important; justify-content: flex-end !important; gap: 6px !important; }
+        .mobile-layout .toolbar .sep { margin: 0 4px !important; height: 18px !important; }
         .mobile-layout .btn .btn-text { display: none !important; }
         .mobile-layout .btn .shortcut { display: none !important; }
-        .mobile-layout .btn { padding: 4px 6px !important; height: 28px !important; min-width: unset !important; font-size: 0 !important; gap: 0 !important; }
-        .mobile-layout .btn .svg-icon { margin: 0 !important; }
+        .mobile-layout .btn { padding: 6px 8px !important; height: 34px !important; min-width: 34px !important; font-size: 0 !important; gap: 0 !important; border-radius: 8px !important; }
+        .mobile-layout .btn .svg-icon { margin: 0 !important; width: 18px !important; height: 18px !important; }
         .mobile-layout .logo span { display: none !important; }
         .mobile-layout .statusbar { display: none !important; }
         .mobile-layout .editor-area { flex-direction: column !important; }
@@ -1462,19 +1474,20 @@
         .mobile-layout .panel-left[data-mobile-hidden="true"],
         .mobile-layout #output-panel[data-mobile-hidden="true"] { display: none !important; }
         .mobile-layout .panel-header { display: none !important; }
-        .mobile-layout .panel-body { padding-bottom: 0 !important; }
         .mobile-layout .sidebar { position: fixed !important; top: 0 !important; right: 0 !important; bottom: 0 !important; width: 85% !important; max-width: 320px !important; max-height: none !important; z-index: 200 !important; border-left: 1px solid var(--border) !important; border-top: none !important; box-shadow: var(--shadow-lg) !important; transform: translateX(100%) !important; transition: transform 0.25s ease !important; }
         .mobile-layout .sidebar.mobile-open { transform: translateX(0) !important; }
-        .mobile-layout .sidebar.collapsed { transform: translateX(100%) !important; }
+        .mobile-layout .sidebar.collapsed { transform: translateX(100%) !important; opacity: 1 !important; }
         .mobile-layout .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 199; }
         .mobile-layout .sidebar-overlay.active { display: block; }
-        .mobile-layout .mobile-menu-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 300; }
+        .mobile-layout .mobile-bar { padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)) !important; gap: 8px !important; }
+        .mobile-layout .mobile-bar-btn { gap: 2px !important; padding: 6px 4px !important; font-size: 11px !important; border-radius: 10px !important; }
+        .mobile-layout .mobile-bar-btn .svg-icon { width: 22px !important; height: 22px !important; }
+        .mobile-layout .mobile-menu-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; }
         .mobile-layout .mobile-menu-backdrop.active { display: block; }
-        .mobile-layout .mobile-menu { display: none; position: fixed; bottom: 60px; left: 8px; right: 8px; z-index: 301; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 8px; flex-wrap: wrap; gap: 6px; box-shadow: var(--shadow-lg); }
+        .mobile-layout .mobile-menu { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 301; background: var(--bg-elevated); border-radius: 16px 16px 0 0; padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 12px) 0; box-shadow: 0 -4px 24px rgba(0,0,0,0.4); flex-direction: column; }
         .mobile-layout .mobile-menu.active { display: flex; }
-        .mobile-layout .mobile-menu .btn { flex: 1 1 calc(50% - 6px); justify-content: center; font-size: 12px; padding: 8px; height: auto; }
-        .mobile-layout .toast { bottom: 70px !important; left: 12px !important; right: 12px !important; max-width: none !important; }
-        .mobile-layout .modal { width: 90% !important; max-width: 340px !important; margin: 0 16px !important; padding: 16px !important; }
+        .mobile-layout .toast { bottom: 80px !important; left: 16px !important; right: 16px !important; max-width: none !important; }
+        .mobile-layout .modal { width: 88% !important; max-width: 340px !important; margin: 0 16px !important; padding: 20px !important; }
         .mobile-layout .compare-body { flex-direction: column !important; }
         .mobile-layout .compare-divider { width: 100% !important; height: 2px !important; }
         .mobile-layout .compare-col { flex: 1 !important; min-height: 40vh !important; }
@@ -1568,6 +1581,11 @@
         <symbol id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </symbol>
+        <symbol id="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+        </symbol>
     </svg>
 
     <!-- ========== Header & Toolbar ========== -->
@@ -1576,47 +1594,51 @@
             <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#icon-braces"/></svg>
             <span>JSON 格式化工具</span>
         </div>
-        <div class="toolbar">
+        <div class="toolbar" id="toolbar">
             <button class="btn" onclick="toggleTheme()" id="theme-btn" title="切换暗色/亮色模式">
                 <svg class="svg-icon" id="theme-icon"><use href="#icon-sun"/></svg>
                 <span class="btn-text">主题</span>
             </button>
             <button class="btn mobile-sidebar-btn" onclick="toggleMobileSidebar()" title="历史记录">
-                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#icon-clock"/></svg>
+                <svg class="svg-icon"><use href="#icon-clock"/></svg>
                 <span class="btn-text">历史</span>
             </button>
             <div class="sep"></div>
-            <button class="btn btn-primary" onclick="formatJSON()" title="格式化 JSON (Ctrl+Enter)">
+            <button class="btn btn-primary" onclick="formatJSON()" title="格式化 JSON">
                 <svg class="svg-icon"><use href="#icon-code"/></svg>
                 <span class="btn-text">格式化</span> <span class="shortcut">^&#9166;</span>
-            </button>
-            <button class="btn" onclick="minifyJSON()" title="压缩 JSON">
-                <span class="btn-text">压缩</span>
-            </button>
-            <button class="btn" onclick="stringifyJSON()" title="JSON 转义">
-                <span class="btn-text">转义</span>
-            </button>
-            <div class="sep"></div>
-            <button class="btn" onclick="copyOutput()" title="复制结果">
-                <svg class="svg-icon"><use href="#icon-copy"/></svg>
-                <span class="btn-text">复制</span>
-            </button>
-            <button class="btn" onclick="downloadJSON()" title="下载 JSON 文件 (Ctrl+D)">
-                <svg class="svg-icon"><use href="#icon-download"/></svg>
-                <span class="btn-text">下载</span> <span class="shortcut">^D</span>
             </button>
             <button class="btn" onclick="uploadFile()" title="上传 JSON 文件">
                 <svg class="svg-icon"><use href="#icon-folder-open"/></svg>
                 <span class="btn-text">上传</span>
             </button>
             <div class="sep"></div>
-            <button class="btn" onclick="saveHistory()" title="保存到历史 (Ctrl+S)">
+            <button class="btn btn-desktop-only" onclick="minifyJSON()" title="压缩 JSON">
+                <span class="btn-text">压缩</span>
+            </button>
+            <button class="btn btn-desktop-only" onclick="stringifyJSON()" title="JSON 转义">
+                <span class="btn-text">转义</span>
+            </button>
+            <div class="sep btn-desktop-only"></div>
+            <button class="btn btn-desktop-only" onclick="copyOutput()" title="复制结果">
+                <svg class="svg-icon"><use href="#icon-copy"/></svg>
+                <span class="btn-text">复制</span>
+            </button>
+            <button class="btn btn-desktop-only" onclick="downloadJSON()" title="下载 JSON 文件">
+                <svg class="svg-icon"><use href="#icon-download"/></svg>
+                <span class="btn-text">下载</span> <span class="shortcut">^D</span>
+            </button>
+            <div class="sep btn-desktop-only"></div>
+            <button class="btn btn-desktop-only" onclick="saveHistory()" title="保存到历史">
                 <svg class="svg-icon"><use href="#icon-save"/></svg>
                 <span class="btn-text">保存</span> <span class="shortcut">^S</span>
             </button>
-            <button class="btn btn-danger" onclick="clearContent()" title="清空">
+            <button class="btn btn-desktop-only btn-danger" onclick="clearContent()" title="清空">
                 <svg class="svg-icon"><use href="#icon-trash"/></svg>
                 <span class="btn-text">清空</span>
+            </button>
+            <button class="btn menu-btn" onclick="showMobileMenu()" title="更多操作">
+                <svg class="svg-icon"><use href="#icon-menu"/></svg>
             </button>
         </div>
     </header>
@@ -1717,27 +1739,21 @@
 
     <!-- ========== Mobile Bottom Bar ========== -->
     <div class="mobile-bar" id="mobile-bar">
-        <button class="mobile-bar-btn" onclick="formatJSON()" title="格式化">
+        <button class="mobile-bar-btn mobile-bar-primary" onclick="formatJSON()">
             <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-code"/></svg>
             <span>格式化</span>
         </button>
-        <button class="mobile-bar-btn" onclick="copyOutput()" title="复制">
+        <button class="mobile-bar-btn" onclick="copyOutput()">
             <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-copy"/></svg>
             <span>复制</span>
         </button>
-        <button class="mobile-bar-btn" onclick="uploadFile()" title="上传">
+        <button class="mobile-bar-btn" onclick="uploadFile()">
             <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>
             <span>上传</span>
         </button>
-        <button class="mobile-bar-btn" onclick="saveHistory()" title="保存">
+        <button class="mobile-bar-btn" onclick="saveHistory()">
             <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-save"/></svg>
             <span>保存</span>
-        </button>
-        <button class="mobile-bar-btn" onclick="showMobileMenu()" title="更多">
-            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
-            </svg>
-            <span>更多</span>
         </button>
     </div>
 
@@ -1756,19 +1772,30 @@
     <!-- ========== Mobile Menu Overlay ========== -->
     <div class="mobile-menu-backdrop" id="mobile-menu-backdrop" onclick="hideMobileMenu()"></div>
     <div class="mobile-menu" id="mobile-menu">
-        <button class="btn" onclick="minifyJSON();hideMobileMenu()">
-            压缩
+        <div class="mobile-menu-header">更多操作</div>
+        <button class="mobile-menu-btn" onclick="copyOutput();hideMobileMenu()">
+            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-copy"/></svg>
+            <span>复制结果</span>
         </button>
-        <button class="btn" onclick="stringifyJSON();hideMobileMenu()">
-            转义
+        <button class="mobile-menu-btn" onclick="saveHistory();hideMobileMenu()">
+            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-save"/></svg>
+            <span>保存到历史</span>
         </button>
-        <button class="btn" onclick="downloadJSON();hideMobileMenu()">
-            <svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-download"/></svg>
-            下载
+        <button class="mobile-menu-btn" onclick="downloadJSON();hideMobileMenu()">
+            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-download"/></svg>
+            <span>下载文件</span>
         </button>
-        <button class="btn btn-danger" onclick="clearContent();hideMobileMenu()">
-            <svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-trash"/></svg>
-            清空
+        <button class="mobile-menu-btn" onclick="minifyJSON();hideMobileMenu()">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="14" y2="14"/></svg>
+            <span>压缩 JSON</span>
+        </button>
+        <button class="mobile-menu-btn" onclick="stringifyJSON();hideMobileMenu()">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="21" x2="12" y2="3"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>
+            <span>转义 JSON</span>
+        </button>
+        <button class="mobile-menu-btn mobile-menu-danger" onclick="clearContent();hideMobileMenu()">
+            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-trash"/></svg>
+            <span>清空内容</span>
         </button>
     </div>
 
