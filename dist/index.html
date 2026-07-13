@@ -1595,24 +1595,19 @@
             <span>JSON 格式化工具</span>
         </div>
         <div class="toolbar" id="toolbar">
-            <button class="btn" onclick="toggleTheme()" id="theme-btn" title="切换暗色/亮色模式">
+            <button class="btn btn-desktop-only" onclick="toggleTheme()" id="theme-btn" title="切换暗色/亮色模式">
                 <svg class="svg-icon" id="theme-icon"><use href="#icon-sun"/></svg>
                 <span class="btn-text">主题</span>
             </button>
-            <button class="btn mobile-sidebar-btn" onclick="toggleMobileSidebar()" title="历史记录">
+            <button class="btn btn-desktop-only" onclick="toggleMobileSidebar()" title="历史记录">
                 <svg class="svg-icon"><use href="#icon-clock"/></svg>
                 <span class="btn-text">历史</span>
             </button>
-            <div class="sep"></div>
+            <div class="sep btn-desktop-only"></div>
             <button class="btn btn-primary" onclick="formatJSON()" title="格式化 JSON">
                 <svg class="svg-icon"><use href="#icon-code"/></svg>
                 <span class="btn-text">格式化</span> <span class="shortcut">^&#9166;</span>
             </button>
-            <button class="btn" onclick="uploadFile()" title="上传 JSON 文件">
-                <svg class="svg-icon"><use href="#icon-folder-open"/></svg>
-                <span class="btn-text">上传</span>
-            </button>
-            <div class="sep"></div>
             <button class="btn btn-desktop-only" onclick="minifyJSON()" title="压缩 JSON">
                 <span class="btn-text">压缩</span>
             </button>
@@ -1627,6 +1622,10 @@
             <button class="btn btn-desktop-only" onclick="downloadJSON()" title="下载 JSON 文件">
                 <svg class="svg-icon"><use href="#icon-download"/></svg>
                 <span class="btn-text">下载</span> <span class="shortcut">^D</span>
+            </button>
+            <button class="btn" onclick="uploadFile()" title="上传 JSON 文件">
+                <svg class="svg-icon"><use href="#icon-folder-open"/></svg>
+                <span class="btn-text">上传</span>
             </button>
             <div class="sep btn-desktop-only"></div>
             <button class="btn btn-desktop-only" onclick="saveHistory()" title="保存到历史">
@@ -1773,6 +1772,14 @@
     <div class="mobile-menu-backdrop" id="mobile-menu-backdrop" onclick="hideMobileMenu()"></div>
     <div class="mobile-menu" id="mobile-menu">
         <div class="mobile-menu-header">更多操作</div>
+        <button class="mobile-menu-btn" onclick="toggleTheme();hideMobileMenu()">
+            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-sun"/></svg>
+            <span>切换主题</span>
+        </button>
+        <button class="mobile-menu-btn" onclick="toggleMobileSidebar();hideMobileMenu()">
+            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-clock"/></svg>
+            <span>历史记录</span>
+        </button>
         <button class="mobile-menu-btn" onclick="copyOutput();hideMobileMenu()">
             <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-copy"/></svg>
             <span>复制结果</span>
