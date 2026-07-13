@@ -1221,7 +1221,14 @@
             color: var(--text-primary) !important;
         }
 
-        /* ========== Responsive ========== */
+        /* ========== Mobile Toolbar ========== */
+        .mobile-tabs { display: none; }
+        .mobile-bar { display: none; }
+        .mobile-menu-backdrop { display: none; }
+        .mobile-menu { display: none; }
+        .mobile-sidebar-btn { display: none; }
+
+        /* ========== Responsive: Tablet ========== */
         @media (max-width: 900px) {
             .editor-area { flex-direction: column; }
             .panel-left { border-right: none; border-bottom: 2px solid var(--border); }
@@ -1235,12 +1242,202 @@
             .btn .shortcut { display: none; }
             .btn { padding: 4px 8px; font-size: 11px; }
             header { padding: 0 12px; }
+            .statusbar { display: none; }
         }
 
+        /* ========== Responsive: Mobile (<=600px) ========== */
         @media (max-width: 600px) {
-            header { flex-wrap: wrap; height: auto; padding: 8px 10px; gap: 8px; }
-            .toolbar { width: 100%; justify-content: center; }
+            /* Header */
+            header { height: auto; padding: 6px 10px; gap: 8px; flex-wrap: nowrap; }
             .logo { font-size: 12px; }
+            .logo span { display: none; }
+            .logo-icon { width: 20px; height: 20px; }
+
+            /* Toolbar: icon-only compact row */
+            .toolbar {
+                flex: 1;
+                justify-content: flex-end;
+                gap: 2px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .toolbar .sep { margin: 0 3px; height: 16px; }
+            .btn .btn-text { display: none; }
+            .btn .shortcut { display: none; }
+            .btn {
+                padding: 4px 6px;
+                height: 28px;
+                min-width: unset;
+                font-size: 0;
+                gap: 0;
+            }
+            .btn .svg-icon { margin: 0; }
+
+            /* Show mobile sidebar toggle button in header */
+            .mobile-sidebar-btn { display: inline-flex !important; }
+
+            /* Mobile tabs for input/output switching */
+            .mobile-tabs {
+                display: flex;
+                background: var(--bg-secondary);
+                border-bottom: 1px solid var(--border-light);
+                flex-shrink: 0;
+            }
+            .mobile-tab {
+                flex: 1;
+                padding: 8px 0;
+                border: none;
+                background: transparent;
+                color: var(--text-muted);
+                font-family: var(--font-sans);
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                text-align: center;
+                border-bottom: 2px solid transparent;
+                transition: all var(--transition-fast);
+            }
+            .mobile-tab.active {
+                color: var(--accent);
+                border-bottom-color: var(--accent);
+            }
+
+            /* Main layout */
+            .main-layout { flex: 1; position: relative; }
+
+            /* Editor area - single panel visible at a time */
+            .editor-area { flex-direction: column; }
+            .panel-left {
+                border-right: none;
+                border-bottom: none;
+                flex: 1 !important;
+            }
+            .panel { flex: 1; }
+            .panel-left[data-mobile-hidden="true"],
+            #output-panel[data-mobile-hidden="true"] {
+                display: none;
+            }
+            .panel-header { height: 28px; padding: 0 10px; font-size: 10px; }
+
+            /* Sidebar as slide-over */
+            .sidebar {
+                position: fixed;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: 85%;
+                max-width: 320px;
+                max-height: none;
+                z-index: 200;
+                border-left: 1px solid var(--border);
+                border-top: none;
+                box-shadow: var(--shadow-lg);
+                transform: translateX(100%);
+                transition: transform 0.25s ease;
+                background: var(--bg-secondary);
+            }
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            .sidebar.collapsed {
+                width: 85%;
+                max-width: 320px;
+                border-left-color: var(--border);
+                opacity: 1;
+                transform: translateX(100%);
+            }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.4);
+                z-index: 199;
+            }
+            .sidebar-overlay.active { display: block; }
+
+            /* Bottom action bar */
+            .mobile-bar {
+                display: flex;
+                background: var(--bg-secondary);
+                border-top: 1px solid var(--border);
+                flex-shrink: 0;
+                padding: 4px 6px;
+                gap: 2px;
+            }
+            .mobile-bar-btn {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 1px;
+                padding: 4px 2px;
+                border: none;
+                background: transparent;
+                color: var(--text-secondary);
+                font-family: var(--font-sans);
+                font-size: 10px;
+                cursor: pointer;
+                border-radius: var(--radius);
+                transition: all var(--transition-fast);
+                white-space: nowrap;
+            }
+            .mobile-bar-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+            .mobile-bar-btn .svg-icon { width: 18px; height: 18px; }
+
+            /* Mobile menu overlay */
+            .mobile-menu-backdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.4);
+                z-index: 300;
+            }
+            .mobile-menu-backdrop.active { display: block; }
+            .mobile-menu {
+                display: none;
+                position: fixed;
+                bottom: 60px;
+                left: 8px;
+                right: 8px;
+                z-index: 301;
+                background: var(--bg-elevated);
+                border: 1px solid var(--border);
+                border-radius: var(--radius-lg);
+                padding: 8px;
+                flex-wrap: wrap;
+                gap: 6px;
+                box-shadow: var(--shadow-lg);
+            }
+            .mobile-menu.active { display: flex; }
+            .mobile-menu .btn {
+                flex: 1 1 calc(50% - 6px);
+                justify-content: center;
+                min-width: 0;
+                font-size: 12px;
+                padding: 8px;
+                height: auto;
+            }
+
+            /* Status bar */
+            .statusbar { display: none; }
+            #sidebar-open-btn { display: none !important; }
+
+            /* Editor tweaks */
+            #input { font-size: 12px; padding: 10px 12px; }
+            .json-tree { font-size: 12px; padding: 10px 12px; }
+            #input::placeholder { font-size: 11px; }
+
+            /* Toast on mobile */
+            .toast { bottom: 70px; left: 12px; right: 12px; max-width: none; font-size: 12px; }
+
+            /* Modal on mobile */
+            .modal { width: 90%; max-width: 340px; margin: 0 16px; padding: 16px; }
+
+            /* Compare on mobile */
+            .compare-body { flex-direction: column; }
+            .compare-divider { width: 100%; height: 2px; }
+            .compare-col { flex: 1; min-height: 40vh; }
         }
     </style>
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1343,42 +1540,53 @@
         <div class="toolbar">
             <button class="btn" onclick="toggleTheme()" id="theme-btn" title="切换暗色/亮色模式">
                 <svg class="svg-icon" id="theme-icon"><use href="#icon-sun"/></svg>
+                <span class="btn-text">主题</span>
+            </button>
+            <button class="btn mobile-sidebar-btn" onclick="toggleMobileSidebar()" title="历史记录">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#icon-clock"/></svg>
+                <span class="btn-text">历史</span>
             </button>
             <div class="sep"></div>
             <button class="btn btn-primary" onclick="formatJSON()" title="格式化 JSON (Ctrl+Enter)">
                 <svg class="svg-icon"><use href="#icon-code"/></svg>
-                格式化 <span class="shortcut">^&#9166;</span>
+                <span class="btn-text">格式化</span> <span class="shortcut">^&#9166;</span>
             </button>
             <button class="btn" onclick="minifyJSON()" title="压缩 JSON">
-                压缩
+                <span class="btn-text">压缩</span>
             </button>
             <button class="btn" onclick="stringifyJSON()" title="JSON 转义">
-                转义
+                <span class="btn-text">转义</span>
             </button>
             <div class="sep"></div>
             <button class="btn" onclick="copyOutput()" title="复制结果">
                 <svg class="svg-icon"><use href="#icon-copy"/></svg>
-                复制
+                <span class="btn-text">复制</span>
             </button>
             <button class="btn" onclick="downloadJSON()" title="下载 JSON 文件 (Ctrl+D)">
                 <svg class="svg-icon"><use href="#icon-download"/></svg>
-                下载 <span class="shortcut">^D</span>
+                <span class="btn-text">下载</span> <span class="shortcut">^D</span>
             </button>
             <button class="btn" onclick="uploadFile()" title="上传 JSON 文件">
                 <svg class="svg-icon"><use href="#icon-folder-open"/></svg>
-                上传
+                <span class="btn-text">上传</span>
             </button>
             <div class="sep"></div>
             <button class="btn" onclick="saveHistory()" title="保存到历史 (Ctrl+S)">
                 <svg class="svg-icon"><use href="#icon-save"/></svg>
-                保存 <span class="shortcut">^S</span>
+                <span class="btn-text">保存</span> <span class="shortcut">^S</span>
             </button>
             <button class="btn btn-danger" onclick="clearContent()" title="清空">
                 <svg class="svg-icon"><use href="#icon-trash"/></svg>
-                清空
+                <span class="btn-text">清空</span>
             </button>
         </div>
     </header>
+
+    <!-- ========== Mobile Panel Tabs ========== -->
+    <div class="mobile-tabs" id="mobile-tabs">
+        <button class="mobile-tab active" data-panel="input">输入</button>
+        <button class="mobile-tab" data-panel="output">输出</button>
+    </div>
 
     <!-- ========== Main Layout ========== -->
     <div class="main-layout">
@@ -1448,6 +1656,8 @@
         </div>
     </div>
 
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
+
     <button class="sidebar-toggle" id="sidebar-open-btn" onclick="toggleSidebar()"
         style="display:none;position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:100;
                background:var(--bg-elevated);border:1px solid var(--border);border-right:none;
@@ -1466,6 +1676,32 @@
         </div>
     </div>
 
+    <!-- ========== Mobile Bottom Bar ========== -->
+    <div class="mobile-bar" id="mobile-bar">
+        <button class="mobile-bar-btn" onclick="formatJSON()" title="格式化">
+            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-code"/></svg>
+            格式化
+        </button>
+        <button class="mobile-bar-btn" onclick="copyOutput()" title="复制">
+            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-copy"/></svg>
+            复制
+        </button>
+        <button class="mobile-bar-btn" onclick="uploadFile()" title="上传">
+            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>
+            上传
+        </button>
+        <button class="mobile-bar-btn" onclick="saveHistory()" title="保存">
+            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-save"/></svg>
+            保存
+        </button>
+        <button class="mobile-bar-btn" onclick="showMobileMenu()" title="更多">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+            </svg>
+            更多
+        </button>
+    </div>
+
     <!-- ========== Save Modal ========== -->
     <div class="modal-backdrop" id="save-modal">
         <div class="modal">
@@ -1476,6 +1712,25 @@
                 <button class="btn btn-primary" onclick="confirmSave()">保存</button>
             </div>
         </div>
+    </div>
+
+    <!-- ========== Mobile Menu Overlay ========== -->
+    <div class="mobile-menu-backdrop" id="mobile-menu-backdrop" onclick="hideMobileMenu()"></div>
+    <div class="mobile-menu" id="mobile-menu">
+        <button class="btn" onclick="minifyJSON();hideMobileMenu()">
+            压缩
+        </button>
+        <button class="btn" onclick="stringifyJSON();hideMobileMenu()">
+            转义
+        </button>
+        <button class="btn" onclick="downloadJSON();hideMobileMenu()">
+            <svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-download"/></svg>
+            下载
+        </button>
+        <button class="btn btn-danger" onclick="clearContent();hideMobileMenu()">
+            <svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-trash"/></svg>
+            清空
+        </button>
     </div>
 
     <!-- ========== Compare View ========== -->
@@ -1699,6 +1954,7 @@
         renderOutput(window.lastFormattedContent, 'json', fixed, jsonObj);
         setStatus('格式化成功' + (fixed ? fixMsg : ''));
         updateOutputStatus(window.lastFormattedContent);
+        showMobileOutput();
     }
 
     function minifyJSON() {
@@ -2212,6 +2468,16 @@
         document.getElementById('input').value = item.content;
         formatJSON();
         showToast('已加载：' + item.name, 2000, 'icon-file-text');
+        closeMobileSidebarIfOpen();
+    }
+
+    function closeMobileSidebarIfOpen() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        if (sidebar.classList.contains('mobile-open')) {
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('active');
+        }
     }
 
     function toggleSelect(id) {
@@ -2268,6 +2534,66 @@
         const openBtn = document.getElementById('sidebar-open-btn');
         sidebar.classList.toggle('collapsed');
         openBtn.style.display = sidebar.classList.contains('collapsed') ? 'block' : 'none';
+    }
+
+    /* ==============================================================
+       Mobile: Sidebar Overlay
+    ============================================================== */
+    function toggleMobileSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        sidebar.classList.toggle('mobile-open');
+        overlay.classList.toggle('active');
+    }
+
+    /* ==============================================================
+       Mobile: More Menu
+    ============================================================== */
+    function showMobileMenu() {
+        document.getElementById('mobile-menu-backdrop').classList.add('active');
+        document.getElementById('mobile-menu').classList.add('active');
+    }
+
+    function hideMobileMenu() {
+        document.getElementById('mobile-menu-backdrop').classList.remove('active');
+        document.getElementById('mobile-menu').classList.remove('active');
+    }
+
+    /* ==============================================================
+       Mobile: Panel Tab Switching
+    ============================================================== */
+    function initMobileTabs() {
+        const tabs = document.querySelectorAll('.mobile-tab');
+        if (tabs.length === 0) return;
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const panel = tab.getAttribute('data-panel');
+                if (panel === 'input') {
+                    document.getElementById('input-panel').removeAttribute('data-mobile-hidden');
+                    document.getElementById('output-panel').setAttribute('data-mobile-hidden', 'true');
+                } else {
+                    document.getElementById('input-panel').setAttribute('data-mobile-hidden', 'true');
+                    document.getElementById('output-panel').removeAttribute('data-mobile-hidden');
+                }
+            });
+        });
+    }
+
+    /* ==============================================================
+       Mobile: Auto-switch to output after format
+    ============================================================== */
+    function showMobileOutput() {
+        const tabs = document.querySelectorAll('.mobile-tab');
+        if (tabs.length === 0) return;
+        tabs.forEach(t => t.classList.remove('active'));
+        const outputTab = document.querySelector('.mobile-tab[data-panel="output"]');
+        if (outputTab) {
+            outputTab.classList.add('active');
+            document.getElementById('input-panel').setAttribute('data-mobile-hidden', 'true');
+            document.getElementById('output-panel').removeAttribute('data-mobile-hidden');
+        }
     }
 
     /* ==============================================================
@@ -2600,6 +2926,7 @@
         initDragDrop();
         initKeyboard();
         initInputTracker();
+        initMobileTabs();
         setStatus('就绪');
     });
     </script>
