@@ -1,12 +1,12 @@
-const CACHE_NAME = 'json-formatter-v13';
+const CACHE_NAME = 'json-formatter-v14';
 const urlsToCache = [
   '/jsonbeautify/',
-  '/jsonbeautify/index.html',
-  '/jsonbeautify/manifest.json',
-  '/jsonbeautify/icon.svg?v=8',
-  '/jsonbeautify/icon-192.png?v=8',
-  '/jsonbeautify/icon-512.png?v=8',
-  '/jsonbeautify/favicon-32.png?v=7'
+  '/jsonbeautify/index.html?v=9',
+  '/jsonbeautify/manifest.json?v=9',
+  '/jsonbeautify/icon.svg?v=9',
+  '/jsonbeautify/icon-192.png?v=9',
+  '/jsonbeautify/icon-512.png?v=9',
+  '/jsonbeautify/favicon-32.png?v=9'
 ];
 const cdnUrls = [
   'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js',
