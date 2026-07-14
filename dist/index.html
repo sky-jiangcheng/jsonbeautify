@@ -1467,7 +1467,8 @@
             #input::placeholder { font-size: 12px; color: var(--text-muted); }
 
             /* Toast */
-            .toast { bottom: 80px; left: 16px; right: 16px; max-width: none; font-size: 13px; border-radius: var(--radius-md); }
+            .toast { bottom: 80px; left: 16px; right: 16px; max-width: none; font-size: 13px; border-radius: var(--radius-md); transform: translateY(100px); }
+            .toast.show { transform: translateY(0); }
 
             /* Modal */
             .modal { width: 88%; max-width: 340px; margin: 0 16px; padding: 20px; border-radius: var(--radius-lg); }
@@ -1521,7 +1522,8 @@
         .mobile-layout .mobile-menu-btn .svg-icon { width: 20px; height: 20px; color: var(--text-secondary); flex-shrink: 0; }
         .mobile-layout .mobile-menu-danger { color: var(--red) !important; }
         .mobile-layout .mobile-menu-danger .svg-icon { color: var(--red) !important; }
-        .mobile-layout .toast { border-radius: var(--radius-md) !important; }
+        .mobile-layout .toast { border-radius: var(--radius-md) !important; transform: translateY(100px) !important; }
+        .mobile-layout .toast.show { transform: translateY(0) !important; }
         .mobile-layout .modal { border-radius: var(--radius-lg) !important; }
         .mobile-layout .compare-body { flex-direction: column !important; }
         .mobile-layout .compare-divider { width: 100% !important; height: 2px !important; }
