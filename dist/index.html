@@ -1818,7 +1818,7 @@
     <div class="mobile-menu" id="mobile-menu">
         <div class="mobile-menu-header">更多操作</div>
         <button class="mobile-menu-btn" onclick="toggleTheme();hideMobileMenu()">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-sun"/></svg>
+            <svg class="svg-icon" id="theme-icon-mobile" viewBox="0 0 24 24"><use href="#icon-sun"/></svg>
             <span>切换主题</span>
         </button>
         <button class="mobile-menu-btn" onclick="toggleMobileSidebar();hideMobileMenu()">
@@ -3019,7 +3019,9 @@
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         var icon = document.getElementById('theme-icon');
+        var iconMobile = document.getElementById('theme-icon-mobile');
         if (icon) icon.querySelector('use').setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
+        if (iconMobile) iconMobile.querySelector('use').setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
         var d = document.getElementById('hljs-dark');
         var l = document.getElementById('hljs-light');
         if (d) d.disabled = theme === 'light';
@@ -3032,7 +3034,7 @@
     }
 
     (function() {
-        document.documentElement.setAttribute('data-theme', getTheme());
+        applyTheme(getTheme());
     })();
 
     /* ==============================================================
