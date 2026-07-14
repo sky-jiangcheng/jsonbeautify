@@ -12,8 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <style>
         /* ========== CSS Variables ========== */
-        :root,
-        [data-theme="dark"] {
+        :root {
             --bg-primary: #0d1117;
             --bg-secondary: #0b0f14;
             --bg-surface: #131921;
@@ -56,7 +55,7 @@
             color-scheme: dark;
         }
 
-        [data-theme="light"] {
+        html[data-theme="light"] {
             --bg-primary: #ffffff;
             --bg-secondary: #eef1f5;
             --bg-surface: #f6f8fa;
@@ -3013,20 +3012,22 @@
        Theme
     ============================================================== */
     function getTheme() {
-        return localStorage.getItem('theme') || 'dark';
+        try { return localStorage.getItem('theme') || 'dark'; } catch(e) { return 'dark'; }
     }
 
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
-        var icon = document.getElementById('theme-icon');
-        var iconMobile = document.getElementById('theme-icon-mobile');
-        if (icon) icon.querySelector('use').setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
-        if (iconMobile) iconMobile.querySelector('use').setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
-        var d = document.getElementById('hljs-dark');
-        var l = document.getElementById('hljs-light');
-        if (d) d.disabled = theme === 'light';
-        if (l) l.disabled = theme === 'dark';
-        localStorage.setItem('theme', theme);
+        try {
+            var icon = document.getElementById('theme-icon');
+            var iconMobile = document.getElementById('theme-icon-mobile');
+            if (icon) { var u = icon.querySelector('use'); if (u) u.setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun'); }
+            if (iconMobile) { var um = iconMobile.querySelector('use'); if (um) um.setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun'); }
+            var d = document.getElementById('hljs-dark');
+            var l = document.getElementById('hljs-light');
+            if (d) d.disabled = theme === 'light';
+            if (l) l.disabled = theme === 'dark';
+        } catch(e) {}
+        try { localStorage.setItem('theme', theme); } catch(e) {}
     }
 
     function toggleTheme() {
