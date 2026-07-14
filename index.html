@@ -29,6 +29,8 @@
             --accent: #58a6ff;
             --accent-hover: #79c0ff;
             --accent-subtle: rgba(88, 166, 255, 0.1);
+            --btn-primary-bg: #1f6feb;
+            --btn-primary-hover: #388bfd;
             --green: #3fb950;
             --green-bg: rgba(63, 185, 80, 0.1);
             --green-border: rgba(63, 185, 80, 0.25);
@@ -70,6 +72,8 @@
             --accent: #0969da;
             --accent-hover: #0550ae;
             --accent-subtle: rgba(9, 105, 218, 0.08);
+            --btn-primary-bg: #0969da;
+            --btn-primary-hover: #0550ae;
             --green: #1a7f37;
             --green-bg: rgba(26, 127, 55, 0.10);
             --green-border: rgba(26, 127, 55, 0.25);
@@ -217,20 +221,20 @@
         }
 
         .btn-primary {
-            background: var(--accent);
+            background: var(--btn-primary-bg);
             color: #ffffff;
-            border-color: var(--accent);
+            border-color: var(--btn-primary-bg);
             font-weight: 600;
         }
 
         .btn-primary:hover {
-            background: var(--accent-hover);
-            border-color: var(--accent-hover);
+            background: var(--btn-primary-hover);
+            border-color: var(--btn-primary-hover);
             color: #ffffff;
         }
 
         .btn-primary:active {
-            background: var(--accent);
+            background: var(--btn-primary-bg);
             filter: brightness(0.85);
         }
 
@@ -1303,8 +1307,8 @@
             }
             .btn .svg-icon { margin: 0; width: 18px; height: 18px; }
             .btn:active { transform: scale(0.97); }
-            .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-            .btn-primary:hover { background: var(--accent-hover); }
+            .btn-primary { background: var(--btn-primary-bg); color: #fff; border-color: var(--btn-primary-bg); }
+            .btn-primary:hover { background: var(--btn-primary-hover); }
 
             /* Desktop-only elements hidden */
             .btn-desktop-only { display: none !important; }
@@ -1404,8 +1408,9 @@
             }
             .mobile-bar-btn:active { background: var(--bg-hover); transform: scale(0.97); }
             .mobile-bar-btn .svg-icon { width: 20px; height: 20px; }
-            .mobile-bar-primary .svg-icon { color: var(--accent); }
-            .mobile-bar-primary span { color: var(--accent); font-weight: 600; }
+            .mobile-bar-primary { background: var(--btn-primary-bg); color: #fff; border-color: var(--btn-primary-bg); }
+            .mobile-bar-primary .svg-icon { color: #fff; }
+            .mobile-bar-primary span { color: #fff; font-weight: 600; }
 
             /* Mobile menu */
             .mobile-menu-backdrop {
@@ -1510,6 +1515,9 @@
         .mobile-layout .mobile-bar-btn { gap: 2px !important; padding: 6px 4px !important; font-size: 11px !important; border-radius: var(--radius-md) !important; border: 1px solid var(--border) !important; background: var(--bg-surface) !important; }
         .mobile-layout .mobile-bar-btn .svg-icon { width: 20px !important; height: 20px !important; }
         .mobile-layout .mobile-bar-btn:active { background: var(--bg-hover) !important; transform: scale(0.97) !important; }
+        .mobile-layout .mobile-bar-primary { background: var(--btn-primary-bg) !important; color: #fff !important; border-color: var(--btn-primary-bg) !important; }
+        .mobile-layout .mobile-bar-primary .svg-icon { color: #fff !important; }
+        .mobile-layout .mobile-bar-primary span { color: #fff !important; font-weight: 600 !important; }
         .mobile-layout .mobile-tab { flex: 1; padding: 10px 0; border: none; background: transparent; color: var(--text-muted); font-family: var(--font-sans); font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; border-bottom: 2px solid transparent; transition: all var(--transition-fast); -webkit-tap-highlight-color: transparent; }
         .mobile-layout .mobile-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
         .mobile-layout .mobile-menu-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; }
