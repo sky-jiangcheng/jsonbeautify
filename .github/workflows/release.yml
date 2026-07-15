@@ -31,7 +31,7 @@ jobs:
       - name: Check for CDN references
         run: npm run check:cdn
 
-      - uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -62,7 +62,7 @@ jobs:
       - name: Generate macOS icons
         run: npx tauri icon src-tauri/icons/icon.png
 
-      - uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -86,7 +86,7 @@ jobs:
       - name: Check for CDN references
         run: npm run check:cdn
 
-      - uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -141,7 +141,7 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo "$PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/appstore.provisionprofile
 
-      - uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
@@ -153,7 +153,7 @@ jobs:
           releaseName: "${{ github.ref_name }} (App Store)"
           releaseDraft: false
           prerelease: false
-          args: --target universal-apple-darwin --bundles app --config src-tauri/tauri.appstore.conf.json
+          args: --target universal-apple-darwin --config src-tauri/tauri.appstore.conf.json
 
   ios:
     if: github.ref_name == 'appstore' || startsWith(github.ref, 'refs/tags/')
@@ -197,7 +197,7 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo "$IOS_PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/ios-appstore.provisionprofile
 
-      - uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
@@ -209,4 +209,5 @@ jobs:
           releaseName: "${{ github.ref_name }} (iOS)"
           releaseDraft: false
           prerelease: false
-          args: --target aarch64-apple-ios --bundles ios
+          mobile: ios
+          args: --target aarch64-apple-ios

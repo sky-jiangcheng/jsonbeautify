@@ -5,9 +5,9 @@
     <key>com.apple.security.app-sandbox</key>
     <true/>
     <key>com.apple.application-identifier</key>
-    <string>$(AppIdentifierPrefix)$(CFBundleIdentifier)</string>
-    <key>com.apple.developer.team-identifier</key>
-    <string>$(TeamIdentifierPrefix)</string>
+<string>YOUR_TEAM_ID.com.jsonbeautify.desktop.appstore</string>
+<key>com.apple.developer.team-identifier</key>
+<string>YOUR_TEAM_ID</string>
     <key>com.apple.security.files.user-selected.read-write</key>
     <true/>
     <key>com.apple.security.network.client</key>
