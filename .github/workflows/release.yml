@@ -170,7 +170,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust targets
-        run: rustup target add aarch64-apple-ios x86_64-apple-ios
+        run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
 
       - uses: actions/setup-node@v4
         with:
@@ -224,4 +224,4 @@ jobs:
           releaseDraft: false
           prerelease: false
           mobile: ios
-          args: --target aarch64-apple-ios --config src-tauri/tauri.ios.conf.json --export-method app-store-connect
+          args: --target aarch64 --config src-tauri/tauri.ios.conf.json --export-method app-store-connect
