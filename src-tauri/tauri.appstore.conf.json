@@ -2,9 +2,7 @@
   "identifier": "com.jsonbeautify.desktop.appstore",
   "bundle": {
     "macOS": {
-      "entitlements": "./Entitlements.plist",
-      "signingIdentity": "${APPLE_SIGNING_IDENTITY}",
-      "teamId": "${APPLE_TEAM_ID}"
+      "entitlements": "./Entitlements.plist"
     }
   }
 }

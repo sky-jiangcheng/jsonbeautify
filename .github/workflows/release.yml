@@ -153,8 +153,7 @@ jobs:
           releaseName: "${{ github.ref_name }} (App Store)"
           releaseDraft: false
           prerelease: false
-          args: --target universal-apple-darwin --bundles app
-          configPath: src-tauri/tauri.appstore.conf.json
+          args: --target universal-apple-darwin --bundles app --config src-tauri/tauri.appstore.conf.json
 
   ios:
     if: github.ref_name == 'appstore' || startsWith(github.ref, 'refs/tags/')
