@@ -9,9 +9,17 @@
     "build": "tauri build",
     "build:macos": "tauri build --target universal-apple-darwin",
     "build:appstore": "tauri build --target universal-apple-darwin --config src-tauri/tauri.appstore.conf.json",
-    "preview": "python3 -m http.server 8000"
+    "preview": "python3 -m http.server 8000",
+    "cap:sync": "npx cap sync",
+    "cap:open:ios": "npx cap open ios",
+    "cap:update": "npx cap update",
+    "build:ios": "npx cap sync ios && cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive archive",
+    "build:ios:ipa": "npx cap sync ios && cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive archive && xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build -exportOptionsPlist exportOptions.plist"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/ios": "^8.4.1",
     "@tauri-apps/cli": "^2"
   }
 }
