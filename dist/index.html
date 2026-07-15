@@ -2293,6 +2293,8 @@
         view.classList.toggle('list-collapsed');
     }
 
+    function getIndent() { return 2; }
+
     function selectListItem(index, arr) {
         window.listSelectedIndex = index;
         window.lastDetailContent = JSON.stringify(arr[index], null, getIndent());
