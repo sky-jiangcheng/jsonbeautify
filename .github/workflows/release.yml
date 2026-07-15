@@ -131,7 +131,12 @@ jobs:
           security default-keychain -s build.keychain
           security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
           security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+          security set-key-partition-list -S apple-tool:,apple:,codesign -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+          # 将 build.keychain 加入搜索列表，确保 codesign 能找到证书
+          security list-keychains -d user -s build.keychain login.keychain
+          # 验证证书已导入并列出可用签名身份
+          echo "=== Available signing identities ==="
+          security find-identity -v -p codesigning build.keychain
 
       - name: Install provisioning profile
         if: env.PROVISIONING_PROFILE != ''
@@ -188,7 +193,12 @@ jobs:
           security default-keychain -s build.keychain
           security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
           security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+          security set-key-partition-list -S apple-tool:,apple:,codesign -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+          # 将 build.keychain 加入搜索列表，确保 codesign 能找到证书
+          security list-keychains -d user -s build.keychain login.keychain
+          # 验证证书已导入并列出可用签名身份
+          echo "=== Available signing identities ==="
+          security find-identity -v -p codesigning build.keychain
 
       - name: Install iOS provisioning profile
         if: env.IOS_PROVISIONING_PROFILE != ''
