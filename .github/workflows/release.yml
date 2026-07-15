@@ -140,6 +140,7 @@ jobs:
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo "$PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/appstore.provisionprofile
+          echo "$PROVISIONING_PROFILE" | base64 --decode > src-tauri/embedded.provisionprofile
 
       - uses: tauri-apps/tauri-action@v1
         env:
@@ -197,6 +198,9 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo "$IOS_PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/ios-appstore.provisionprofile
 
+      - name: Initialize iOS project
+        run: npx tauri ios init --ci --config src-tauri/tauri.ios.conf.json
+
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -210,4 +214,4 @@ jobs:
           releaseDraft: false
           prerelease: false
           mobile: ios
-          args: --target aarch64-apple-ios --config src-tauri/tauri.ios.conf.json
+          args: --target aarch64-apple-ios --config src-tauri/tauri.ios.conf.json --export-method app-store-connect

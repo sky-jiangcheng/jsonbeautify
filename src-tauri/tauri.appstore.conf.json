@@ -2,7 +2,10 @@
   "identifier": "com.jsonbeautify.desktop.appstore",
   "bundle": {
     "macOS": {
-      "entitlements": "./Entitlements.plist"
+      "entitlements": "./Entitlements.plist",
+      "files": {
+        "embedded.provisionprofile": "./embedded.provisionprofile"
+      }
     }
   }
 }
