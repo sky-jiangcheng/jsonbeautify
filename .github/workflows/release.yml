@@ -64,7 +64,7 @@ jobs:
       - run: npm ci
 
       - name: Generate macOS icons
-        run: npx tauri icon src-tauri/icons/icon.png
+        run: npx tauri icon src-tauri/app-icon-source.png
 
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -115,7 +115,7 @@ jobs:
       - run: npm ci
 
       - name: Generate macOS icons
-        run: npx tauri icon src-tauri/icons/icon.png
+        run: npx tauri icon src-tauri/app-icon-source.png
 
       - name: Import Apple code signing certificate
         env:
