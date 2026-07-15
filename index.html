@@ -1882,6 +1882,15 @@
     <div class="toast" id="toast"></div>
 
     <script>
+    // Global error handler for debugging in Tauri/WebView
+    window.addEventListener('error', function(e) {
+        var msg = 'JS Error: ' + (e.message || 'Unknown') + ' at line ' + (e.lineno || '?');
+        try {
+            var st = document.getElementById('status-text');
+            if (st) st.textContent = msg;
+        } catch(_) {}
+    });
+
     /* ==============================================================
        State
     ============================================================== */
@@ -2023,6 +2032,7 @@
     }
 
     function formatJSON() {
+        try {
         const input = document.getElementById('input');
         const value = input.value.trim();
         clearNotifications();
@@ -2072,6 +2082,10 @@
         setStatus('格式化成功' + (fixed ? fixMsg : ''));
         updateOutputStatus(window.lastFormattedContent);
         showMobileOutput();
+        } catch(e) {
+            setStatus('格式化错误: ' + e.message);
+            renderOutput('格式化错误: ' + e.message + '\n\n' + (e.stack || ''), 'text');
+        }
     }
 
     function minifyJSON() {
