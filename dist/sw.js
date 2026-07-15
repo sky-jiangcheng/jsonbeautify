@@ -1,26 +1,21 @@
-const CACHE_NAME = 'json-formatter-v14';
+const CACHE_NAME = 'json-formatter-v15';
 const urlsToCache = [
   '/jsonbeautify/',
-  '/jsonbeautify/index.html?v=9',
-  '/jsonbeautify/manifest.json?v=9',
-  '/jsonbeautify/icon.svg?v=9',
-  '/jsonbeautify/icon-192.png?v=9',
-  '/jsonbeautify/icon-512.png?v=9',
-  '/jsonbeautify/favicon-32.png?v=9'
-];
-const cdnUrls = [
-  'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css'
+  '/jsonbeautify/index.html?v=10',
+  '/jsonbeautify/manifest.json?v=10',
+  '/jsonbeautify/icon.svg?v=10',
+  '/jsonbeautify/icon-192.png?v=10',
+  '/jsonbeautify/icon-512.png?v=10',
+  '/jsonbeautify/favicon-32.png?v=10',
+  '/jsonbeautify/lib/highlight/highlight.min.js?v=10',
+  '/jsonbeautify/lib/highlight/styles/atom-one-dark.min.css?v=10',
+  '/jsonbeautify/lib/highlight/styles/atom-one-light.min.css?v=10'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return Promise.all([
-        cache.addAll(urlsToCache),
-        ...cdnUrls.map(url => cache.add(url))
-      ]);
+      return cache.addAll(urlsToCache);
     })
   );
   self.skipWaiting();
@@ -52,4 +47,10 @@ self.addEventListener('fetch', event => {
       });
     })
   );
+});
+
+self.addEventListener('message', event => {
+  if (event.data === 'skipWaiting') {
+    self.skipWaiting();
+  }
 });

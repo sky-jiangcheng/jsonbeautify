@@ -28,6 +28,16 @@ jobs:
 
       - run: npm ci
 
+      - name: Verify no external CDN references
+        run: |
+          CDN_COUNT=$(grep -cE 'https?://[^"'"'"']*\.(js|css|woff|ttf)' dist/index.html || true)
+          if [ "$CDN_COUNT" -gt 0 ]; then
+            echo "ERROR: Found $CDN_COUNT external CDN references in dist/index.html"
+            grep -nE 'https?://[^"'"'"']*\.(js|css|woff|ttf)' dist/index.html
+            exit 1
+          fi
+          echo "OK: No external CDN references"
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
