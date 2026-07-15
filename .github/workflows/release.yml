@@ -210,4 +210,4 @@ jobs:
           releaseDraft: false
           prerelease: false
           mobile: ios
-          args: --target aarch64-apple-ios
+          args: --target aarch64-apple-ios --config src-tauri/tauri.ios.conf.json
