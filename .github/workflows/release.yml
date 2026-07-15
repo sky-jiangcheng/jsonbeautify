@@ -211,6 +211,20 @@ jobs:
       - name: Initialize iOS project
         run: npx tauri ios init --ci --config src-tauri/tauri.ios.conf.json
 
+      - name: Configure iOS signing
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          PBXPROJ="src-tauri/gen/apple/json-formatter.xcodeproj/project.pbxproj"
+          # 方法1: 直接用 sed 在所有 buildSettings 块中插入 DEVELOPMENT_TEAM
+          sed -i '' "s/buildSettings = {/buildSettings = {\n\t\t\t\tDEVELOPMENT_TEAM = \"$APPLE_TEAM_ID\";/g" "$PBXPROJ"
+          # 方法2: 如果已存在则替换
+          sed -i '' "s/DEVELOPMENT_TEAM = \"[^\"]*\";/DEVELOPMENT_TEAM = \"$APPLE_TEAM_ID\";/g" "$PBXPROJ"
+          echo "=== iOS Signing Config ==="
+          grep "DEVELOPMENT_TEAM" "$PBXPROJ" | head -10
+          echo "=== Bundle ID ==="
+          grep "PRODUCT_BUNDLE_IDENTIFIER" "$PBXPROJ" | head -5
+
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
