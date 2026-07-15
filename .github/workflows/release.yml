@@ -137,9 +137,13 @@ jobs:
           # 验证证书已导入并列出可用签名身份
           echo "=== Available signing identities ==="
           security find-identity -v -p codesigning build.keychain
-          # 用 openssl 解析证书获取真实 Common Name
-          echo "=== Certificate Subject ==="
-          openssl pkcs12 -in certificate.p12 -passin pass:"$APPLE_CERTIFICATE_PASSWORD" -nokeys -clcerts 2>/dev/null | openssl x509 -noout -subject -issuer -dates 2>/dev/null || echo "(openssl parse failed)"
+          # 从 keychain 导出证书并解析 Common Name
+          echo "=== Certificate details ==="
+          security find-certificate -a -p build.keychain | while IFS= read -r line; do echo "$line"; done | openssl x509 -noout -subject -issuer -dates 2>/dev/null || echo "(parse failed)"
+          # 自动检测签名身份名称并设置为 env 变量
+          SIGNING_ID=$(security find-identity -v -p codesigning build.keychain | grep -o '"[^"]*"' | head -1 | tr -d '"')
+          echo "Detected signing identity: $SIGNING_ID"
+          echo "APPLE_SIGNING_IDENTITY=$SIGNING_ID" >> $GITHUB_ENV
 
       - name: Install provisioning profile
         if: env.PROVISIONING_PROFILE != ''
@@ -202,9 +206,13 @@ jobs:
           # 验证证书已导入并列出可用签名身份
           echo "=== Available signing identities ==="
           security find-identity -v -p codesigning build.keychain
-          # 用 openssl 解析证书获取真实 Common Name
-          echo "=== Certificate Subject ==="
-          openssl pkcs12 -in certificate.p12 -passin pass:"$APPLE_CERTIFICATE_PASSWORD" -nokeys -clcerts 2>/dev/null | openssl x509 -noout -subject -issuer -dates 2>/dev/null || echo "(openssl parse failed)"
+          # 从 keychain 导出证书并解析 Common Name
+          echo "=== Certificate details ==="
+          security find-certificate -a -p build.keychain | while IFS= read -r line; do echo "$line"; done | openssl x509 -noout -subject -issuer -dates 2>/dev/null || echo "(parse failed)"
+          # 自动检测签名身份名称并设置为 env 变量
+          SIGNING_ID=$(security find-identity -v -p codesigning build.keychain | grep -o '"[^"]*"' | head -1 | tr -d '"')
+          echo "Detected signing identity: $SIGNING_ID"
+          echo "APPLE_SIGNING_IDENTITY=$SIGNING_ID" >> $GITHUB_ENV
 
       - name: Install iOS provisioning profile
         if: env.IOS_PROVISIONING_PROFILE != ''
