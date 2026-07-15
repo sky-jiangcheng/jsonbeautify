@@ -22,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; media-src 'none'; frame-src 'none'; object-src 'none'"
+      "csp": "default-src 'self' 'unsafe-inline' data: blob:; script-src 'self' 'unsafe-inline' tauri: ipc: https://tauri.localhost; style-src 'self' 'unsafe-inline'; connect-src 'self' tauri: ipc: https://tauri.localhost"
     }
   },
   "bundle": {
