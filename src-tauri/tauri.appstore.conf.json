@@ -3,9 +3,8 @@
   "bundle": {
     "macOS": {
       "entitlements": "./Entitlements.plist",
-      "files": {
-        "embedded.provisionprofile": "./appstore.provisionprofile"
-      }
+      "signingIdentity": "${APPLE_SIGNING_IDENTITY}",
+      "teamId": "${APPLE_TEAM_ID}"
     }
   }
 }

@@ -2,17 +2,15 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON 格式化工具</title>
-    <link rel="stylesheet" href="lib/highlight/styles/atom-one-dark.min.css" id="hljs-dark">
-    <link rel="stylesheet" href="lib/highlight/styles/atom-one-light.min.css" id="hljs-light" disabled>
-    <script src="lib/highlight/highlight.min.js"></script>
+    <link rel="stylesheet" href="styles/atom-one-dark.min.css" id="hljs-dark">
+    <link rel="stylesheet" href="styles/atom-one-light.min.css" id="hljs-light" disabled>
+    <script src="highlight.min.js"></script>
     <style>
         /* ========== CSS Variables ========== */
-        :root {
+        :root,
+        [data-theme="dark"] {
             --bg-primary: #0d1117;
             --bg-secondary: #0b0f14;
             --bg-surface: #131921;
@@ -28,8 +26,6 @@
             --accent: #58a6ff;
             --accent-hover: #79c0ff;
             --accent-subtle: rgba(88, 166, 255, 0.1);
-            --btn-primary-bg: #1f6feb;
-            --btn-primary-hover: #388bfd;
             --green: #3fb950;
             --green-bg: rgba(63, 185, 80, 0.1);
             --green-border: rgba(63, 185, 80, 0.25);
@@ -43,7 +39,6 @@
             --radius: 6px;
             --radius-md: 8px;
             --radius-lg: 12px;
-            --radius-xl: 16px;
             --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
             --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
             --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
@@ -55,7 +50,7 @@
             color-scheme: dark;
         }
 
-        html[data-theme="light"] {
+        [data-theme="light"] {
             --bg-primary: #ffffff;
             --bg-secondary: #eef1f5;
             --bg-surface: #f6f8fa;
@@ -71,8 +66,6 @@
             --accent: #0969da;
             --accent-hover: #0550ae;
             --accent-subtle: rgba(9, 105, 218, 0.08);
-            --btn-primary-bg: #0969da;
-            --btn-primary-hover: #0550ae;
             --green: #1a7f37;
             --green-bg: rgba(26, 127, 55, 0.10);
             --green-border: rgba(26, 127, 55, 0.25);
@@ -97,14 +90,12 @@
             font-family: var(--font-sans);
             background: var(--bg-primary);
             color: var(--text-primary);
-            min-height: 100dvh;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
         /* ========== SVG Icon Styles ========== */
@@ -148,18 +139,6 @@
             white-space: nowrap;
             letter-spacing: -0.2px;
             user-select: none;
-        }
-
-        .version-tag {
-            font-style: normal;
-            font-size: 9px;
-            font-weight: 400;
-            color: var(--accent);
-            background: var(--accent-subtle);
-            padding: 1px 5px;
-            border-radius: 3px;
-            margin-left: 4px;
-            vertical-align: middle;
         }
 
         .logo-icon {
@@ -220,21 +199,20 @@
         }
 
         .btn-primary {
-            background: var(--btn-primary-bg);
+            background: #1f6feb;
             color: #ffffff;
-            border-color: var(--btn-primary-bg);
+            border-color: #1f6feb;
             font-weight: 600;
         }
 
         .btn-primary:hover {
-            background: var(--btn-primary-hover);
-            border-color: var(--btn-primary-hover);
+            background: #388bfd;
+            border-color: #388bfd;
             color: #ffffff;
         }
 
         .btn-primary:active {
-            background: var(--btn-primary-bg);
-            filter: brightness(0.85);
+            background: #1a5dcc;
         }
 
         .btn-danger {
@@ -353,7 +331,6 @@
             flex: 1;
             position: relative;
             overflow: hidden;
-            -webkit-overflow-scrolling: touch;
         }
 
         /* ========== Input Panel ========== */
@@ -429,8 +406,6 @@
             min-width: 0;
             min-height: 0;
             overflow: auto;
-            position: relative;
-            -webkit-overflow-scrolling: touch;
         }
 
         .output-content pre {
@@ -564,7 +539,6 @@
             min-height: 0;
             min-width: 0;
             overflow: hidden;
-            -webkit-overflow-scrolling: touch;
         }
 
         /* ========== List View (Array) ========== */
@@ -720,8 +694,6 @@
             min-width: 0;
             min-height: 0;
             overflow: auto;
-            position: relative;
-            -webkit-overflow-scrolling: touch;
         }
         .list-detail-content pre {
             margin: 0;
@@ -771,20 +743,16 @@
         }
         .jt-toggle {
             display: inline-block;
-            min-width: 24px;
-            height: 24px;
-            line-height: 24px;
+            width: 16px;
             cursor: pointer;
             user-select: none;
             color: var(--text-muted);
             font-size: 10px;
             text-align: center;
             transition: transform var(--transition-fast);
-            border-radius: 4px;
         }
         .jt-toggle:hover {
             color: var(--text-primary);
-            background: var(--bg-hover);
         }
         .jt-children {
             padding-left: 20px;
@@ -1251,15 +1219,7 @@
             color: var(--text-primary) !important;
         }
 
-        /* ========== Desktop-only / Mobile-only elements ========== */
-        .mobile-tabs { display: none; }
-        .mobile-bar { display: none; }
-        .mobile-menu-backdrop { display: none; }
-        .mobile-menu { display: none; }
-        .mobile-sidebar-btn { display: none; }
-        .menu-btn { display: none; }
-
-        /* ========== Responsive: Tablet ========== */
+        /* ========== Responsive ========== */
         @media (max-width: 900px) {
             .editor-area { flex-direction: column; }
             .panel-left { border-right: none; border-bottom: 2px solid var(--border); }
@@ -1273,276 +1233,19 @@
             .btn .shortcut { display: none; }
             .btn { padding: 4px 8px; font-size: 11px; }
             header { padding: 0 12px; }
-            .statusbar { display: none; }
         }
 
-        /* ========== Responsive: Mobile (<=600px) ========== */
         @media (max-width: 600px) {
-            /* Body: lock to exact viewport height, no body scroll */
-            body { height: 100dvh; overflow: hidden; }
-
-            /* Header */
-            header { height: auto; padding: 8px 12px; gap: 10px; flex-wrap: nowrap; }
-            .logo { font-size: 13px; }
-            .logo span { display: none; }
-            .logo-icon { width: 22px; height: 22px; }
-
-            /* Toolbar */
-            .toolbar {
-                flex: 1;
-                justify-content: flex-end;
-                gap: 6px;
-            }
-            .toolbar .sep { margin: 0 4px; height: 18px; }
-            .btn .btn-text { display: none; }
-            .btn .shortcut { display: none; }
-            .btn {
-                padding: 6px 8px;
-                height: 34px;
-                min-width: 34px;
-                font-size: 0;
-                gap: 0;
-                border-radius: var(--radius-md);
-            }
-            .btn .svg-icon { margin: 0; width: 18px; height: 18px; }
-            .btn:active { transform: scale(0.97); }
-            .btn-primary { background: var(--btn-primary-bg); color: #fff; border-color: var(--btn-primary-bg); }
-            .btn-primary:hover { background: var(--btn-primary-hover); }
-
-            /* Desktop-only elements hidden */
-            .btn-desktop-only { display: none !important; }
-            /* Menu button visible */
-            .menu-btn { display: inline-flex !important; }
-            .mobile-sidebar-btn { display: inline-flex !important; }
-
-            /* Mobile tabs */
-            .mobile-tabs {
-                display: flex;
-                background: var(--bg-secondary);
-                border-bottom: 1px solid var(--border-light);
-                flex-shrink: 0;
-            }
-            .mobile-tab {
-                flex: 1;
-                padding: 10px 0;
-                border: none;
-                background: transparent;
-                color: var(--text-muted);
-                font-family: var(--font-sans);
-                font-size: 14px;
-                font-weight: 500;
-                cursor: pointer;
-                text-align: center;
-                border-bottom: 2px solid transparent;
-                transition: all var(--transition-fast);
-                -webkit-tap-highlight-color: transparent;
-            }
-            .mobile-tab.active {
-                color: var(--accent);
-                border-bottom-color: var(--accent);
-            }
-
-            /* Main layout */
-            .main-layout { flex: 1; position: relative; }
-
-            /* Editor area */
-            .editor-area { flex-direction: column; }
-            .panel-left { border-right: none; border-bottom: none; flex: 1 !important; }
-            .panel { flex: 1; }
-            .panel-left[data-mobile-hidden="true"],
-            #output-panel[data-mobile-hidden="true"] { display: none; }
-            .panel-header { display: none !important; }
-
-            /* Sidebar */
-            .sidebar {
-                position: fixed;
-                top: 0; right: 0; bottom: 0;
-                width: 85%; max-width: 320px; max-height: none;
-                z-index: 200;
-                border-left: 1px solid var(--border);
-                border-top: none;
-                box-shadow: var(--shadow-lg);
-                transform: translateX(100%);
-                transition: transform 0.25s ease;
-                background: var(--bg-secondary);
-            }
-            .sidebar.mobile-open { transform: translateX(0); }
-            .sidebar.collapsed { transform: translateX(100%); opacity: 1; }
-            .sidebar-overlay {
-                display: none;
-                position: fixed; inset: 0;
-                background: rgba(0,0,0,0.4);
-                z-index: 199;
-            }
-            .sidebar-overlay.active { display: block; }
-
-            /* Bottom bar */
-            .mobile-bar {
-                display: flex;
-                background: var(--bg-secondary);
-                border-top: 1px solid var(--border);
-                flex-shrink: 0;
-                padding: 6px 8px;
-                padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
-                gap: 8px;
-            }
-            .mobile-bar-btn {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                gap: 2px;
-                padding: 6px 4px;
-                border: 1px solid var(--border);
-                background: var(--bg-surface);
-                color: var(--text-secondary);
-                font-family: var(--font-sans);
-                font-size: 11px;
-                font-weight: 500;
-                cursor: pointer;
-                border-radius: var(--radius-md);
-                transition: all var(--transition-fast);
-                -webkit-tap-highlight-color: transparent;
-            }
-            .mobile-bar-btn:active { background: var(--bg-hover); transform: scale(0.97); }
-            .mobile-bar-btn .svg-icon { width: 20px; height: 20px; }
-            .mobile-bar-primary { background: var(--btn-primary-bg); color: #fff; border-color: var(--btn-primary-bg); }
-            .mobile-bar-primary .svg-icon { color: #fff; }
-            .mobile-bar-primary span { color: #fff; font-weight: 600; }
-
-            /* Mobile menu */
-            .mobile-menu-backdrop {
-                display: none;
-                position: fixed; inset: 0;
-                background: rgba(0,0,0,0.5);
-                z-index: 300;
-            }
-            .mobile-menu-backdrop.active { display: block; }
-            .mobile-menu {
-                display: none;
-                position: fixed;
-                bottom: 0; left: 0; right: 0;
-                z-index: 301;
-                background: var(--bg-elevated);
-                border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-                padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 12px) 0;
-                box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
-                flex-direction: column;
-            }
-            .mobile-menu.active { display: flex; }
-            .mobile-menu-header {
-                text-align: center;
-                font-size: 13px;
-                font-weight: 600;
-                color: var(--text-secondary);
-                padding: 14px 0 8px;
-                border-bottom: 1px solid var(--border-light);
-                margin: 0 16px 4px;
-            }
-            .mobile-menu-btn {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 12px 20px;
-                border: none;
-                background: transparent;
-                color: var(--text-primary);
-                font-family: var(--font-sans);
-                font-size: 14px;
-                cursor: pointer;
-                transition: background var(--transition-fast);
-                -webkit-tap-highlight-color: transparent;
-                text-align: left;
-                width: 100%;
-            }
-            .mobile-menu-btn:active { background: var(--bg-hover); transform: scale(0.97); }
-            .mobile-menu-btn .svg-icon { width: 20px; height: 20px; color: var(--text-secondary); flex-shrink: 0; }
-            .mobile-menu-danger { color: var(--red) !important; }
-            .mobile-menu-danger .svg-icon { color: var(--red) !important; }
-
-            /* Hide status bar & floating sidebar toggle */
-            .statusbar { display: none; }
-            #sidebar-open-btn { display: none !important; }
-
-            /* Editor */
-            #input { font-size: 13px; padding: 12px 14px; }
-            .json-tree { font-size: 12px; padding: 12px 14px; }
-            #input::placeholder { font-size: 12px; color: var(--text-muted); }
-
-            /* Toast */
-            .toast { bottom: 80px; left: 16px; right: 16px; max-width: none; font-size: 13px; border-radius: var(--radius-md); transform: translateY(100px); }
-            .toast.show { transform: translateY(0); }
-
-            /* Modal */
-            .modal { width: 88%; max-width: 340px; margin: 0 16px; padding: 20px; border-radius: var(--radius-lg); }
-
-            /* Compare */
-            .compare-body { flex-direction: column; }
-            .compare-divider { width: 100%; height: 2px; }
-            .compare-col { flex: 1; min-height: 40vh; }
+            header { flex-wrap: wrap; height: auto; padding: 8px 10px; gap: 8px; }
+            .toolbar { width: 100%; justify-content: center; }
+            .logo { font-size: 12px; }
         }
-
-        /* JS-detected mobile layout (fallback) */
-        .mobile-layout body { height: 100dvh; overflow: hidden; }
-        .mobile-layout .mobile-tabs { display: flex !important; }
-        .mobile-layout .mobile-bar { display: flex !important; }
-        .mobile-layout .mobile-sidebar-btn { display: inline-flex !important; }
-        .mobile-layout .menu-btn { display: inline-flex !important; }
-        .mobile-layout .btn-desktop-only { display: none !important; }
-        .mobile-layout .toolbar { flex: 1 !important; justify-content: flex-end !important; gap: 6px !important; }
-        .mobile-layout .toolbar .sep { margin: 0 4px !important; height: 18px !important; }
-        .mobile-layout .btn .btn-text { display: none !important; }
-        .mobile-layout .btn .shortcut { display: none !important; }
-        .mobile-layout .btn { padding: 6px 8px !important; height: 34px !important; min-width: 34px !important; font-size: 0 !important; gap: 0 !important; border-radius: var(--radius-md) !important; }
-        .mobile-layout .btn .svg-icon { margin: 0 !important; width: 18px !important; height: 18px !important; }
-        .mobile-layout .btn:active { transform: scale(0.97) !important; }
-        .mobile-layout .logo span { display: none !important; }
-        .mobile-layout .statusbar { display: none !important; }
-        .mobile-layout .editor-area { flex-direction: column !important; }
-        .mobile-layout .panel-left { border-right: none !important; border-bottom: none !important; flex: 1 !important; }
-        .mobile-layout .panel { flex: 1 !important; }
-        .mobile-layout .panel-left[data-mobile-hidden="true"],
-        .mobile-layout #output-panel[data-mobile-hidden="true"] { display: none !important; }
-        .mobile-layout .panel-header { display: none !important; }
-        .mobile-layout .sidebar { position: fixed !important; top: 0 !important; right: 0 !important; bottom: 0 !important; width: 85% !important; max-width: 320px !important; max-height: none !important; z-index: 200 !important; border-left: 1px solid var(--border) !important; border-top: none !important; box-shadow: var(--shadow-lg) !important; transform: translateX(100%) !important; transition: transform 0.25s ease !important; }
-        .mobile-layout .sidebar.mobile-open { transform: translateX(0) !important; }
-        .mobile-layout .sidebar.collapsed { transform: translateX(100%) !important; opacity: 1 !important; }
-        .mobile-layout .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 199; }
-        .mobile-layout .sidebar-overlay.active { display: block; }
-        .mobile-layout .mobile-bar { padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)) !important; gap: 8px !important; }
-        .mobile-layout .mobile-bar-btn { gap: 2px !important; padding: 6px 4px !important; font-size: 11px !important; border-radius: var(--radius-md) !important; border: 1px solid var(--border) !important; background: var(--bg-surface) !important; }
-        .mobile-layout .mobile-bar-btn .svg-icon { width: 20px !important; height: 20px !important; }
-        .mobile-layout .mobile-bar-btn:active { background: var(--bg-hover) !important; transform: scale(0.97) !important; }
-        .mobile-layout .mobile-bar-primary { background: var(--btn-primary-bg) !important; color: #fff !important; border-color: var(--btn-primary-bg) !important; }
-        .mobile-layout .mobile-bar-primary .svg-icon { color: #fff !important; }
-        .mobile-layout .mobile-bar-primary span { color: #fff !important; font-weight: 600 !important; }
-        .mobile-layout .mobile-tab { flex: 1; padding: 10px 0; border: none; background: transparent; color: var(--text-muted); font-family: var(--font-sans); font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; border-bottom: 2px solid transparent; transition: all var(--transition-fast); -webkit-tap-highlight-color: transparent; }
-        .mobile-layout .mobile-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-        .mobile-layout .mobile-menu-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; }
-        .mobile-layout .mobile-menu-backdrop.active { display: block; }
-        .mobile-layout .mobile-menu { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 301; background: var(--bg-elevated); border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 12px) 0; box-shadow: 0 -8px 32px rgba(0,0,0,0.5); flex-direction: column; }
-        .mobile-layout .mobile-menu.active { display: flex; }
-        .mobile-layout .mobile-menu-header { text-align: center; font-size: 13px; font-weight: 600; color: var(--text-secondary); padding: 14px 0 8px; border-bottom: 1px solid var(--border-light); margin: 0 16px 4px; }
-        .mobile-layout .mobile-menu-btn { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border: none; background: transparent; color: var(--text-primary); font-family: var(--font-sans); font-size: 14px; cursor: pointer; transition: background var(--transition-fast); -webkit-tap-highlight-color: transparent; text-align: left; width: 100%; }
-        .mobile-layout .mobile-menu-btn:active { background: var(--bg-hover); transform: scale(0.97); }
-        .mobile-layout .mobile-menu-btn .svg-icon { width: 20px; height: 20px; color: var(--text-secondary); flex-shrink: 0; }
-        .mobile-layout .mobile-menu-danger { color: var(--red) !important; }
-        .mobile-layout .mobile-menu-danger .svg-icon { color: var(--red) !important; }
-        .mobile-layout .toast { border-radius: var(--radius-md) !important; transform: translateY(100px) !important; }
-        .mobile-layout .toast.show { transform: translateY(0) !important; }
-        .mobile-layout .modal { border-radius: var(--radius-lg) !important; }
-        .mobile-layout .compare-body { flex-direction: column !important; }
-        .mobile-layout .compare-divider { width: 100% !important; height: 2px !important; }
-        .mobile-layout .compare-col { flex: 1 !important; min-height: 40vh !important; }
     </style>
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0d1117">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=8">
     <link rel="icon" type="image/svg+xml" href="icon.svg?v=8">
-    <link rel="apple-touch-icon" href="icon-192.png?v=9">
-    <link rel="manifest" href="manifest.json?v=9">
+    <link rel="apple-touch-icon" href="icon-192.png?v=8">
+    <link rel="manifest" href="manifest.json?v=8">
 </head>
 <body>
     <!-- SVG Icon Definitions -->
@@ -1625,72 +1328,53 @@
         <symbol id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </symbol>
-        <symbol id="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <line x1="3" y1="12" x2="21" y2="12"/>
-            <line x1="3" y1="18" x2="21" y2="18"/>
-        </symbol>
     </svg>
 
     <!-- ========== Header & Toolbar ========== -->
     <header>
         <div class="logo">
             <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#icon-braces"/></svg>
-            <span>JSON 格式化工具<em class="version-tag">v9</em></span>
+            <span>JSON 格式化工具</span>
         </div>
-        <div class="toolbar" id="toolbar">
-            <button class="btn btn-desktop-only" onclick="toggleTheme()" id="theme-btn" title="切换暗色/亮色模式">
+        <div class="toolbar">
+            <button class="btn" onclick="toggleTheme()" id="theme-btn" title="切换暗色/亮色模式">
                 <svg class="svg-icon" id="theme-icon"><use href="#icon-sun"/></svg>
-                <span class="btn-text">主题</span>
             </button>
-            <button class="btn btn-desktop-only" onclick="toggleMobileSidebar()" title="历史记录">
-                <svg class="svg-icon"><use href="#icon-clock"/></svg>
-                <span class="btn-text">历史</span>
-            </button>
-            <div class="sep btn-desktop-only"></div>
-            <button class="btn btn-primary" onclick="formatJSON()" title="格式化 JSON">
+            <div class="sep"></div>
+            <button class="btn btn-primary" onclick="formatJSON()" title="格式化 JSON (Ctrl+Enter)">
                 <svg class="svg-icon"><use href="#icon-code"/></svg>
-                <span class="btn-text">格式化</span> <span class="shortcut">^&#9166;</span>
+                格式化 <span class="shortcut">^&#9166;</span>
             </button>
-            <button class="btn btn-desktop-only" onclick="minifyJSON()" title="压缩 JSON">
-                <span class="btn-text">压缩</span>
+            <button class="btn" onclick="minifyJSON()" title="压缩 JSON">
+                压缩
             </button>
-            <button class="btn btn-desktop-only" onclick="stringifyJSON()" title="JSON 转义">
-                <span class="btn-text">转义</span>
+            <button class="btn" onclick="stringifyJSON()" title="JSON 转义">
+                转义
             </button>
-            <div class="sep btn-desktop-only"></div>
-            <button class="btn btn-desktop-only" onclick="copyOutput()" title="复制结果">
+            <div class="sep"></div>
+            <button class="btn" onclick="copyOutput()" title="复制结果">
                 <svg class="svg-icon"><use href="#icon-copy"/></svg>
-                <span class="btn-text">复制</span>
+                复制
             </button>
-            <button class="btn btn-desktop-only" onclick="downloadJSON()" title="下载 JSON 文件">
+            <button class="btn" onclick="downloadJSON()" title="下载 JSON 文件 (Ctrl+D)">
                 <svg class="svg-icon"><use href="#icon-download"/></svg>
-                <span class="btn-text">下载</span> <span class="shortcut">^D</span>
+                下载 <span class="shortcut">^D</span>
             </button>
             <button class="btn" onclick="uploadFile()" title="上传 JSON 文件">
                 <svg class="svg-icon"><use href="#icon-folder-open"/></svg>
-                <span class="btn-text">上传</span>
+                上传
             </button>
-            <div class="sep btn-desktop-only"></div>
-            <button class="btn btn-desktop-only" onclick="saveHistory()" title="保存到历史">
+            <div class="sep"></div>
+            <button class="btn" onclick="saveHistory()" title="保存到历史 (Ctrl+S)">
                 <svg class="svg-icon"><use href="#icon-save"/></svg>
-                <span class="btn-text">保存</span> <span class="shortcut">^S</span>
+                保存 <span class="shortcut">^S</span>
             </button>
-            <button class="btn btn-desktop-only btn-danger" onclick="clearContent()" title="清空">
+            <button class="btn btn-danger" onclick="clearContent()" title="清空">
                 <svg class="svg-icon"><use href="#icon-trash"/></svg>
-                <span class="btn-text">清空</span>
-            </button>
-            <button class="btn menu-btn" onclick="showMobileMenu()" title="更多操作">
-                <svg class="svg-icon"><use href="#icon-menu"/></svg>
+                清空
             </button>
         </div>
     </header>
-
-    <!-- ========== Mobile Panel Tabs ========== -->
-    <div class="mobile-tabs" id="mobile-tabs">
-        <button class="mobile-tab active" data-panel="input">输入</button>
-        <button class="mobile-tab" data-panel="output">输出</button>
-    </div>
 
     <!-- ========== Main Layout ========== -->
     <div class="main-layout">
@@ -1705,14 +1389,14 @@
                     <span id="input-size" style="font-weight:400;text-transform:none;letter-spacing:0;font-family:var(--font-mono)"></span>
                 </div>
                 <div class="panel-body" id="input-body">
-                    <textarea id="input" placeholder="在此粘贴 JSON，或点击底部「上传」按钮加载文件" spellcheck="false"></textarea>
+                    <textarea id="input" placeholder="在此粘贴 JSON，或拖拽 JSON 文件到此处&#10;&#10;快捷键：&#10;  Ctrl+Enter  格式化&#10;  Ctrl+S      保存&#10;  Ctrl+D      下载" spellcheck="false"></textarea>
                     <div class="drop-overlay" id="drop-overlay">
                         <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>
                         释放以加载文件
                     </div>
                 </div>
             </div>
-            <div class="panel" id="output-panel" data-mobile-hidden="true">
+            <div class="panel" id="output-panel">
                 <div class="panel-header">
                     <span class="label">
                         <svg class="svg-icon-xs" viewBox="0 0 24 24"><use href="#icon-code"/></svg>
@@ -1760,8 +1444,6 @@
         </div>
     </div>
 
-    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
-
     <button class="sidebar-toggle" id="sidebar-open-btn" onclick="toggleSidebar()"
         style="display:none;position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:100;
                background:var(--bg-elevated);border:1px solid var(--border);border-right:none;
@@ -1780,26 +1462,6 @@
         </div>
     </div>
 
-    <!-- ========== Mobile Bottom Bar ========== -->
-    <div class="mobile-bar" id="mobile-bar">
-        <button class="mobile-bar-btn mobile-bar-primary" onclick="formatJSON()">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-code"/></svg>
-            <span>格式化</span>
-        </button>
-        <button class="mobile-bar-btn" onclick="copyOutput()">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-copy"/></svg>
-            <span>复制</span>
-        </button>
-        <button class="mobile-bar-btn" onclick="uploadFile()">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>
-            <span>上传</span>
-        </button>
-        <button class="mobile-bar-btn" onclick="saveHistory()">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-save"/></svg>
-            <span>保存</span>
-        </button>
-    </div>
-
     <!-- ========== Save Modal ========== -->
     <div class="modal-backdrop" id="save-modal">
         <div class="modal">
@@ -1810,44 +1472,6 @@
                 <button class="btn btn-primary" onclick="confirmSave()">保存</button>
             </div>
         </div>
-    </div>
-
-    <!-- ========== Mobile Menu Overlay ========== -->
-    <div class="mobile-menu-backdrop" id="mobile-menu-backdrop" onclick="hideMobileMenu()"></div>
-    <div class="mobile-menu" id="mobile-menu">
-        <div class="mobile-menu-header">更多操作</div>
-        <button class="mobile-menu-btn" onclick="toggleTheme();hideMobileMenu()">
-            <svg class="svg-icon" id="theme-icon-mobile" viewBox="0 0 24 24"><use href="#icon-sun"/></svg>
-            <span>切换主题</span>
-        </button>
-        <button class="mobile-menu-btn" onclick="toggleMobileSidebar();hideMobileMenu()">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-clock"/></svg>
-            <span>历史记录</span>
-        </button>
-        <button class="mobile-menu-btn" onclick="copyOutput();hideMobileMenu()">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-copy"/></svg>
-            <span>复制结果</span>
-        </button>
-        <button class="mobile-menu-btn" onclick="saveHistory();hideMobileMenu()">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-save"/></svg>
-            <span>保存到历史</span>
-        </button>
-        <button class="mobile-menu-btn" onclick="downloadJSON();hideMobileMenu()">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-download"/></svg>
-            <span>下载文件</span>
-        </button>
-        <button class="mobile-menu-btn" onclick="minifyJSON();hideMobileMenu()">
-            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="14" y2="14"/></svg>
-            <span>压缩 JSON</span>
-        </button>
-        <button class="mobile-menu-btn" onclick="stringifyJSON();hideMobileMenu()">
-            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="21" x2="12" y2="3"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>
-            <span>转义 JSON</span>
-        </button>
-        <button class="mobile-menu-btn mobile-menu-danger" onclick="clearContent();hideMobileMenu()">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-trash"/></svg>
-            <span>清空内容</span>
-        </button>
     </div>
 
     <!-- ========== Compare View ========== -->
@@ -2071,7 +1695,6 @@
         renderOutput(window.lastFormattedContent, 'json', fixed, jsonObj);
         setStatus('格式化成功' + (fixed ? fixMsg : ''));
         updateOutputStatus(window.lastFormattedContent);
-        showMobileOutput();
     }
 
     function minifyJSON() {
@@ -2292,8 +1915,6 @@
         panel.classList.toggle('collapsed');
         view.classList.toggle('list-collapsed');
     }
-
-    function getIndent() { return 2; }
 
     function selectListItem(index, arr) {
         window.listSelectedIndex = index;
@@ -2587,16 +2208,6 @@
         document.getElementById('input').value = item.content;
         formatJSON();
         showToast('已加载：' + item.name, 2000, 'icon-file-text');
-        closeMobileSidebarIfOpen();
-    }
-
-    function closeMobileSidebarIfOpen() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-        if (sidebar.classList.contains('mobile-open')) {
-            sidebar.classList.remove('mobile-open');
-            overlay.classList.remove('active');
-        }
     }
 
     function toggleSelect(id) {
@@ -2653,66 +2264,6 @@
         const openBtn = document.getElementById('sidebar-open-btn');
         sidebar.classList.toggle('collapsed');
         openBtn.style.display = sidebar.classList.contains('collapsed') ? 'block' : 'none';
-    }
-
-    /* ==============================================================
-       Mobile: Sidebar Overlay
-    ============================================================== */
-    function toggleMobileSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-        sidebar.classList.toggle('mobile-open');
-        overlay.classList.toggle('active');
-    }
-
-    /* ==============================================================
-       Mobile: More Menu
-    ============================================================== */
-    function showMobileMenu() {
-        document.getElementById('mobile-menu-backdrop').classList.add('active');
-        document.getElementById('mobile-menu').classList.add('active');
-    }
-
-    function hideMobileMenu() {
-        document.getElementById('mobile-menu-backdrop').classList.remove('active');
-        document.getElementById('mobile-menu').classList.remove('active');
-    }
-
-    /* ==============================================================
-       Mobile: Panel Tab Switching
-    ============================================================== */
-    function initMobileTabs() {
-        const tabs = document.querySelectorAll('.mobile-tab');
-        if (tabs.length === 0) return;
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                const panel = tab.getAttribute('data-panel');
-                if (panel === 'input') {
-                    document.getElementById('input-panel').removeAttribute('data-mobile-hidden');
-                    document.getElementById('output-panel').setAttribute('data-mobile-hidden', 'true');
-                } else {
-                    document.getElementById('input-panel').setAttribute('data-mobile-hidden', 'true');
-                    document.getElementById('output-panel').removeAttribute('data-mobile-hidden');
-                }
-            });
-        });
-    }
-
-    /* ==============================================================
-       Mobile: Auto-switch to output after format
-    ============================================================== */
-    function showMobileOutput() {
-        const tabs = document.querySelectorAll('.mobile-tab');
-        if (tabs.length === 0) return;
-        tabs.forEach(t => t.classList.remove('active'));
-        const outputTab = document.querySelector('.mobile-tab[data-panel="output"]');
-        if (outputTab) {
-            outputTab.classList.add('active');
-            document.getElementById('input-panel').setAttribute('data-mobile-hidden', 'true');
-            document.getElementById('output-panel').removeAttribute('data-mobile-hidden');
-        }
     }
 
     /* ==============================================================
@@ -3014,22 +2565,18 @@
        Theme
     ============================================================== */
     function getTheme() {
-        try { return localStorage.getItem('theme') || 'dark'; } catch(e) { return 'dark'; }
+        return localStorage.getItem('theme') || 'dark';
     }
 
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
-        try {
-            var icon = document.getElementById('theme-icon');
-            var iconMobile = document.getElementById('theme-icon-mobile');
-            if (icon) { var u = icon.querySelector('use'); if (u) u.setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun'); }
-            if (iconMobile) { var um = iconMobile.querySelector('use'); if (um) um.setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun'); }
-            var d = document.getElementById('hljs-dark');
-            var l = document.getElementById('hljs-light');
-            if (d) d.disabled = theme === 'light';
-            if (l) l.disabled = theme === 'dark';
-        } catch(e) {}
-        try { localStorage.setItem('theme', theme); } catch(e) {}
+        var icon = document.getElementById('theme-icon');
+        if (icon) icon.querySelector('use').setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
+        var d = document.getElementById('hljs-dark');
+        var l = document.getElementById('hljs-light');
+        if (d) d.disabled = theme === 'light';
+        if (l) l.disabled = theme === 'dark';
+        localStorage.setItem('theme', theme);
     }
 
     function toggleTheme() {
@@ -3037,35 +2584,7 @@
     }
 
     (function() {
-        applyTheme(getTheme());
-    })();
-
-    /* ==============================================================
-       Screen Detection
-    ============================================================== */
-    (function() {
-        function updateLayout() {
-            var w = window.innerWidth;
-            var body = document.body;
-            if (w <= 600) {
-                body.classList.add('mobile-layout');
-                body.classList.remove('tablet-layout');
-                body.classList.remove('desktop-layout');
-            } else if (w <= 900) {
-                body.classList.add('tablet-layout');
-                body.classList.remove('mobile-layout');
-                body.classList.remove('desktop-layout');
-            } else {
-                body.classList.add('desktop-layout');
-                body.classList.remove('mobile-layout');
-                body.classList.remove('tablet-layout');
-            }
-        }
-        updateLayout();
-        window.addEventListener('resize', updateLayout);
-        window.addEventListener('orientationchange', function() {
-            setTimeout(updateLayout, 100);
-        });
+        document.documentElement.setAttribute('data-theme', getTheme());
     })();
 
     /* ==============================================================
@@ -3077,7 +2596,6 @@
         initDragDrop();
         initKeyboard();
         initInputTracker();
-        initMobileTabs();
         setStatus('就绪');
     });
     </script>

@@ -28,15 +28,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Verify no external CDN references
-        run: |
-          CDN_COUNT=$(grep -cE 'https?://[^"'"'"']*\.(js|css|woff|ttf)' dist/index.html || true)
-          if [ "$CDN_COUNT" -gt 0 ]; then
-            echo "ERROR: Found $CDN_COUNT external CDN references in dist/index.html"
-            grep -nE 'https?://[^"'"'"']*\.(js|css|woff|ttf)' dist/index.html
-            exit 1
-          fi
-          echo "OK: No external CDN references"
+      - name: Check for CDN references
+        run: npm run check:cdn
 
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -63,8 +56,11 @@ jobs:
 
       - run: npm ci
 
+      - name: Check for CDN references
+        run: npm run check:cdn
+
       - name: Generate macOS icons
-        run: npx tauri icon src-tauri/app-icon-source.png
+        run: npx tauri icon src-tauri/icons/icon.png
 
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -86,6 +82,9 @@ jobs:
           node-version: '20'
 
       - run: npm ci
+
+      - name: Check for CDN references
+        run: npm run check:cdn
 
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -114,10 +113,14 @@ jobs:
 
       - run: npm ci
 
-      - name: Generate macOS icons
-        run: npx tauri icon src-tauri/app-icon-source.png
+      - name: Check for CDN references
+        run: npm run check:cdn
 
-      - name: Import Apple code signing certificate
+      - name: Generate macOS icons
+        run: npx tauri icon src-tauri/icons/icon.png
+
+      - name: Import Apple certificate
+        if: env.APPLE_CERTIFICATE != ''
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -130,22 +133,13 @@ jobs:
           security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain
 
-      - name: Import Apple installer certificate
-        env:
-          APPLE_INSTALLER_CERTIFICATE: ${{ secrets.APPLE_INSTALLER_CERTIFICATE }}
-          APPLE_INSTALLER_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_INSTALLER_CERTIFICATE_PASSWORD }}
-          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
-        run: |
-          echo "$APPLE_INSTALLER_CERTIFICATE" | base64 --decode > installer.p12
-          security import installer.p12 -k build.keychain -P "$APPLE_INSTALLER_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain
-
       - name: Install provisioning profile
         if: env.PROVISIONING_PROFILE != ''
         env:
           PROVISIONING_PROFILE: ${{ secrets.PROVISIONING_PROFILE }}
         run: |
-          echo "$PROVISIONING_PROFILE" | base64 --decode > src-tauri/appstore.provisionprofile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/appstore.provisionprofile
 
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -153,8 +147,6 @@ jobs:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_INSTALLER_CERTIFICATE: ${{ secrets.APPLE_INSTALLER_CERTIFICATE }}
-          APPLE_INSTALLER_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_INSTALLER_CERTIFICATE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: ${{ github.ref_name }}
@@ -164,7 +156,7 @@ jobs:
           args: --target universal-apple-darwin --bundles app
           configPath: src-tauri/tauri.appstore.conf.json
 
-  ios-appstore:
+  ios:
     if: github.ref_name == 'appstore' || startsWith(github.ref, 'refs/tags/')
     runs-on: macos-latest
     environment:
@@ -172,74 +164,50 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Rust targets
+        run: rustup target add aarch64-apple-ios x86_64-apple-ios
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - run: npm ci
 
-      - name: Sync Capacitor web assets
-        run: npx cap sync ios
+      - name: Check for CDN references
+        run: npm run check:cdn
 
-      - name: Import iOS distribution certificate
+      - name: Import Apple certificate
+        if: env.APPLE_CERTIFICATE != ''
         env:
-          IOS_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}
-          IOS_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
         run: |
-          echo "$IOS_DISTRIBUTION_CERTIFICATE_BASE64" | base64 --decode > ios_dist.p12
-          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
           security default-keychain -s build.keychain
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security import ios_dist.p12 -k build.keychain -P "$IOS_DISTRIBUTION_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain
 
       - name: Install iOS provisioning profile
+        if: env.IOS_PROVISIONING_PROFILE != ''
         env:
-          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/ios.mobileprovision
+          echo "$IOS_PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/ios-appstore.provisionprofile
 
-      - name: Build iOS archive
-        working-directory: ios/App
-        run: |
-          xcodebuild archive \
-            -workspace App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -archivePath build/App.xcarchive \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="match AppStore com.jsonformatter.app" \
-            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}"
-
-      - name: Export IPA
-        working-directory: ios/App
-        run: |
-          sed -i '' "s/APPLE_TEAM_ID_PLACEHOLDER/${{ secrets.APPLE_TEAM_ID }}/" exportOptions.plist
-          xcodebuild -exportArchive \
-            -archivePath build/App.xcarchive \
-            -exportPath build \
-            -exportOptionsPlist exportOptions.plist
-
-      - name: Upload to App Store Connect
+      - uses: tauri-apps/tauri-action@v0
         env:
-          APPCONNECT_API_KEY_BASE64: ${{ secrets.APPSTORE_CONNECT_API_KEY_BASE64 }}
-          APPCONNECT_KEY_ID: ${{ secrets.APPSTORE_CONNECT_API_KEY_ID }}
-          APPCONNECT_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
-        run: |
-          mkdir -p ~/.appstoreconnect/private_keys
-          echo "$APPCONNECT_API_KEY_BASE64" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_${APPCONNECT_KEY_ID}.p8
-          xcrun altool --upload-app \
-            --type ios \
-            --file ios/App/build/App.ipa \
-            --apiKey "$APPCONNECT_KEY_ID" \
-            --apiIssuer "$APPCONNECT_ISSUER_ID"
-
-      - name: Upload IPA as workflow artifact
-        uses: actions/upload-artifact@v4
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
-          name: ios-ipa
-          path: ios/App/build/App.ipa
-          retention-days: 30
+          tagName: ${{ github.ref_name }}
+          releaseName: "${{ github.ref_name }} (iOS)"
+          releaseDraft: false
+          prerelease: false
+          args: --target aarch64-apple-ios --bundles ios

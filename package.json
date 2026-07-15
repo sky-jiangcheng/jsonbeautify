@@ -1,27 +1,21 @@
 {
   "name": "json-formatter",
-  "version": "1.3.0",
+  "version": "1.2.9",
   "description": "JSON 格式化工具 - Tauri 桌面应用",
   "private": true,
   "scripts": {
     "tauri": "tauri",
     "dev": "tauri dev",
-    "build": "tauri build",
-    "build:macos": "tauri build --target universal-apple-darwin",
-    "build:appstore": "tauri build --target universal-apple-darwin --config src-tauri/tauri.appstore.conf.json",
+    "check:cdn": "node scripts/pre-commit-check.js",
+    "build": "npm run check:cdn && tauri build",
+    "build:macos": "npm run check:cdn && tauri build --target universal-apple-darwin",
+    "build:appstore": "npm run check:cdn && tauri build --target universal-apple-darwin --config src-tauri/tauri.appstore.conf.json",
     "preview": "python3 -m http.server 8000",
-    "cap:sync": "npx cap sync",
-    "cap:open:ios": "npx cap open ios",
-    "cap:update": "npx cap update",
-    "build:ios": "npx cap sync ios && cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive archive",
-    "build:ios:ipa": "npx cap sync ios && cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive archive && xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build -exportOptionsPlist exportOptions.plist"
-  },
-  "dependencies": {
-    "@capacitor/cli": "^6.0.0",
-    "@capacitor/core": "^6.0.0",
-    "@capacitor/ios": "^6.0.0"
+    "prepare": "husky"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2"
+    "@tauri-apps/cli": "^2",
+    "husky": "^9.1.7",
+    "sharp": "^0.35.3"
   }
 }

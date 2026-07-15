@@ -1,15 +1,12 @@
-const CACHE_NAME = 'json-formatter-v15';
+const CACHE_NAME = 'json-formatter-v11';
 const urlsToCache = [
   '/jsonbeautify/',
-  '/jsonbeautify/index.html?v=10',
-  '/jsonbeautify/manifest.json?v=10',
-  '/jsonbeautify/icon.svg?v=10',
-  '/jsonbeautify/icon-192.png?v=10',
-  '/jsonbeautify/icon-512.png?v=10',
-  '/jsonbeautify/favicon-32.png?v=10',
-  '/jsonbeautify/lib/highlight/highlight.min.js?v=10',
-  '/jsonbeautify/lib/highlight/styles/atom-one-dark.min.css?v=10',
-  '/jsonbeautify/lib/highlight/styles/atom-one-light.min.css?v=10'
+  '/jsonbeautify/index.html',
+  '/jsonbeautify/manifest.json',
+  '/jsonbeautify/icon.svg?v=8',
+  '/jsonbeautify/icon-192.png?v=8',
+  '/jsonbeautify/icon-512.png?v=8',
+  '/jsonbeautify/favicon-32.png?v=7'
 ];
 
 self.addEventListener('install', event => {
@@ -47,10 +44,4 @@ self.addEventListener('fetch', event => {
       });
     })
   );
-});
-
-self.addEventListener('message', event => {
-  if (event.data === 'skipWaiting') {
-    self.skipWaiting();
-  }
 });

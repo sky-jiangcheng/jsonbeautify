@@ -1,8 +1,2 @@
 node_modules/
 src-tauri/target/
-
-# Apple signing credentials (do NOT commit to public repos)
-*.p12
-*.provisionprofile
-src-tauri/*.p12
-src-tauri/*.provisionprofile
