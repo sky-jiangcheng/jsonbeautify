@@ -206,7 +206,16 @@ jobs:
           IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo "$IOS_PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/ios-appstore.provisionprofile
+          echo "$IOS_PROVISIONING_PROFILE" | base64 --decode > ios-profile.mobileprovision
+          # 提取 profile 的 UUID 和 Name
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin 2>/dev/null <<< $(security cms -D -i ios-profile.mobileprovision 2>/dev/null))
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /dev/stdin 2>/dev/null <<< $(security cms -D -i ios-profile.mobileprovision 2>/dev/null))
+          echo "Profile UUID: $PROFILE_UUID"
+          echo "Profile Name: $PROFILE_NAME"
+          # 用 UUID 命名保存
+          cp ios-profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/${PROFILE_UUID}.mobileprovision
+          echo "PROFILE_UUID=$PROFILE_UUID" >> $GITHUB_ENV
+          echo "PROFILE_NAME=$PROFILE_NAME" >> $GITHUB_ENV
 
       - name: Initialize iOS project
         run: npx tauri ios init --ci --config src-tauri/tauri.ios.conf.json
@@ -216,14 +225,60 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           PBXPROJ="src-tauri/gen/apple/json-formatter.xcodeproj/project.pbxproj"
-          # 方法1: 直接用 sed 在所有 buildSettings 块中插入 DEVELOPMENT_TEAM
-          sed -i '' "s/buildSettings = {/buildSettings = {\n\t\t\t\tDEVELOPMENT_TEAM = \"$APPLE_TEAM_ID\";/g" "$PBXPROJ"
-          # 方法2: 如果已存在则替换
-          sed -i '' "s/DEVELOPMENT_TEAM = \"[^\"]*\";/DEVELOPMENT_TEAM = \"$APPLE_TEAM_ID\";/g" "$PBXPROJ"
-          echo "=== iOS Signing Config ==="
-          grep "DEVELOPMENT_TEAM" "$PBXPROJ" | head -10
-          echo "=== Bundle ID ==="
-          grep "PRODUCT_BUNDLE_IDENTIFIER" "$PBXPROJ" | head -5
+          # 输出当前签名配置用于调试
+          echo "=== Before ==="
+          grep -E "(DEVELOPMENT_TEAM|CODE_SIGN_STYLE|PROVISIONING_PROFILE|CODE_SIGN_IDENTITY|PRODUCT_BUNDLE_IDENTIFIER)" "$PBXPROJ" | head -20
+
+          # 用 Python 批量修改所有 buildSettings 块
+          python3 << 'PYEOF'
+          import re
+          import os
+
+          team_id = os.environ.get("APPLE_TEAM_ID", "")
+          profile_name = os.environ.get("PROFILE_NAME", "")
+          pbxproj_path = "src-tauri/gen/apple/json-formatter.xcodeproj/project.pbxproj"
+
+          with open(pbxproj_path, "r") as f:
+              content = f.read()
+
+          # 找到所有 buildSettings = { ... } 块，在里面插入/替换签名配置
+          def add_signing_settings(match):
+              block = match.group(0)
+              settings_to_add = {
+                  "DEVELOPMENT_TEAM": f'"{team_id}"',
+                  "CODE_SIGN_STYLE": "Manual",
+                  "CODE_SIGN_IDENTITY": '"Apple Distribution"',
+              }
+              if profile_name:
+                  settings_to_add["PROVISIONING_PROFILE_SPECIFIER"] = f'"{profile_name}"'
+
+              for key, value in settings_to_add.items():
+                  # 如果已存在则替换
+                  pattern = re.compile(rf'(\t*){key}\s*=\s*[^;]+;')
+                  if pattern.search(block):
+                      block = pattern.sub(rf'\1{key} = {value};', block)
+                  else:
+                      # 在 buildSettings = { 后面插入
+                      block = block.replace(
+                          "buildSettings = {",
+                          f"buildSettings = {{\n\t\t\t\t{key} = {value};",
+                          1
+                      )
+              return block
+
+          # 匹配 buildSettings 块（用非贪婪匹配）
+          pattern = re.compile(r'buildSettings = \{[^}]*\};', re.DOTALL)
+          content = pattern.sub(add_signing_settings, content)
+
+          with open(pbxproj_path, "w") as f:
+              f.write(content)
+
+          print("Done")
+          PYEOF
+
+          echo ""
+          echo "=== After ==="
+          grep -E "(DEVELOPMENT_TEAM|CODE_SIGN_STYLE|PROVISIONING_PROFILE|CODE_SIGN_IDENTITY|PRODUCT_BUNDLE_IDENTIFIER)" "$PBXPROJ" | head -30
 
       - uses: tauri-apps/tauri-action@v1
         env:
