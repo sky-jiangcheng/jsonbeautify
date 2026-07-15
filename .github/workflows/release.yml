@@ -179,11 +179,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Verify Capacitor CLI available
-        run: ls -la ./node_modules/.bin/cap && ./node_modules/.bin/cap --version
-
       - name: Sync Capacitor web assets
-        run: ./node_modules/.bin/cap sync ios
+        run: npx cap sync ios
 
       - name: Import iOS distribution certificate
         env:
