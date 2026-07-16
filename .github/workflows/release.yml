@@ -142,14 +142,23 @@ jobs:
           security list-keychains -d user -s build.keychain login.keychain
           security default-keychain -s build.keychain
           # 验证并自动检测签名身份
-          echo "=== Available signing identities ==="
+          echo "=== All signing identities (all keychains) ==="
           security find-identity -v -p codesigning
+          echo "=== Login keychain identities ==="
+          security find-identity -v -p codesigning login.keychain 2>/dev/null || echo "(login.keychain not found)"
+          echo "=== Build keychain identities ==="
+          security find-identity -v -p codesigning build.keychain
           SIGNING_ID=$(security find-identity -v -p codesigning | grep -o '"[^"]*"' | head -1 | tr -d '"')
           echo "Detected signing identity: $SIGNING_ID"
           echo "APPLE_SIGNING_IDENTITY=$SIGNING_ID" >> $GITHUB_ENV
-          # 输出证书类型信息
-          echo "=== Certificate details ==="
-          security find-certificate -a -p build.keychain | openssl x509 -noout -subject 2>/dev/null || true
+          # 输出证书完整信息（类型、颁发者、有效期）
+          echo "=== Certificate full details ==="
+          CERT_PEM=$(security find-certificate -a -p build.keychain)
+          if [ -n "$CERT_PEM" ]; then
+            echo "$CERT_PEM" | openssl x509 -noout -text 2>/dev/null | head -30
+          else
+            echo "(no cert found in build.keychain)"
+          fi
 
       - name: Install provisioning profile
         if: env.PROVISIONING_PROFILE != ''
@@ -214,14 +223,30 @@ jobs:
           security list-keychains -d user -s build.keychain login.keychain
           security default-keychain -s build.keychain
           # 验证并自动检测签名身份
-          echo "=== Available signing identities ==="
+          echo "=== All signing identities (all keychains) ==="
           security find-identity -v -p codesigning
+          echo "=== Login keychain identities ==="
+          security find-identity -v -p codesigning login.keychain 2>/dev/null || echo "(login.keychain not found)"
+          echo "=== Build keychain identities ==="
+          security find-identity -v -p codesigning build.keychain
           SIGNING_ID=$(security find-identity -v -p codesigning | grep -o '"[^"]*"' | head -1 | tr -d '"')
           echo "Detected signing identity: $SIGNING_ID"
           echo "APPLE_SIGNING_IDENTITY=$SIGNING_ID" >> $GITHUB_ENV
-          # 输出证书类型信息
-          echo "=== Certificate details ==="
-          security find-certificate -a -p build.keychain | openssl x509 -noout -subject 2>/dev/null || true
+          # 输出证书完整信息（类型、颁发者、有效期）
+          echo "=== Certificate full details ==="
+          CERT_PEM=$(security find-certificate -a -p build.keychain)
+          if [ -n "$CERT_PEM" ]; then
+            echo "$CERT_PEM" | openssl x509 -noout -text 2>/dev/null | head -30
+          else
+            echo "(no cert found in build.keychain)"
+          fi
+          echo "=== Login keychain certs ==="
+          CERT_PEM2=$(security find-certificate -a -p login.keychain 2>/dev/null)
+          if [ -n "$CERT_PEM2" ]; then
+            echo "$CERT_PEM2" | openssl x509 -noout -subject -issuer 2>/dev/null
+          else
+            echo "(no cert found in login.keychain)"
+          fi
 
       - name: Install iOS provisioning profile
         if: env.IOS_PROVISIONING_PROFILE != ''
