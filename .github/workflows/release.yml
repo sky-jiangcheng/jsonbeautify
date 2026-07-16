@@ -185,6 +185,8 @@ jobs:
     runs-on: macos-latest
     environment:
       name: appstore
+    env:
+      IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
     steps:
       - uses: actions/checkout@v4
 
@@ -290,8 +292,34 @@ jobs:
               content = f.read()
 
           # 找到所有 buildSettings = { ... } 块，在里面插入/替换签名配置
-          def add_signing_settings(match):
-              block = match.group(0)
+          def find_matching_brace(text, start):
+              """找到与 start 处 { 匹配的 }; 位置"""
+              depth = 1
+              pos = start
+              while depth > 0 and pos < len(text):
+                  if text[pos] == '{':
+                      depth += 1
+                  elif text[pos] == '}':
+                      depth -= 1
+                  pos += 1
+              if pos < len(text) and text[pos] == ';':
+                  pos += 1
+              return pos
+
+          # 替换 buildSettings 块
+          result = []
+          i = 0
+          prefix = 'buildSettings = {'
+          while i < len(content):
+              idx = content.find(prefix, i)
+              if idx == -1:
+                  result.append(content[i:])
+                  break
+              result.append(content[i:idx])
+              end = find_matching_brace(content, idx + len(prefix))
+              block = content[idx:end]
+
+              # 修改 block 内的签名设置
               settings_to_add = {
                   "DEVELOPMENT_TEAM": f'"{team_id}"',
                   "CODE_SIGN_STYLE": "Manual",
@@ -302,9 +330,9 @@ jobs:
 
               for key, value in settings_to_add.items():
                   # 如果已存在则替换
-                  pattern = re.compile(rf'(\t*){key}\s*=\s*[^;]+;')
-                  if pattern.search(block):
-                      block = pattern.sub(rf'\1{key} = {value};', block)
+                  p = re.compile(rf'(\t*){key}\s*=\s*[^;]+;')
+                  if p.search(block):
+                      block = p.sub(rf'\1{key} = {value};', block)
                   else:
                       # 在 buildSettings = { 后面插入
                       block = block.replace(
@@ -312,11 +340,10 @@ jobs:
                           f"buildSettings = {{\n\t\t\t\t{key} = {value};",
                           1
                       )
-              return block
+              result.append(block)
+              i = end
 
-          # 匹配 buildSettings 块（用非贪婪匹配）
-          pattern = re.compile(r'buildSettings = \{[^}]*\};', re.DOTALL)
-          content = pattern.sub(add_signing_settings, content)
+          content = ''.join(result)
 
           with open(pbxproj_path, "w") as f:
               f.write(content)

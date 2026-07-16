@@ -1646,6 +1646,8 @@
         return { success: ok, json: fixed };
     }
 
+    function getIndent() { return 2; }
+
     function formatJSON() {
         const input = document.getElementById('input');
         const value = input.value.trim();
