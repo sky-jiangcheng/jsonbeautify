@@ -186,6 +186,7 @@ jobs:
     environment:
       name: appstore
     env:
+      IOS_APPLE_CERTIFICATE: ${{ secrets.IOS_APPLE_CERTIFICATE }}
       IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
     steps:
       - uses: actions/checkout@v4
@@ -202,14 +203,16 @@ jobs:
       - name: Check for CDN references
         run: npm run check:cdn
 
-      - name: Import Apple certificate
-        if: env.APPLE_CERTIFICATE != ''
+      - name: Import Apple certificate (iOS)
+        if: env.IOS_APPLE_CERTIFICATE != '' || env.APPLE_CERTIFICATE != ''
         env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          IOS_APPLE_CERTIFICATE: ${{ secrets.IOS_APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
         run: |
-          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          # 优先使用 iOS 专用证书，否则回退到环境中的通用证书
+          CERT_BASE64="${IOS_APPLE_CERTIFICATE:-$APPLE_CERTIFICATE}"
+          echo "$CERT_BASE64" | base64 --decode > certificate.p12
           # 创建构建用 keychain
           security create-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
           security set-keychain-settings -lut 21600 build.keychain
