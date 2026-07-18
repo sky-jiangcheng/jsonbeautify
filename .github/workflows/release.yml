@@ -230,7 +230,13 @@ jobs:
 
       - name: Build and sign PKG
         if: env.APPLE_INSTALLER_CERTIFICATE != ''
+        env:
+          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
         run: |
+          # 解锁所有 keychain，确保 productbuild 能访问证书私钥
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain 2>/dev/null || true
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" login.keychain 2>/dev/null || true
+
           # 找到 .app bundle（tauri 输出在 target/universal-apple-darwin/release/bundle/macos/）
           APP=$(find src-tauri/target -name "*.app" -type d -path "*universal-apple-darwin*" | head -1)
           if [ -z "$APP" ]; then
@@ -238,16 +244,19 @@ jobs:
             exit 1
           fi
           echo "App bundle: $APP"
+          echo "Installer identity: $APPLE_INSTALLER_IDENTITY"
 
-          # 用 productbuild 把 .app 打包成 .pkg 并用 Installer 证书签名
+          # 用 ASCII 文件名避免 productbuild 中文路径问题
           PKG_DIR="src-tauri/target/universal-apple-darwin/release/bundle/pkg"
           mkdir -p "$PKG_DIR"
-          PKG="$PKG_DIR/$(basename "$APP" .app).pkg"
+          PKG="$PKG_DIR/JSON-Formatter.pkg"
 
+          # productbuild 签名（设置 PRODUCTBUILD_IDENTITY_CHECK=1 避免卡在交互）
+          export PRODUCTBUILD_IDENTITY_CHECK=1
           productbuild \
             --component "$APP" /Applications \
             --sign "$APPLE_INSTALLER_IDENTITY" \
-            "$PKG"
+            "$PKG" < /dev/null
 
           echo "=== Generated PKG ==="
           ls -lh "$PKG"
