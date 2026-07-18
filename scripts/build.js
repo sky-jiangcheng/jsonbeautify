@@ -60,6 +60,10 @@ for (const entry of fs.readdirSync(DIST)) {
     }
 }
 
+// Write .nojekyll to prevent Jekyll processing on GitHub Pages
+fs.writeFileSync(path.join(DIST, '.nojekyll'), '');
+console.log('  WRITE .nojekyll');
+
 // Copy src/index.html and fix asset paths for flat dist/ layout
 let html = fs.readFileSync(path.join(SRC, 'index.html'), 'utf-8');
 html = html.replace(/\.\.\//g, '');
