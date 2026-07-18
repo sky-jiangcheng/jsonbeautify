@@ -414,6 +414,194 @@ jobs:
 
 ---
 
+## 7. App Store 上传与移动端适配踩坑
+
+本节总结将 Tauri 应用上架 macOS / iOS App Store 过程中遇到的实际问题与最终方案。涉及证书签名、版本管理、图标规范、移动端布局四个方面，均为真实踩坑后的经验。
+
+### 7.1 macOS App Store：productbuild 签名卡死
+
+**现象**：CI 中 `Build and sign PKG` 步骤 in_progress 超过 20 分钟无输出，最终被 GitHub Actions 超时杀掉。本地同样的命令却能跑通。
+
+**根因（三层叠加）**：
+
+1. **keychain 自动锁定**：`security set-keychain-settings -lut 21600 build.keychain` 设置了 6 小时超时，productbuild 运行过程中 keychain 锁定，访问 Installer 证书私钥时触发 ACL 弹窗，无头 CI 环境无人响应 → 无限卡死。
+2. **login.keychain 干扰**：同时导入证书到 `build.keychain` 和 `login.keychain`，但 `login.keychain` 的密码与 `APPLE_KEYCHAIN_PASSWORD` 不一致时，导入静默失败，却仍出现在搜索路径里，导致 productbuild 找到证书但访问不到私钥。
+3. **partition list 吞错误**：`security set-key-partition-list ... || true` 用 `|| true` 吞掉了错误，ACL 实际未生效，productbuild 仍无法无密码访问私钥。
+
+**最终方案**：
+
+```bash
+# 1. build.keychain 永不自动锁定（去掉 -lut）
+security create-keychain -p "$PWD" build.keychain
+security set-keychain-settings build.keychain   # 关键：不设 timeout
+
+# 2. 只用 build.keychain，不碰 login.keychain
+security import cert.p12 -k build.keychain -P "$CERT_PWD" \
+    -T /usr/bin/codesign -T /usr/bin/productbuild -T /usr/bin/security
+
+# 3. set-key-partition-list 不吞错误
+security set-key-partition-list -S apple-tool:,apple:,codesign: \
+    -s -k "$PWD" build.keychain
+
+# 4. 搜索路径只放 build.keychain
+security list-keychains -d user -s build.keychain
+security default-keychain -s build.keychain
+
+# 5. productbuild 加 300s 看门狗，万一还卡也会报错退出
+( productbuild --component "$APP" /Applications \
+    --sign "$IDENTITY" "$PKG" < /dev/null ) &
+PB_PID=$!
+( sleep 300; kill -KILL $PB_PID 2>/dev/null ) &
+wait $PB_PID
+```
+
+**关键点**：`< /dev/null` 重定向 stdin，`PRODUCTBUILD_IDENTITY_CHECK=1` 环境变量避免交互式确认。
+
+### 7.2 macOS App Store：ICNS 缺 512pt @2x 被拒
+
+**现象**：PKG 上传成功，但 App Store Connect 返回错误 90236：
+
+```
+Missing required icon. The application bundle does not have an icon
+in ICNS format containing a 512pt x 512pt @2x image.
+```
+
+**根因**：App Store 要求 ICNS 必须包含 1024×1024（即 512pt @2x）尺寸图标。Tauri 按 `tauri.conf.json` 的 `bundle.icon` 列表生成 ICNS，列表里只有 `512x512.png`（512×512），缺少 `512x512@2x.png`（1024×1024）。
+
+**注意**：即使仓库里有 `icon.png`（1024×1024），Tauri 也不会自动把它当作 512@2x 打包，必须在 conf.json 里显式声明。
+
+**修复**：
+
+```json
+// tauri.conf.json
+"icon": [
+    "icons/32x32.png",
+    "icons/128x128.png",
+    "icons/128x128@2x.png",
+    "icons/icon.ico",
+    "icons/icon.png",
+    "icons/16x16.png",
+    "icons/64x64.png",
+    "icons/256x256.png",
+    "icons/512x512.png",
+    "icons/512x512@2x.png"   // ← 关键：1024×1024
+]
+```
+
+同时把 `src-tauri/icons/512x512@2x.png`（1024×1024）文件加入仓库。
+
+### 7.3 iOS App Store：bundle version 重复被拒
+
+**现象**：iOS IPA 上传时返回 `ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE`：
+
+```
+The bundle version must be higher than the previously uploaded version.
+previousBundleVersion: 1.4.0
+```
+
+**根因**：版本号漏改。Tauri 的 iOS `cfBundleVersion` 继承自 `tauri.conf.json` 的 `version` 字段。我们只改了 `package.json` 和 `Cargo.toml`，**漏改了 `tauri.conf.json`**，导致多次构建都用 1.4.0 上传，跟历史重复被拒。
+
+**版本号必须同步更新的位置（共 3 处）**：
+
+| 文件 | 字段 |
+|------|------|
+| `package.json` | `"version"` |
+| `src-tauri/Cargo.toml` | `version` |
+| `src-tauri/tauri.conf.json` | `"version"` ← **最易漏** |
+
+**iOS 专属注意**：`tauri.ios.conf.json` 通常只覆盖 `identifier`，version 继承自主配置，所以改主 `tauri.conf.json` 即可。每次发版前用 `grep -r '"version"' package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json` 三处对齐。
+
+**Git tag 策略**：tag 号一旦推过就会永久占用，即使对应 run 失败也不能复用。版本号升到 1.4.4 后 tag 必须 ≥ v1.4.4；若 v1.4.4 又失败，下一次用 v1.4.5，不能回退。
+
+### 7.4 移动端布局：iOS Safari 显示 PC 端页面
+
+**现象**：iPhone Safari（含无痕模式）打开页面显示双栏 PC 布局，而非上下单栏移动端布局。无痕模式复现排除了缓存因素。
+
+**架构背景**：项目用 **HTML 属性驱动**而非纯 CSS 媒体查询。`<head>` 顶部内联 JS 检测设备类型，给 `<html>` 加 `data-device="mobile|desktop"` 属性，CSS 用 `[data-device="mobile"]` 选择器切换布局，并显示 `mobile-only` 的移动端专属工具栏。
+
+**根因（多重叠加）**：
+
+1. **viewport meta 被整体忽略**：原 viewport 含 `maximum-scale=1.0, user-scalable=no`，部分 iOS 版本会因此忽略整个 viewport meta，回退到默认 980px 虚拟视口。980px > 900px 断点 → 即使 CSS 媒体查询存在也不触发。
+2. **检测 JS 在 viewport 之前执行**：`window.innerWidth` 在视口未解析时返回虚拟值，影响宽度判断。
+3. **检测逻辑无容错**：一处异常整体失效，`data-device` 属性不被设置，默认走 desktop 布局。
+4. **`display: revert` Safari 兼容性差**：`[data-device="mobile"] .mobile-only { display: revert }` 在旧 Safari 上可能不生效，移动端控制栏不显示。
+
+**最终方案**：
+
+```html
+<head>
+    <!-- 1. viewport 放最前，简化掉 maximum-scale / user-scalable -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <!-- 2. 检测 JS 加 try-catch + 多维检测 -->
+    <script>
+    (function(){
+      try {
+        var d = document.documentElement;
+        var ua = navigator.userAgent || '';
+        var pf = navigator.platform || '';
+        var isMobilePlatform = /iPhone|iPad|iPod|Android/i.test(pf);
+        var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|iOS|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+        var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 1);
+        var isNarrow = window.innerWidth <= 900;
+        var isMobile = isMobilePlatform || isMobileUA || (isTouch && isNarrow);
+        d.setAttribute('data-device', isMobile ? 'mobile' : 'desktop');
+        // resize / orientationchange 时重新检测
+      } catch(e) {
+        // 兜底：纯 UA 判断
+        document.documentElement.setAttribute('data-device',
+          /Mobi|Android|iPhone|iPad|iPod|iOS/i.test(navigator.userAgent||'') ? 'mobile' : 'desktop');
+      }
+    })();
+    </script>
+    ...
+</head>
+```
+
+```css
+/* display: revert → flex，Safari 兼容 */
+[data-device="mobile"] .mobile-only { display: flex !important; }
+```
+
+**调试技巧**：加临时调试指示器，URL 带 `?debug=1` 时在右下角显示 `data-device`、`innerWidth`、UA 等值，手机上直接看检测结果，精确定位是 JS 检测问题还是 CSS 问题。
+
+**教训**：响应式布局不要只靠 CSS 媒体查询，iOS Safari 的 viewport 解析有历史包袱。HTML 属性驱动 + JS 多维检测 + CSS 属性选择器的组合更鲁棒。
+
+### 7.5 iOS Bundle ID 与 Provisioning Profile 必须匹配
+
+**现象**：iOS archive 失败：
+
+```
+Provisioning profile "jsonbeautify-ios-appstore" has app ID
+"com.jsonbeautify.desktop.appstore", which does not match the bundle ID
+"com.jsonbeautify.desktop.appstore.ios"
+```
+
+**根因**：macOS 和 iOS 共用同一个 Apple Developer 账号，但 Bundle ID 必须区分。Bundle ID 改了之后，App Store Distribution Profile 没有同步重新生成。
+
+**方案**：
+- macOS App Store：`com.jsonbeautify.desktop.appstore`
+- iOS App Store：`com.jsonbeautify.desktop.appstore.ios`（加 `.ios` 后缀）
+- 每改一次 Bundle ID，必须到 Apple Developer 后台重新生成对应的 App Store Distribution Profile，并更新 GitHub Secret `IOS_PROVISIONING_PROFILE`。
+
+### 7.6 GitHub PAT 权限
+
+修改 `.github/workflows/*.yml` 并 push 时，PAT 必须包含 `workflow` scope，否则报：
+
+```
+refusing to allow a Personal Access Token to create or update workflow
+without workflow scope
+```
+
+`repo` scope 不足以操作 workflow 文件。建议用 fine-grained PAT 并显式勾选 `Actions: write` + `Contents: write`。
+
+### 7.7 安全：暴露的 PAT 必须立即吊销
+
+PAT 一旦在对话、日志、截图、commit message 中明文出现，视为已泄露。**必须在 GitHub Settings → Developer settings → Personal access tokens 立即删除并重新生成**。GitHub 有自动扫描机制会撤销泄露的 token，但不应依赖它。
+
+---
+
 ## 快速自查清单
 
 开始一个新 Tauri + 静态前端项目时，逐项检查：
@@ -424,7 +612,12 @@ jobs:
 - [ ] Windows 构建仅使用 NSIS
 - [ ] 所有 `innerHTML` 调用点已审计、用户输入已转义
 - [ ] 深色/浅色模式色值已独立定义（非简单反色）
-- [ ] 版本号在 5 个位置保持一致
+- [ ] 版本号在 3 个位置保持一致（package.json / Cargo.toml / tauri.conf.json）
 - [ ] Workflow badge 指向的 workflow 在 main 分支有成功运行
-- [ ] 图标预留 12% 边距、多尺寸完整
+- [ ] 图标预留 12% 边距、多尺寸完整（含 512x512@2x）
 - [ ] macOS App Store 版本与开源版 identifier 已区分
+- [ ] macOS keychain 不设 timeout，productbuild 加看门狗超时
+- [ ] iOS Bundle ID 与 Provisioning Profile 一致
+- [ ] 移动端 viewport 不含 maximum-scale / user-scalable
+- [ ] 移动端检测 JS 在 viewport 之后执行，且有 try-catch 兜底
+- [ ] 暴露过的 PAT 已吊销重新生成
