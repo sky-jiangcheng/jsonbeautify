@@ -26,28 +26,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
       - name: Build
         run: |
-          set -e
           rm -rf dist
           mkdir -p dist/styles dist/scripts dist/icons
-          # Copy HTML and fix paths (../ → flat)
           sed 's|\.\./||g' src/index.html > dist/index.html
-          # Copy source files
           cp src/styles/*.css dist/styles/
           cp src/scripts/*.js dist/scripts/
-          # Copy static assets
           for f in highlight.min.js highlight-atom-one-dark.min.css highlight-atom-one-light.min.css manifest.json sw.js icon.svg favicon-32.png icon-192.png icon-512.png; do
-            [ -f "$f" ] && cp "$f" dist/ || true
+            [ -f "$f" ] && cp "$f" dist/ || echo "  SKIP $f (not found)"
           done
-          # Copy icons directory
           if [ -d icons ] && ls icons/*.png >/dev/null 2>&1; then
             cp icons/*.png dist/icons/
           fi
-          # Create .nojekyll
           touch dist/.nojekyll
-          # Verify
-          echo "=== dist/ contents ===" && ls -laR dist/ && echo "=== index.html head ===" && head -3 dist/index.html
+          # Must exist or fail
+          test -f dist/index.html || { echo "ERROR: dist/index.html missing!"; exit 1; }
+          test -f dist/styles/main.css || { echo "ERROR: dist/styles/main.css missing!"; exit 1; }
+          test -f dist/scripts/main.js || { echo "ERROR: dist/scripts/main.js missing!"; exit 1; }
+          test -f dist/highlight.min.js || { echo "ERROR: dist/highlight.min.js missing!"; exit 1; }
+          echo "=== dist/ OK ===" && ls -laR dist/ 2>&1 | head -40
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
