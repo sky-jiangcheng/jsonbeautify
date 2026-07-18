@@ -400,4 +400,21 @@ jobs:
           releaseDraft: false
           prerelease: false
           mobile: ios
-          args: --target aarch64 --config src-tauri/tauri.ios.conf.json --export-method app-store-connect --export-options-plist src-tauri/gen/apple/export/exportOptions.plist
+          args: --target aarch64 --config src-tauri/tauri.ios.conf.json --export-method app-store-connect --archive-only
+
+      - name: Export IPA
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          ARCHIVE=$(find . -path "*/release-iphoneos/*.xcarchive" -type d 2>/dev/null | head -1)
+          echo "Archive found: $ARCHIVE"
+          ls -la "$ARCHIVE" 2>/dev/null
+
+          xcodebuild -exportArchive \
+            -archivePath "$ARCHIVE" \
+            -exportPath src-tauri/gen/apple/build \
+            -exportOptionsPlist src-tauri/gen/apple/export/exportOptions.plist \
+            -allowProvisioningUpdates
+
+          echo "=== Generated files ==="
+          find src-tauri/gen/apple/build -name "*.ipa" 2>/dev/null
