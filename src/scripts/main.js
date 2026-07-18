@@ -1095,15 +1095,6 @@ function toggleTheme() {
    Init
 ============================================================== */
 window.addEventListener('DOMContentLoaded', () => {
-    const checkMobile = () => {
-        const isMobile = window.innerWidth <= 900 ||
-                         /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        document.body.classList.toggle('mobile', isMobile);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    window.addEventListener('orientationchange', checkMobile);
-
     applyAllTranslations();
     applyTheme(getTheme());
     renderHistory();

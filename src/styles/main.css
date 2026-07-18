@@ -1238,25 +1238,6 @@
             .toolbar { width: 100%; justify-content: center; }
             .logo { font-size: 12px; }
         }
-
-        /* ========== JS 兜底移动端布局（body.mobile）==========
-           当 CSS 媒体查询因 viewport 解析问题未触发时，
-           由 JS 检测后给 body 加 .mobile class，强制移动端布局 */
-        body.mobile .editor-area { flex-direction: column; }
-        body.mobile .panel-left { border-right: none; border-bottom: 2px solid var(--border); }
-        body.mobile .sidebar {
-            width: 100%;
-            border-left: none;
-            border-top: 1px solid var(--border);
-            max-height: 260px;
-        }
-        body.mobile .sidebar.collapsed { max-height: 0; }
-        body.mobile .btn .shortcut { display: none; }
-        body.mobile .btn { padding: 4px 8px; font-size: 11px; }
-        body.mobile header { padding: 0 12px; }
-        body.mobile header { flex-wrap: wrap; height: auto; padding: 8px 10px; gap: 8px; }
-        body.mobile .toolbar { width: 100%; justify-content: center; }
-        body.mobile .logo { font-size: 12px; }
     
         /* ========== 设备布局（UA 同步检测驱动） ========== */
         [data-device="desktop"] .mobile-only { display: none !important; }
