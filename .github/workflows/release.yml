@@ -190,23 +190,37 @@ jobs:
         env:
           APPLE_INSTALLER_CERTIFICATE: ${{ secrets.APPLE_INSTALLER_CERTIFICATE }}
           APPLE_INSTALLER_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_INSTALLER_CERTIFICATE_PASSWORD }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
         run: |
+          # 优先用 installer 专用密码，否则回退到通用密码
+          INSTALLER_PWD="${APPLE_INSTALLER_CERTIFICATE_PASSWORD:-$APPLE_CERTIFICATE_PASSWORD}"
           echo "$APPLE_INSTALLER_CERTIFICATE" | base64 --decode > installer-cert.p12
-          # 导入 Installer 证书到 build.keychain 和 login.keychain（productbuild 默认搜 login.keychain）
+          # 导入 Installer 证书到 build.keychain 和 login.keychain
           security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain 2>/dev/null || true
-          security import installer-cert.p12 -k build.keychain -P "$APPLE_INSTALLER_CERTIFICATE_PASSWORD" -T /usr/bin/productbuild 2>/dev/null || true
+          security import installer-cert.p12 -k build.keychain -P "$INSTALLER_PWD" -T /usr/bin/productbuild -T /usr/bin/security 2>&1 || true
           security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" login.keychain 2>/dev/null || true
-          security import installer-cert.p12 -k login.keychain -P "$APPLE_INSTALLER_CERTIFICATE_PASSWORD" -T /usr/bin/productbuild 2>/dev/null || true
+          security import installer-cert.p12 -k login.keychain -P "$INSTALLER_PWD" -T /usr/bin/productbuild -T /usr/bin/security 2>&1 || true
           security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$APPLE_KEYCHAIN_PASSWORD" login.keychain 2>/dev/null || true
           security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain 2>/dev/null || true
-          # 检测 installer 签名身份
-          echo "=== Installer identities ==="
-          security find-identity -v -p codesigning | grep -i installer || true
-          INSTALLER_ID=$(security find-identity -v -p codesigning | grep -i "3rd Party Mac Developer Installer" | grep -o '"[^"]*"' | head -1 | tr -d '"')
+          # 检测 installer 签名身份（从 keychain 中搜索所有证书，找 Installer 类型）
+          echo "=== All certificates in keychain ==="
+          security find-certificate -a build.keychain | grep -E "sha-1|labl" | head -30
+          echo "=== Looking for Installer certificate ==="
+          INSTALLER_ID=""
+          for cert in $(security find-certificate -a -p build.keychain | csplit -s -z -f /tmp/cert_ - '/-----BEGIN CERTIFICATE-----/' '{*}' 2>/dev/null; ls /tmp/cert_* 2>/dev/null); do
+            if [ -f "$cert" ]; then
+              CN=$(openssl x509 -in "$cert" -noout -subject 2>/dev/null | sed -n 's/.*CN = //p' | tr -d '"')
+              if echo "$CN" | grep -qi "Installer"; then
+                INSTALLER_ID="$CN"
+                echo "Found: $INSTALLER_ID"
+                break
+              fi
+            fi
+          done
+          # 兜底：用 security find-identity 找所有身份，匹配 installer
           if [ -z "$INSTALLER_ID" ]; then
-            # 兜底：取任意 installer 身份
-            INSTALLER_ID=$(security find-identity -v -p codesigning | grep -i installer | grep -o '"[^"]*"' | head -1 | tr -d '"')
+            INSTALLER_ID=$(security find-identity -v build.keychain | grep -i installer | grep -o '"[^"]*"' | head -1 | tr -d '"')
           fi
           echo "Detected installer identity: $INSTALLER_ID"
           echo "APPLE_INSTALLER_IDENTITY=$INSTALLER_ID" >> $GITHUB_ENV
