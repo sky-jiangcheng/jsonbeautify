@@ -4,9 +4,16 @@
   <script>
     (function(){
       var d = document.documentElement;
-      d.setAttribute('data-device',
-        /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent + ' ' + (navigator.platform||''))
-          ? 'mobile' : 'desktop');
+      var ua = navigator.userAgent;
+      var pf = navigator.platform || '';
+      var isMobilePlatform = /iPhone|iPad|iPod/i.test(pf);
+      var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+      var isNarrow = window.innerWidth <= 900;
+      d.setAttribute('data-device', (isMobilePlatform || isMobileUA || isNarrow) ? 'mobile' : 'desktop');
+      window.addEventListener('resize', function(){
+        d.setAttribute('data-device',
+          (isMobilePlatform || isMobileUA || window.innerWidth <= 900) ? 'mobile' : 'desktop');
+      });
     })();
   </script>
 
@@ -1428,7 +1435,7 @@
     </svg>
 
     <!-- ========== Header & Toolbar ========== -->
-    <header>
+    <header class="desktop-only">
         <div class="logo">
             <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#icon-braces"/></svg>
             <span data-i18n="logoText">JSON 格式化工具</span>
