@@ -1255,24 +1255,44 @@
             .logo { font-size: 12px; }
         }
 
-        /* ========== JS 兜底移动端布局（body.mobile）==========
+        /* ========== JS 兜底移动端布局（html.mobile, body.mobile）==========
            当 CSS 媒体查询因 viewport 解析问题未触发时，
            由 JS 检测后给 body 加 .mobile class，强制移动端布局 */
-        body.mobile .editor-area { flex-direction: column; }
-        body.mobile .panel-left { border-right: none; border-bottom: 2px solid var(--border); }
-        body.mobile .sidebar {
-            width: 100%;
-            border-left: none;
-            border-top: 1px solid var(--border);
-            max-height: 260px;
+        html.mobile, body.mobile .editor-area  {
+            flex-direction: column !important;
         }
-        body.mobile .sidebar.collapsed { max-height: 0; }
-        body.mobile .btn .shortcut { display: none; }
-        body.mobile .btn { padding: 4px 8px; font-size: 11px; }
-        body.mobile header { padding: 0 12px; }
-        body.mobile header { flex-wrap: wrap; height: auto; padding: 8px 10px; gap: 8px; }
-        body.mobile .toolbar { width: 100%; justify-content: center; }
-        body.mobile .logo { font-size: 12px; }
+        html.mobile, body.mobile .panel-left  {
+            border-right: none; border-bottom: 2px solid var(--border) !important;
+        }
+        html.mobile, body.mobile .sidebar  {
+
+            width: 100% !important;
+            border-left: none !important;
+            border-top: 1px solid var(--border) !important;
+            max-height: 260px !important;
+
+        }
+        html.mobile, body.mobile .sidebar.collapsed  {
+            max-height: 0 !important;
+        }
+        html.mobile, body.mobile .btn .shortcut  {
+            display: none !important;
+        }
+        html.mobile, body.mobile .btn  {
+            padding: 4px 8px; font-size: 11px !important;
+        }
+        html.mobile, body.mobile header  {
+            padding: 0 12px !important;
+        }
+        html.mobile, body.mobile header  {
+            flex-wrap: wrap; height: auto; padding: 8px 10px; gap: 8px !important;
+        }
+        html.mobile, body.mobile .toolbar  {
+            width: 100%; justify-content: center !important;
+        }
+        html.mobile, body.mobile .logo  {
+            font-size: 12px !important;
+        }
     </style>
     <meta name="theme-color" content="#0d1117">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=8">
@@ -2894,14 +2914,16 @@
        Init
     ============================================================== */
     window.addEventListener('DOMContentLoaded', () => {
-        // 移动端检测兜底：万一 CSS 媒体查询因 viewport 解析问题未触发，
-        // 用 JS 强制加 mobile class 触发移动端布局
+        // 移动端检测兜底：UA 优先（不受"请求桌面网站"模式影响 innerWidth 的干扰）
+        const isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
         const checkMobile = () => {
-            const isMobile = window.innerWidth <= 900 ||
-                             /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const isMobile = isMobileUA || window.innerWidth <= 900;
             document.body.classList.toggle('mobile', isMobile);
+            document.documentElement.classList.toggle('mobile', isMobile);
         };
         checkMobile();
+        // 延迟再判定一次，确保视口宽度已稳定
+        setTimeout(checkMobile, 300);
         window.addEventListener('resize', checkMobile);
         window.addEventListener('orientationchange', checkMobile);
 
