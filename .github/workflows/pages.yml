@@ -34,18 +34,20 @@ jobs:
           # Copy HTML and fix paths (../ → flat)
           sed 's|\.\./||g' src/index.html > dist/index.html
           # Copy source files
-          cp -r src/styles/* dist/styles/
-          cp -r src/scripts/* dist/scripts/
+          cp src/styles/*.css dist/styles/
+          cp src/scripts/*.js dist/scripts/
           # Copy static assets
           for f in highlight.min.js highlight-atom-one-dark.min.css highlight-atom-one-light.min.css manifest.json sw.js icon.svg favicon-32.png icon-192.png icon-512.png; do
-            [ -f "$f" ] && cp "$f" dist/
+            [ -f "$f" ] && cp "$f" dist/ || true
           done
           # Copy icons directory
-          [ -d icons ] && cp -r icons/* dist/icons/
+          if [ -d icons ] && ls icons/*.png >/dev/null 2>&1; then
+            cp icons/*.png dist/icons/
+          fi
           # Create .nojekyll
           touch dist/.nojekyll
           # Verify
-          echo "=== dist/ contents ===" && ls -la dist/ && echo "=== index.html head ===" && head -5 dist/index.html
+          echo "=== dist/ contents ===" && ls -laR dist/ && echo "=== index.html head ===" && head -3 dist/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
