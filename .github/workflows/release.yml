@@ -203,26 +203,29 @@ jobs:
           security import installer-cert.p12 -k login.keychain -P "$INSTALLER_PWD" -T /usr/bin/productbuild -T /usr/bin/security 2>&1 || true
           security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$APPLE_KEYCHAIN_PASSWORD" login.keychain 2>/dev/null || true
           security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain 2>/dev/null || true
-          # 检测 installer 签名身份（从 keychain 中搜索所有证书，找 Installer 类型）
-          echo "=== All certificates in keychain ==="
-          security find-certificate -a build.keychain | grep -E "sha-1|labl" | head -30
-          echo "=== Looking for Installer certificate ==="
-          INSTALLER_ID=""
-          for cert in $(security find-certificate -a -p build.keychain | csplit -s -z -f /tmp/cert_ - '/-----BEGIN CERTIFICATE-----/' '{*}' 2>/dev/null; ls /tmp/cert_* 2>/dev/null); do
-            if [ -f "$cert" ]; then
-              CN=$(openssl x509 -in "$cert" -noout -subject 2>/dev/null | sed -n 's/.*CN = //p' | tr -d '"')
-              if echo "$CN" | grep -qi "Installer"; then
-                INSTALLER_ID="$CN"
-                echo "Found: $INSTALLER_ID"
-                break
-              fi
-            fi
-          done
-          # 兜底：用 security find-identity 找所有身份，匹配 installer
+
+          # 列出所有证书身份（Installer 证书会出现在 "valid identities" 列表里）
+          echo "=== All valid identities ==="
+          security find-identity -v build.keychain
+          echo "=== Login keychain identities ==="
+          security find-identity -v login.keychain
+
+          # 从 find-identity 输出里抓 Installer 身份
+          # 格式: 1) SHA "3rd Party Mac Developer Installer: Name (TEAM)"
+          INSTALLER_ID=$(security find-identity -v build.keychain | grep -i "Installer" | grep -o '"[^"]*"' | head -1 | tr -d '"')
           if [ -z "$INSTALLER_ID" ]; then
-            INSTALLER_ID=$(security find-identity -v build.keychain | grep -i installer | grep -o '"[^"]*"' | head -1 | tr -d '"')
+            INSTALLER_ID=$(security find-identity -v login.keychain | grep -i "Installer" | grep -o '"[^"]*"' | head -1 | tr -d '"')
           fi
-          echo "Detected installer identity: $INSTALLER_ID"
+          if [ -z "$INSTALLER_ID" ]; then
+            # 兜底：列出所有证书 CN，找 Installer 关键字
+            INSTALLER_ID=$(security find-certificate -a -p build.keychain | openssl x509 -noout -subject 2>/dev/null | grep -i installer | sed -n 's/.*CN = //p' | tr -d '"' | head -1)
+          fi
+          echo "Detected installer identity: [$INSTALLER_ID]"
+          if [ -z "$INSTALLER_ID" ]; then
+            echo "ERROR: No installer identity found. Available identities:"
+            security find-identity -v
+            exit 1
+          fi
           echo "APPLE_INSTALLER_IDENTITY=$INSTALLER_ID" >> $GITHUB_ENV
 
       - name: Build and sign PKG
