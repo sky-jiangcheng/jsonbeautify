@@ -1345,7 +1345,7 @@
             align-items: center;
         }
 
-        /* ========== 移动端重构设计 ========== */
+/* ========== 移动端重构设计 ========== */
         [data-device="mobile"] .mobile-row-top {
             display: flex !important; align-items: center; justify-content: space-between;
             padding: 6px 10px 0;
@@ -1579,6 +1579,76 @@
             </button>
         </div>
     </div>
+
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3>
+                    <svg class="svg-icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><use href="#icon-clock"/></svg>
+                    <span data-i18n="history">历史记录</span>
+                </h3>
+                <button class="sidebar-toggle" onclick="toggleSidebar()" data-i18n-title="collapseSidebar" title="收起侧栏">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+            </div>
+            <div class="history-list" id="history-list"></div>
+            <div class="sidebar-footer">
+                <div class="compare-actions">
+                    <button class="btn" id="compare-btn" onclick="compareSelected()" disabled>
+                        <svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-diff"/></svg>
+                        <span data-i18n="compare">对比</span>
+                    </button>
+                    <button class="btn" onclick="clearAllHistory()" data-i18n-title="clearAllTitle" title="清空所有历史">
+                        <svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-trash"/></svg>
+                        <span data-i18n="clear">清空</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ========== 移动端控制栏结束 ========== -->
+
+
+    <!-- ========== Main Layout ========== -->
+    <div class="main-layout">
+        <div class="editor-area">
+            <div class="panel panel-left" id="input-panel">
+                <div class="panel-header">
+                    <span class="label">
+                        <svg class="svg-icon-xs" viewBox="0 0 24 24"><use href="#icon-file-text"/></svg>
+                        <span data-i18n="input">输入</span>
+                    </span>
+                    <span class="validation-indicator" id="validation-indicator" style="display:none"></span>
+                    <span id="input-size" style="font-weight:400;text-transform:none;letter-spacing:0;font-family:var(--font-mono)"></span>
+                </div>
+                <div class="panel-body" id="input-body">
+                    <textarea id="input" data-i18n-placeholder="inputPlaceholder" placeholder="在此粘贴 JSON，或拖拽 JSON 文件到此处&#10;&#10;快捷键：&#10;  Ctrl+Enter  格式化&#10;  Ctrl+S      保存&#10;  Ctrl+D      下载" spellcheck="false"></textarea>
+                    <div class="drop-overlay" id="drop-overlay">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>
+                        <span data-i18n="dropHint">释放以加载文件</span>
+                    </div>
+                </div>
+            </div>
+            <div class="panel" id="output-panel">
+                <div class="panel-header">
+                    <span class="label">
+                        <svg class="svg-icon-xs" viewBox="0 0 24 24"><use href="#icon-code"/></svg>
+                        <span data-i18n="output">输出</span>
+                    </span>
+                    <span id="output-status" style="font-weight:400;text-transform:none;letter-spacing:0;font-family:var(--font-mono)"></span>
+                </div>
+                <div class="panel-body">
+                    <div class="output-wrap" id="output-wrap">
+                        <div class="output-notifications" id="output-notifications"></div>
+                        <div class="output-content-area" id="output-content-area">
+                            <div class="output-placeholder" id="output-placeholder">
+                                <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-braces"/></svg>
+                                <span data-i18n="outputPlaceholder">格式化后的 JSON 将显示在这里</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
