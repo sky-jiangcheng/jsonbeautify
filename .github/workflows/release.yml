@@ -28,6 +28,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Build dist/
+        run: node scripts/build.js
+
       - name: Check for CDN references
         run: npm run check:cdn
 
@@ -56,6 +59,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Build dist/
+        run: node scripts/build.js
+
       - name: Check for CDN references
         run: npm run check:cdn
 
@@ -82,6 +88,9 @@ jobs:
           node-version: '20'
 
       - run: npm ci
+
+      - name: Build dist/
+        run: node scripts/build.js
 
       - name: Check for CDN references
         run: npm run check:cdn
@@ -117,6 +126,9 @@ jobs:
           node-version: '20'
 
       - run: npm ci
+
+      - name: Build dist/
+        run: node scripts/build.js
 
       - name: Check for CDN references
         run: npm run check:cdn
@@ -343,6 +355,9 @@ jobs:
           node-version: '20'
 
       - run: npm ci
+
+      - name: Build dist/
+        run: node scripts/build.js
 
       - name: Check for CDN references
         run: npm run check:cdn

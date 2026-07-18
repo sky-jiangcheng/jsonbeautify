@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <script>
+    (function(){
+      try {
+        var d = document.documentElement;
+        var ua = navigator.userAgent || '';
+        var pf = navigator.platform || '';
+        // 多重检测：platform / UA / maxTouchPoints / 触摸事件
+        var isMobilePlatform = /iPhone|iPad|iPod|Android/i.test(pf);
+        var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|iOS|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+        var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+        var isNarrow = window.innerWidth <= 900;
+        var isMobile = isMobilePlatform || isMobileUA || (isTouch && isNarrow);
+        d.setAttribute('data-device', isMobile ? 'mobile' : 'desktop');
+        window.addEventListener('resize', function(){
+          var narrow = window.innerWidth <= 900;
+          d.setAttribute('data-device',
+            (isMobilePlatform || isMobileUA || (isTouch && narrow) || narrow) ? 'mobile' : 'desktop');
+        });
+        window.addEventListener('orientationchange', function(){
+          setTimeout(function(){
+            var narrow = window.innerWidth <= 900;
+            d.setAttribute('data-device',
+              (isMobilePlatform || isMobileUA || (isTouch && narrow) || narrow) ? 'mobile' : 'desktop');
+          }, 100);
+        });
+      } catch(e) {
+        // 兜底：出错时强制用 UA 判断，避免完全失效
+        var ua2 = navigator.userAgent || '';
+        document.documentElement.setAttribute('data-device',
+          /Mobi|Android|iPhone|iPad|iPod|iOS/i.test(ua2) ? 'mobile' : 'desktop');
+      }
+    })();
+  </script>
+    <title>JSON Formatter</title>
+    <!-- iOS PWA：以独立应用模式启动，不显示 Safari UI -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="JSON Formatter">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#0d1117">
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png?v=8">
+    <link rel="icon" type="image/svg+xml" href="../icon.svg?v=8">
+    <link rel="apple-touch-icon" href="../icon-192.png?v=8">
+    <link rel="manifest" href="../manifest.json?v=8">
+    <link rel="stylesheet" href="../highlight-atom-one-dark.min.css" id="hljs-dark">
+    <link rel="stylesheet" href="../highlight-atom-one-light.min.css" id="hljs-light" disabled>
+    <link rel="stylesheet" href="styles/main.css">
+    <script src="../highlight.min.js"></script>
+</head>
+<body>
+    <script src="scripts/mobile-detect.js"></script>
+    <!-- 调试指示器：URL 加 ?debug=1 显示，用于排查移动端检测问题 -->
+    <div id="mobile-debug" style="position:fixed;bottom:8px;right:8px;z-index:99999;background:rgba(0,0,0,0.85);color:#fff;font-size:10px;padding:6px 8px;border-radius:4px;font-family:monospace;line-height:1.5;display:none;pointer-events:none;white-space:pre"></div>
+    <script>
+      (function(){
+        if(location.search.indexOf('debug=1')>-1 || location.hash.indexOf('debug=1')>-1) {
+          var el = document.getElementById('mobile-debug');
+          if(el) {
+            el.style.display = 'block';
+            var d = document.documentElement;
+            var up = function(){
+              el.textContent =
+                'data-device: ' + d.getAttribute('data-device') +
+                '\nbody.mobile: ' + document.body.classList.contains('mobile') +
+                '\ninnerWidth: ' + window.innerWidth +
+                '\ninnerHeight: ' + window.innerHeight +
+                '\nUA: ' + (navigator.userAgent||'').substring(0,80) +
+                '\nplatform: ' + (navigator.platform||'') +
+                '\ntouch: ' + ('ontouchstart' in window) +
+                '\nmaxTouchPoints: ' + (navigator.maxTouchPoints||0);
+            };
+            up();
+            window.addEventListener('resize', up);
+            window.addEventListener('orientationchange', function(){ setTimeout(up, 200); });
+          }
+        }
+      })();
+    </script>
+    <!-- SVG Icon Definitions -->
+    <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+        <symbol id="icon-braces" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 1H7a4 4 0 0 0-4 4v5.2a3 3 0 0 1-.6 1.8L2 12.5l.4.5A3 3 0 0 1 3 14.8V19a4 4 0 0 0 4 4h1v-1.5H7A2.5 2.5 0 0 1 4.5 19v-4.2a4.5 4.5 0 0 0-.9-2.8 4.5 4.5 0 0 0 .9-2.8V5A2.5 2.5 0 0 1 7 2.5h1V1z"/>
+            <path d="M16 1h1a4 4 0 0 1 4 4v5.2a3 3 0 0 0 .6 1.8l.4.5-.4.5a3 3 0 0 0-.6 1.8V19a4 4 0 0 1-4 4h-1v-1.5h1A2.5 2.5 0 0 0 19.5 19v-4.2a4.5 4.5 0 0 1 .9-2.8 4.5 4.5 0 0 1-.9-2.8V5A2.5 2.5 0 0 0 17 2.5h-1V1z"/>
+        </symbol>
+        <symbol id="icon-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+        </symbol>
+        <symbol id="icon-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+        </symbol>
+        <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </symbol>
+        <symbol id="icon-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </symbol>
+        <symbol id="icon-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+        </symbol>
+        <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </symbol>
+        <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+        </symbol>
+        <symbol id="icon-diff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h3"/>
+            <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
+            <line x1="12" y1="3" x2="12" y2="21"/>
+        </symbol>
+        <symbol id="icon-swap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="17 1 21 5 17 9"/>
+            <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+            <polyline points="7 23 3 19 7 15"/>
+            <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+        </symbol>
+        <symbol id="icon-folder-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </symbol>
+        <symbol id="icon-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </symbol>
+        <symbol id="icon-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+        </symbol>
+        <symbol id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </symbol>
+        <symbol id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </symbol>
+        <symbol id="icon-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </symbol>
+        <symbol id="icon-minimize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
+            <line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>
+        </symbol>
+        <symbol id="icon-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </symbol>
+        <symbol id="icon-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </symbol>
+        <symbol id="icon-more-horizontal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+        </symbol>
+    </svg>
+
+    <!-- ========== Header & Toolbar ========== -->
+    <header class="desktop-only">
+        <div class="logo">
+            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#icon-braces"/></svg>
+            <span data-i18n="logoText">JSON 格式化工具</span>
+        </div>
+        <div class="toolbar">
+                <button class="btn" onclick="toggleTheme()" id="theme-btn" data-i18n-title="themeTitle" title="切换暗色/亮色模式">
+                <svg class="svg-icon" id="theme-icon"><use href="#icon-sun"/></svg>
+            </button>
+            <div class="sep"></div>
+            <button class="btn btn-primary" onclick="formatJSON()" data-i18n-title="formatTitle" title="格式化 JSON (Ctrl+Enter)">
+                <svg class="svg-icon"><use href="#icon-code"/></svg>
+                <span data-i18n="format">格式化</span> <span class="shortcut">^&#9166;</span>
+            </button>
+            <button class="btn" onclick="minifyJSON()" data-i18n-title="minifyTitle" title="压缩 JSON">
+                <span data-i18n="minify">压缩</span>
+            </button>
+            <button class="btn" onclick="stringifyJSON()" data-i18n-title="escapeTitle" title="JSON 转义">
+                <span data-i18n="escape">转义</span>
+            </button>
+            <div class="sep"></div>
+            <button class="btn" onclick="copyOutput()" data-i18n-title="copyTitle" title="复制结果">
+                <svg class="svg-icon"><use href="#icon-copy"/></svg>
+                <span data-i18n="copy">复制</span>
+            </button>
+            <button class="btn" onclick="downloadJSON()" data-i18n-title="downloadTitle" title="下载 JSON 文件 (Ctrl+D)">
+                <svg class="svg-icon"><use href="#icon-download"/></svg>
+                <span data-i18n="download">下载</span> <span class="shortcut">^D</span>
+            </button>
+            <button class="btn" onclick="uploadFile()" data-i18n-title="uploadTitle" title="上传 JSON 文件">
+                <svg class="svg-icon"><use href="#icon-folder-open"/></svg>
+                <span data-i18n="upload">上传</span>
+            </button>
+            <div class="sep"></div>
+            <button class="btn" onclick="saveHistory()" data-i18n-title="saveTitle" title="保存到历史 (Ctrl+S)">
+                <svg class="svg-icon"><use href="#icon-save"/></svg>
+                <span data-i18n="save">保存</span> <span class="shortcut">^S</span>
+            </button>
+            <button class="btn btn-danger" onclick="clearContent()" data-i18n-title="clearTitle" title="清空">
+                <svg class="svg-icon"><use href="#icon-trash"/></svg>
+                <span data-i18n="clear">清空</span>
+            </button>
+            <div class="sep"></div>
+            <button class="btn btn-lang" id="lang-btn" onclick="i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh')" title="Switch language / 切换语言">EN</button>
+        </div>
+    </header>
+    <!-- ========== 移动端控制栏（data-device=mobile 时显示） ========== -->
+    <div class="mobile-only" style="display:none" id="mobile-input-actions">
+    <div class="mobile-row-top">
+        <div style="display:flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#icon-braces"/></svg>
+            <span style="font-weight:600;font-size:14px" data-i18n="logoText">JSON 格式化</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px">
+            <button class="mobile-top-btn" onclick="toggleMobileLang()" id="mobile-lang-btn" title="切换语言"><span id="mobile-lang-label">中文</span></button>
+            <button class="mobile-top-btn" onclick="toggleTheme()" id="mobile-theme-btn" title="切换主题"><svg width="16" height="16"><use href="#icon-sun" id="mobile-theme-icon-use"/></svg></button>
+        </div>
+    </div>
+    <div class="mobile-row-actions" style="border-top:1px solid var(--border);padding:6px 12px">
+        <button class="mobile-action-btn" onclick="formatJSON()"><svg width="16" height="16"><use href="#icon-zap"/></svg><span data-i18n="format">格式化</span></button>
+        <button class="mobile-action-btn" onclick="minifyJSON()"><svg width="16" height="16"><use href="#icon-minimize"/></svg><span data-i18n="minify">压缩</span></button>
+        <button class="mobile-action-btn" onclick="stringifyJSON()"><svg width="16" height="16"><use href="#icon-share"/></svg><span data-i18n="escape">转义</span></button>
+        <button class="mobile-action-btn" onclick="copyOutput()"><svg width="16" height="16"><use href="#icon-copy"/></svg><span data-i18n="copy">复制</span></button>
+    </div>
+    <div class="mobile-row-actions" style="padding:0 12px 6px">
+        <button class="mobile-action-btn" onclick="uploadFile()"><svg width="16" height="16"><use href="#icon-folder"/></svg><span data-i18n="open">打开</span></button>
+        <button class="mobile-action-btn" onclick="downloadJSON()"><svg width="16" height="16"><use href="#icon-download"/></svg><span data-i18n="download">下载</span></button>
+        <button class="mobile-action-btn" onclick="toggleSidebar()"><svg width="16" height="16"><use href="#icon-clock"/></svg><span data-i18n="history">历史</span></button>
+        <button class="mobile-action-btn" onclick="toggleMobileMore()" id="mobile-more-btn"><svg width="16" height="16"><use href="#icon-more-horizontal"/></svg><span>更多</span></button>
+    </div>
+    <div id="mobile-more-panel" style="display:none;padding:4px 8px 6px;border-top:1px solid var(--border)">
+        <button class="mobile-action-btn" onclick="toggleMobileLang()"><svg width="14" height="14"><use href="#icon-globe"/></svg><span id="mobile-lang-label2">中文</span></button>
+        <button class="mobile-action-btn" onclick="clearContent()" style="color:var(--danger,#e74c3c)"><svg width="14" height="14"><use href="#icon-trash"/></svg><span data-i18n="clear">清空</span></button>
+    </div>
+</div>
+    <!-- ========== 移动端控制栏结束 ========== -->
+
+
+    <!-- ========== Main Layout ========== -->
+    <div class="main-layout">
+        <div class="editor-area">
+            <div class="panel panel-left" id="input-panel">
+                <div class="panel-header">
+                    <span class="label">
+                        <svg class="svg-icon-xs" viewBox="0 0 24 24"><use href="#icon-file-text"/></svg>
+                        <span data-i18n="input">输入</span>
+                    </span>
+                    <span class="validation-indicator" id="validation-indicator" style="display:none"></span>
+                    <span id="input-size" style="font-weight:400;text-transform:none;letter-spacing:0;font-family:var(--font-mono)"></span>
+                </div>
+                <div class="panel-body" id="input-body">
+                    <textarea id="input" data-i18n-placeholder="inputPlaceholder" placeholder="在此粘贴 JSON，或拖拽 JSON 文件到此处&#10;&#10;快捷键：&#10;  Ctrl+Enter  格式化&#10;  Ctrl+S      保存&#10;  Ctrl+D      下载" spellcheck="false"></textarea>
+                    <div class="drop-overlay" id="drop-overlay">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>
+                        <span data-i18n="dropHint">释放以加载文件</span>
+                    </div>
+                </div>
+            </div>
+            <div class="panel" id="output-panel">
+                <div class="panel-header">
+                    <span class="label">
+                        <svg class="svg-icon-xs" viewBox="0 0 24 24"><use href="#icon-code"/></svg>
+                        <span data-i18n="output">输出</span>
+                    </span>
+                    <span id="output-status" style="font-weight:400;text-transform:none;letter-spacing:0;font-family:var(--font-mono)"></span>
+                </div>
+                <div class="panel-body">
+                    <div class="output-wrap" id="output-wrap">
+                        <div class="output-notifications" id="output-notifications"></div>
+                        <div class="output-content-area" id="output-content-area">
+                            <div class="output-placeholder" id="output-placeholder">
+                                <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-braces"/></svg>
+                                <span data-i18n="outputPlaceholder">格式化后的 JSON 将显示在这里</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3>
+                    <svg class="svg-icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><use href="#icon-clock"/></svg>
+                    <span data-i18n="history">历史记录</span>
+                </h3>
+                <button class="sidebar-toggle" onclick="toggleSidebar()" data-i18n-title="collapseSidebar" title="收起侧栏">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+            </div>
+            <div class="history-list" id="history-list"></div>
+            <div class="sidebar-footer">
+                <div class="compare-actions">
+                    <button class="btn" id="compare-btn" onclick="compareSelected()" disabled>
+                        <svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-diff"/></svg>
+                        <span data-i18n="compare">对比</span>
+                    </button>
+                    <button class="btn" onclick="clearAllHistory()" data-i18n-title="clearAllTitle" title="清空所有历史">
+                        <svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-trash"/></svg>
+                        <span data-i18n="clear">清空</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="sidebar-toggle" id="sidebar-open-btn" onclick="toggleSidebar()"
+        style="display:none;position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:100;
+               background:var(--bg-elevated);border:1px solid var(--border);border-right:none;
+               border-radius:4px 0 0 4px;padding:6px 4px;color:var(--text-muted);font-size:11px;cursor:pointer;"
+        title="展开侧栏" data-i18n-title="expandSidebar">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+
+    <!-- ========== Status Bar ========== -->
+    <div class="statusbar">
+        <div class="statusbar-left">
+            <span id="status-msg" data-i18n="statusReady">就绪</span>
+        </div>
+        <div class="statusbar-right">
+            <span id="status-shortcuts" data-i18n="statusShortcuts">Ctrl+Enter 格式化 &middot; Ctrl+S 保存 &middot; Ctrl+D 下载</span>
+        </div>
+    </div>
+
+    <!-- ========== Save Modal ========== -->
+    <div class="modal-backdrop" id="save-modal">
+        <div class="modal">
+            <h3 data-i18n="saveModalTitle">保存到历史记录</h3>
+            <input type="text" id="save-name-input" data-i18n-placeholder="saveNamePlaceholder" placeholder="输入记录名称（可选）" autocomplete="off">
+            <div class="modal-actions">
+                <button class="btn" onclick="closeSaveModal()" data-i18n="cancel">取消</button>
+                <button class="btn btn-primary" onclick="confirmSave()" data-i18n="save">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== Compare View ========== -->
+    <div class="compare-container" id="compare-container">
+        <div class="compare-header">
+            <span class="title">
+                <svg class="svg-icon" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><use href="#icon-diff"/></svg>
+                <span data-i18n="compareTitle">JSON 对比</span>
+            </span>
+            <div class="actions">
+                <button class="btn" onclick="reverseCompare()">
+                    <svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-swap"/></svg>
+                    <span data-i18n="swap">交换</span>
+                </button>
+                <button class="btn btn-danger" onclick="closeCompare()" data-i18n="close">关闭</button>
+            </div>
+        </div>
+            <div class="compare-body">
+                <div class="compare-col" id="compare-left">
+                <div class="compare-col-header" id="compare-left-title"></div>
+                <div class="compare-content" id="compare-left-content"></div>
+            </div>
+            <div class="compare-divider"></div>
+            <div class="compare-col" id="compare-right">
+                <div class="compare-col-header" id="compare-right-title"></div>
+                <div class="compare-content" id="compare-right-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== Toast ========== -->
+    <div class="toast" id="toast"></div>
+
+    <script src="scripts/i18n.js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+</html>
