@@ -1,13 +1,29 @@
 <!DOCTYPE html>
 <html lang="zh">
-<head>
+<head>  <script>
+    (function(){
+      var d = document.documentElement;
+      var ua = navigator.userAgent;
+      var pf = navigator.platform || '\u200B';  // zero-width space to avoid empty concatenation
+      d.setAttribute('data-device',
+        /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(ua + ' ' + pf) ? 'mobile' : 'desktop');
+    })();
+  </script>
+  
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JSON 格式化工具</title>
-    <link rel="stylesheet" href="highlight-atom-one-dark.min.css" id="hljs-dark">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>JSON Formatter</title>
+    <!-- iOS PWA：以独立应用模式启动，不显示 Safari UI -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="JSON Formatter">
+    <meta name="format-detection" content="telephone=no">
+<link rel="stylesheet" href="highlight-atom-one-dark.min.css" id="hljs-dark">
     <link rel="stylesheet" href="highlight-atom-one-light.min.css" id="hljs-light" disabled>
     <script src="highlight.min.js"></script>
     <style>
+        /* ========== CSS Variables ========== */
         :root,
         [data-theme="dark"] {
             --bg-primary: #0d1117;
@@ -158,6 +174,14 @@
             height: 20px;
             background: var(--border);
             margin: 0 6px;
+        }
+
+        .btn-lang {
+            min-width: 36px;
+            padding: 4px 8px !important;
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.5px;
         }
 
         .btn {
@@ -1236,22 +1260,121 @@
 
         @media (max-width: 600px) {
             header { flex-wrap: wrap; height: auto; padding: 8px 10px; gap: 8px; }
-            .toolbar { width: 100%; justify-content: center; flex-wrap: wrap; gap: 6px; }
+            .toolbar { width: 100%; justify-content: center; }
             .logo { font-size: 12px; }
-            .btn { padding: 8px 10px; font-size: 12px; min-height: 38px; line-height: 1.2; }
-            .btn .shortcut { display: none; }
-            /* 编辑区上下排列，输入/输出各占一半高度 */
-            .editor-area { flex-direction: column; }
-            .panel-left, .panel-right { flex: 1 1 50%; min-height: 0; }
-            .panel-left { border-right: none; border-bottom: 2px solid var(--border); }
-            /* 侧边栏（历史/书签）默认收起，避免占用手机空间 */
-            .sidebar { max-height: 0; overflow: hidden; transition: max-height 0.2s ease; }
-            .sidebar.collapsed { max-height: 0; }
-            .sidebar:not(.collapsed) { max-height: 50vh; }
-            /* 文本域触摸友好 */
-            textarea { font-size: 16px; padding: 12px; }
-            /* 弹窗在小屏占满 */
-            .modal { width: 95%; max-width: none; }
+        }
+
+                /* ========== 移动端布局 [data-device="mobile"] ==========
+           在 <head> 同步检测设备类型，从第一帧起正确渲染。
+           兼容 .mobile class 运行时检测（双重保障） */
+        [data-device="mobile"] .editor-area,
+        .mobile .editor-area {
+            flex-direction: column !important;
+        }
+        [data-device="mobile"] .panel-left,
+        .mobile .panel-left {
+            border-right: none !important;
+            border-bottom: 2px solid var(--border) !important;
+        }
+        [data-device="mobile"] .panel-right,
+        .mobile .panel-right {
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+        [data-device="mobile"] .sidebar,
+        .mobile .sidebar {
+            width: 100% !important;
+            min-width: 0 !important;
+            border-left: none !important;
+            border-top: 1px solid var(--border) !important;
+            max-height: 260px !important;
+            overflow-y: auto !important;
+        }
+        [data-device="mobile"] .sidebar.collapsed,
+        .mobile .sidebar.collapsed {
+            max-height: 0 !important;
+        }
+        [data-device="mobile"] .sidebar-header,
+        .mobile .sidebar-header {
+            padding: 6px 10px !important;
+        }
+        [data-device="mobile"] .history-item,
+        .mobile .history-item {
+            padding: 6px 8px !important;
+        }
+        [data-device="mobile"] .list-panel,
+        .mobile .list-panel {
+            width: 50% !important;
+            min-width: 80px !important;
+        }
+        [data-device="mobile"] .list-view,
+        .mobile .list-view {
+            flex-direction: column !important;
+        }
+        [data-device="mobile"] .btn .shortcut,
+        .mobile .btn .shortcut {
+            display: none !important;
+        }
+        [data-device="mobile"] .btn,
+        .mobile .btn {
+            padding: 8px 12px !important;
+            font-size: 13px !important;
+            min-height: 36px !important;
+        }
+        [data-device="mobile"] .btn-lang,
+        .mobile .btn-lang {
+            min-width: 40px !important;
+            padding: 6px 10px !important;
+        }
+        [data-device="mobile"] header,
+        .mobile header {
+            padding: 6px 10px !important;
+            flex-wrap: wrap !important;
+            height: auto !important;
+            gap: 6px !important;
+        }
+        [data-device="mobile"] .logo,
+        .mobile .logo {
+            font-size: 12px !important;
+        }
+        [data-device="mobile"] .toolbar,
+        .mobile .toolbar {
+            width: 100% !important;
+            justify-content: center !important;
+            flex-wrap: wrap !important;
+            gap: 4px !important;
+        }
+        [data-device="mobile"] .statusbar,
+        .mobile .statusbar {
+            flex-wrap: wrap !important;
+            gap: 4px !important;
+            font-size: 11px !important;
+        }
+        [data-device="mobile"] textarea,
+        .mobile textarea {
+            font-size: 16px !important;
+        }
+        [data-device="mobile"] .compare-body,
+        .mobile .compare-body {
+            flex-direction: column !important;
+        }
+        [data-device="mobile"] .compare-col,
+        .mobile .compare-col {
+            max-height: 50vh !important;
+        }
+        [data-device="mobile"] .compare-divider,
+        .mobile .compare-divider {
+            width: 100% !important;
+            height: 1px !important;
+        }
+        [data-device="mobile"] .modal,
+        .mobile .modal {
+            width: 90vw !important;
+            max-height: 80vh !important;
+        }
+        [data-device="mobile"] .main-layout,
+        .mobile .main-layout {
+            flex-direction: column !important;
         }
     </style>
     <meta name="theme-color" content="#0d1117">
@@ -1347,45 +1470,47 @@
     <header>
         <div class="logo">
             <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#icon-braces"/></svg>
-            <span>JSON 格式化工具</span>
+            <span data-i18n="logoText">JSON 格式化工具</span>
         </div>
         <div class="toolbar">
-            <button class="btn" onclick="toggleTheme()" id="theme-btn" title="切换暗色/亮色模式">
+                <button class="btn" onclick="toggleTheme()" id="theme-btn" data-i18n-title="themeTitle" title="切换暗色/亮色模式">
                 <svg class="svg-icon" id="theme-icon"><use href="#icon-sun"/></svg>
             </button>
             <div class="sep"></div>
-            <button class="btn btn-primary" onclick="formatJSON()" title="格式化 JSON (Ctrl+Enter)">
+            <button class="btn btn-primary" onclick="formatJSON()" data-i18n-title="formatTitle" title="格式化 JSON (Ctrl+Enter)">
                 <svg class="svg-icon"><use href="#icon-code"/></svg>
-                格式化 <span class="shortcut">^&#9166;</span>
+                <span data-i18n="format">格式化</span> <span class="shortcut">^&#9166;</span>
             </button>
-            <button class="btn" onclick="minifyJSON()" title="压缩 JSON">
-                压缩
+            <button class="btn" onclick="minifyJSON()" data-i18n-title="minifyTitle" title="压缩 JSON">
+                <span data-i18n="minify">压缩</span>
             </button>
-            <button class="btn" onclick="stringifyJSON()" title="JSON 转义">
-                转义
+            <button class="btn" onclick="stringifyJSON()" data-i18n-title="escapeTitle" title="JSON 转义">
+                <span data-i18n="escape">转义</span>
             </button>
             <div class="sep"></div>
-            <button class="btn" onclick="copyOutput()" title="复制结果">
+            <button class="btn" onclick="copyOutput()" data-i18n-title="copyTitle" title="复制结果">
                 <svg class="svg-icon"><use href="#icon-copy"/></svg>
-                复制
+                <span data-i18n="copy">复制</span>
             </button>
-            <button class="btn" onclick="downloadJSON()" title="下载 JSON 文件 (Ctrl+D)">
+            <button class="btn" onclick="downloadJSON()" data-i18n-title="downloadTitle" title="下载 JSON 文件 (Ctrl+D)">
                 <svg class="svg-icon"><use href="#icon-download"/></svg>
-                下载 <span class="shortcut">^D</span>
+                <span data-i18n="download">下载</span> <span class="shortcut">^D</span>
             </button>
-            <button class="btn" onclick="uploadFile()" title="上传 JSON 文件">
+            <button class="btn" onclick="uploadFile()" data-i18n-title="uploadTitle" title="上传 JSON 文件">
                 <svg class="svg-icon"><use href="#icon-folder-open"/></svg>
-                上传
+                <span data-i18n="upload">上传</span>
             </button>
             <div class="sep"></div>
-            <button class="btn" onclick="saveHistory()" title="保存到历史 (Ctrl+S)">
+            <button class="btn" onclick="saveHistory()" data-i18n-title="saveTitle" title="保存到历史 (Ctrl+S)">
                 <svg class="svg-icon"><use href="#icon-save"/></svg>
-                保存 <span class="shortcut">^S</span>
+                <span data-i18n="save">保存</span> <span class="shortcut">^S</span>
             </button>
-            <button class="btn btn-danger" onclick="clearContent()" title="清空">
+            <button class="btn btn-danger" onclick="clearContent()" data-i18n-title="clearTitle" title="清空">
                 <svg class="svg-icon"><use href="#icon-trash"/></svg>
-                清空
+                <span data-i18n="clear">清空</span>
             </button>
+            <div class="sep"></div>
+            <button class="btn btn-lang" id="lang-btn" onclick="i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh')" title="Switch language / 切换语言">EN</button>
         </div>
     </header>
 
@@ -1396,16 +1521,16 @@
                 <div class="panel-header">
                     <span class="label">
                         <svg class="svg-icon-xs" viewBox="0 0 24 24"><use href="#icon-file-text"/></svg>
-                        输入
+                        <span data-i18n="input">输入</span>
                     </span>
                     <span class="validation-indicator" id="validation-indicator" style="display:none"></span>
                     <span id="input-size" style="font-weight:400;text-transform:none;letter-spacing:0;font-family:var(--font-mono)"></span>
                 </div>
                 <div class="panel-body" id="input-body">
-                    <textarea id="input" placeholder="在此粘贴 JSON，或拖拽 JSON 文件到此处&#10;&#10;快捷键：&#10;  Ctrl+Enter  格式化&#10;  Ctrl+S      保存&#10;  Ctrl+D      下载" spellcheck="false"></textarea>
+                    <textarea id="input" data-i18n-placeholder="inputPlaceholder" placeholder="在此粘贴 JSON，或拖拽 JSON 文件到此处&#10;&#10;快捷键：&#10;  Ctrl+Enter  格式化&#10;  Ctrl+S      保存&#10;  Ctrl+D      下载" spellcheck="false"></textarea>
                     <div class="drop-overlay" id="drop-overlay">
                         <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>
-                        释放以加载文件
+                        <span data-i18n="dropHint">释放以加载文件</span>
                     </div>
                 </div>
             </div>
@@ -1413,7 +1538,7 @@
                 <div class="panel-header">
                     <span class="label">
                         <svg class="svg-icon-xs" viewBox="0 0 24 24"><use href="#icon-code"/></svg>
-                        输出
+                        <span data-i18n="output">输出</span>
                     </span>
                     <span id="output-status" style="font-weight:400;text-transform:none;letter-spacing:0;font-family:var(--font-mono)"></span>
                 </div>
@@ -1423,7 +1548,7 @@
                         <div class="output-content-area" id="output-content-area">
                             <div class="output-placeholder" id="output-placeholder">
                                 <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-braces"/></svg>
-                                格式化后的 JSON 将显示在这里
+                                <span data-i18n="outputPlaceholder">格式化后的 JSON 将显示在这里</span>
                             </div>
                         </div>
                     </div>
@@ -1435,9 +1560,9 @@
             <div class="sidebar-header">
                 <h3>
                     <svg class="svg-icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><use href="#icon-clock"/></svg>
-                    历史记录
+                    <span data-i18n="history">历史记录</span>
                 </h3>
-                <button class="sidebar-toggle" onclick="toggleSidebar()" title="收起侧栏">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" data-i18n-title="collapseSidebar" title="收起侧栏">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
             </div>
@@ -1446,11 +1571,11 @@
                 <div class="compare-actions">
                     <button class="btn" id="compare-btn" onclick="compareSelected()" disabled>
                         <svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-diff"/></svg>
-                        对比
+                        <span data-i18n="compare">对比</span>
                     </button>
-                    <button class="btn" onclick="clearAllHistory()" title="清空所有历史">
+                    <button class="btn" onclick="clearAllHistory()" data-i18n-title="clearAllTitle" title="清空所有历史">
                         <svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-trash"/></svg>
-                        清空
+                        <span data-i18n="clear">清空</span>
                     </button>
                 </div>
             </div>
@@ -1461,28 +1586,28 @@
         style="display:none;position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:100;
                background:var(--bg-elevated);border:1px solid var(--border);border-right:none;
                border-radius:4px 0 0 4px;padding:6px 4px;color:var(--text-muted);font-size:11px;cursor:pointer;"
-        title="展开侧栏">
+        title="展开侧栏" data-i18n-title="expandSidebar">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
 
     <!-- ========== Status Bar ========== -->
     <div class="statusbar">
         <div class="statusbar-left">
-            <span id="status-msg">就绪</span>
+            <span id="status-msg" data-i18n="statusReady">就绪</span>
         </div>
         <div class="statusbar-right">
-            <span id="status-shortcuts">Ctrl+Enter 格式化 &middot; Ctrl+S 保存 &middot; Ctrl+D 下载</span>
+            <span id="status-shortcuts" data-i18n="statusShortcuts">Ctrl+Enter 格式化 &middot; Ctrl+S 保存 &middot; Ctrl+D 下载</span>
         </div>
     </div>
 
     <!-- ========== Save Modal ========== -->
     <div class="modal-backdrop" id="save-modal">
         <div class="modal">
-            <h3>保存到历史记录</h3>
-            <input type="text" id="save-name-input" placeholder="输入记录名称（可选）" autocomplete="off">
+            <h3 data-i18n="saveModalTitle">保存到历史记录</h3>
+            <input type="text" id="save-name-input" data-i18n-placeholder="saveNamePlaceholder" placeholder="输入记录名称（可选）" autocomplete="off">
             <div class="modal-actions">
-                <button class="btn" onclick="closeSaveModal()">取消</button>
-                <button class="btn btn-primary" onclick="confirmSave()">保存</button>
+                <button class="btn" onclick="closeSaveModal()" data-i18n="cancel">取消</button>
+                <button class="btn btn-primary" onclick="confirmSave()" data-i18n="save">保存</button>
             </div>
         </div>
     </div>
@@ -1492,14 +1617,14 @@
         <div class="compare-header">
             <span class="title">
                 <svg class="svg-icon" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><use href="#icon-diff"/></svg>
-                JSON 对比
+                <span data-i18n="compareTitle">JSON 对比</span>
             </span>
             <div class="actions">
                 <button class="btn" onclick="reverseCompare()">
                     <svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-swap"/></svg>
-                    交换
+                    <span data-i18n="swap">交换</span>
                 </button>
-                <button class="btn btn-danger" onclick="closeCompare()">关闭</button>
+                <button class="btn btn-danger" onclick="closeCompare()" data-i18n="close">关闭</button>
             </div>
         </div>
             <div class="compare-body">
@@ -1566,6 +1691,266 @@
     }
 
     /* ==============================================================
+       Internationalization (i18n)
+    ============================================================== */
+    const I18N = {
+        zh: {
+            title: 'JSON 格式化工具',
+            logoText: 'JSON 格式化工具',
+            format: '格式化',
+            minify: '压缩',
+            escape: '转义',
+            copy: '复制',
+            download: '下载',
+            upload: '上传',
+            save: '保存',
+            clear: '清空',
+            input: '输入',
+            output: '输出',
+            dropHint: '释放以加载文件',
+            outputPlaceholder: '格式化后的 JSON 将显示在这里',
+            history: '历史记录',
+            compare: '对比',
+            swap: '交换',
+            close: '关闭',
+            statusReady: '就绪',
+            statusShortcuts: 'Ctrl+Enter 格式化 \u00b7 Ctrl+S 保存 \u00b7 Ctrl+D 下载',
+            saveModalTitle: '保存到历史记录',
+            saveNamePlaceholder: '输入记录名称（可选）',
+            cancel: '取消',
+            compareTitle: 'JSON 对比',
+            compareLoading: '正在比对\u2026',
+            themeTitle: '切换暗色/亮色模式',
+            formatTitle: '格式化 JSON (Ctrl+Enter)',
+            minifyTitle: '压缩 JSON',
+            escapeTitle: 'JSON 转义',
+            copyTitle: '复制结果',
+            downloadTitle: '下载 JSON 文件 (Ctrl+D)',
+            uploadTitle: '上传 JSON 文件',
+            saveTitle: '保存到历史 (Ctrl+S)',
+            clearTitle: '清空',
+            collapseSidebar: '收起侧栏',
+            clearAllTitle: '清空所有历史',
+            expandSidebar: '展开侧栏',
+            inputPlaceholder: '在此粘贴 JSON，或拖拽 JSON 文件到此处\n\n快捷键：\n  Ctrl+Enter  格式化\n  Ctrl+S      保存\n  Ctrl+D      下载',
+            listTitle: '列表 ({count})',
+            collapseList: '收起列表',
+            expandList: '展开列表',
+            emptyArray: '空数组',
+            items: '{count} 项',
+            keys: '{count} 键',
+            loadingFile: '已加载 {name}',
+            saved: '已保存：{name}',
+            copied: '已复制到剪贴板',
+            nothingToCopy: '没有可复制的内容',
+            nothingToDownload: '没有可下载的内容',
+            downloaded: '已下载 JSON 文件',
+            inputEmpty: '输入为空',
+            inputEmptyToast: '请先输入 JSON',
+            formatSuccess: '格式化成功',
+            minifySuccess: '压缩成功',
+            escapeSuccess: 'JSON 转义成功',
+            jsonError: 'JSON 格式错误',
+            cleared: '已清空',
+            historyCleared: '历史已清空',
+            loaded: '已加载：{name}',
+            jsonOnly: '请拖入 .json 文件',
+            needFormatFirst: '请先格式化有效的 JSON',
+            unnamed: '未命名',
+            noHistory: '暂无历史记录',
+            noHistoryHint: '格式化后保存即可',
+            selectForCompare: '选中用于对比',
+            deleteItem: '删除',
+            autoQuoteId: '（已自动为标识符添加引号）',
+            autoBracket: '（已自动补全括号）',
+            autoBracketNotification: '原始 JSON 缺失部分括号，已自动补全',
+            unquotedIdHint: 'JSON 中的键名和字符串值必须用双引号包裹',
+            jsonIncomplete: 'JSON 不完整，可能缺少闭合的括号、逗号或值',
+            jsonSyntaxError: 'JSON 语法错误：{msg}',
+            stringMisplaced: 'JSON 字符串位置不当，检查是否缺少逗号或括号',
+            numberError: '数字格式错误或位置不当',
+            unquotedIdDetected: '检测到未加引号的标识符 "{id}"',
+            errorTitle: 'JSON 格式错误',
+            nearLine: '第 {line} 行附近',
+            jsonRules: 'JSON 语法规则：',
+            ruleKeys: '键名和字符串值必须用双引号（"）包裹',
+            ruleComma: '对象和数组的最后一个元素后不能有逗号',
+            ruleBool: '布尔值只能为 true 或 false（小写）',
+            ruleNull: 'null 必须为小写',
+            ruleBracket: '括号和花括号必须成对出现',
+            valid: '有效',
+            invalid: '无效',
+            lineCount: '行',
+        },
+        en: {
+            title: 'JSON Formatter',
+            logoText: 'JSON Formatter',
+            format: 'Format',
+            minify: 'Minify',
+            escape: 'Escape',
+            copy: 'Copy',
+            download: 'Download',
+            upload: 'Upload',
+            save: 'Save',
+            clear: 'Clear',
+            input: 'Input',
+            output: 'Output',
+            dropHint: 'Drop to load file',
+            outputPlaceholder: 'Formatted JSON will appear here',
+            history: 'History',
+            compare: 'Compare',
+            swap: 'Swap',
+            close: 'Close',
+            statusReady: 'Ready',
+            statusShortcuts: 'Ctrl+Enter Format \u00b7 Ctrl+S Save \u00b7 Ctrl+D Download',
+            saveModalTitle: 'Save to History',
+            saveNamePlaceholder: 'Enter name (optional)',
+            cancel: 'Cancel',
+            compareTitle: 'JSON Compare',
+            compareLoading: 'Comparing\u2026',
+            themeTitle: 'Toggle dark/light mode',
+            formatTitle: 'Format JSON (Ctrl+Enter)',
+            minifyTitle: 'Minify JSON',
+            escapeTitle: 'Escape JSON',
+            copyTitle: 'Copy result',
+            downloadTitle: 'Download JSON file (Ctrl+D)',
+            uploadTitle: 'Upload JSON file',
+            saveTitle: 'Save to history (Ctrl+S)',
+            clearTitle: 'Clear',
+            collapseSidebar: 'Collapse sidebar',
+            clearAllTitle: 'Clear all history',
+            expandSidebar: 'Expand sidebar',
+            inputPlaceholder: 'Paste JSON here, or drag a JSON file here\n\nShortcuts:\n  Ctrl+Enter  Format\n  Ctrl+S      Save\n  Ctrl+D      Download',
+            listTitle: 'List ({count})',
+            collapseList: 'Collapse list',
+            expandList: 'Expand list',
+            emptyArray: 'Empty array',
+            items: '{count} items',
+            keys: '{count} keys',
+            loadingFile: 'Loaded {name}',
+            saved: 'Saved: {name}',
+            copied: 'Copied to clipboard',
+            nothingToCopy: 'Nothing to copy',
+            nothingToDownload: 'Nothing to download',
+            downloaded: 'JSON file downloaded',
+            inputEmpty: 'Input is empty',
+            inputEmptyToast: 'Please enter JSON first',
+            formatSuccess: 'Formatted successfully',
+            minifySuccess: 'Minified successfully',
+            escapeSuccess: 'JSON escaped successfully',
+            jsonError: 'Invalid JSON format',
+            cleared: 'Cleared',
+            historyCleared: 'History cleared',
+            loaded: 'Loaded: {name}',
+            jsonOnly: 'Please drop .json files only',
+            needFormatFirst: 'Please format valid JSON first',
+            unnamed: 'Untitled',
+            noHistory: 'No history yet',
+            noHistoryHint: 'Format and save to see history',
+            selectForCompare: 'Select to compare',
+            deleteItem: 'Delete',
+            autoQuoteId: ' (auto-quoted identifier)',
+            autoBracket: ' (auto-closed brackets)',
+            autoBracketNotification: 'Some brackets were missing and have been auto-closed',
+            unquotedIdHint: 'JSON keys and string values must be wrapped in double quotes',
+            jsonIncomplete: 'JSON is incomplete, possibly missing closing brackets, commas, or values',
+            jsonSyntaxError: 'JSON syntax error: {msg}',
+            stringMisplaced: 'JSON string in wrong position, check for missing commas or brackets',
+            numberError: 'Number format error or misplaced number',
+            unquotedIdDetected: 'Detected unquoted identifier "{id}"',
+            errorTitle: 'Invalid JSON',
+            nearLine: 'Near line {line}',
+            jsonRules: 'JSON syntax rules:',
+            ruleKeys: 'Keys and string values must be wrapped in double quotes (")',
+            ruleComma: 'No trailing comma after the last element in objects/arrays',
+            ruleBool: 'Boolean values must be true or false (lowercase)',
+            ruleNull: 'null must be lowercase',
+            ruleBracket: 'Brackets and braces must be paired',
+            valid: 'Valid',
+            invalid: 'Invalid',
+            lineCount: 'lines',
+        }
+    };
+
+    const i18n = {
+        _lang: localStorage.getItem('appLang') || (navigator.language.startsWith('zh') ? 'zh' : 'en'),
+
+        t(key, vars) {
+            let s = I18N[this._lang][key] || I18N['en'][key] || key;
+            if (vars) {
+                Object.entries(vars).forEach(([k, v]) => {
+                    s = s.replace(new RegExp('\\{' + k + '\\}', 'g'), v);
+                });
+            }
+            return s;
+        },
+
+        setLang(lang) {
+            this._lang = lang;
+            localStorage.setItem('appLang', lang);
+            applyAllTranslations();
+        },
+
+        get lang() { return this._lang; }
+    };
+
+    function applyAllTranslations() {
+        // Document title
+        document.title = i18n.t('title');
+        document.documentElement.lang = i18n._lang;
+        // Text content
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (key) el.textContent = i18n.t(key);
+        });
+        // Title attributes
+        document.querySelectorAll('[data-i18n-title]').forEach(el => {
+            const key = el.getAttribute('data-i18n-title');
+            if (key) el.setAttribute('title', i18n.t(key));
+        });
+        // Placeholder attributes
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if (key) el.setAttribute('placeholder', i18n.t(key).replace(/\\n/g, '\n'));
+        });
+        // HTML content
+        document.querySelectorAll('[data-i18n-html]').forEach(el => {
+            const key = el.getAttribute('data-i18n-html');
+            if (key) el.innerHTML = i18n.t(key);
+        });
+        // Update language switcher button text
+        const langBtn = document.getElementById('lang-btn');
+        if (langBtn) langBtn.textContent = i18n._lang === 'zh' ? 'EN' : '\u4e2d';
+        // Re-render dynamic content
+        rerenderDynamicContent();
+    }
+
+    function rerenderDynamicContent() {
+        // Refresh output panel if it has content
+        if (window._lastRenderContent) {
+            renderOutput(window._lastRenderContent, window._lastRenderType, window._lastRenderFixed, window._lastRenderParsedObj);
+        }
+        // Refresh history list
+        renderHistory();
+        // Update status bar
+        const sm = document.getElementById('status-msg');
+        if (sm && (sm.textContent === I18N.zh.statusReady || sm.textContent === I18N.en.statusReady)) {
+            setStatus(i18n.t('statusReady'));
+        }
+        // Refresh compare open state
+        const cc = document.getElementById('compare-container');
+        if (cc && cc.classList.contains('visible')) {
+            renderHistory();
+            refreshCompareView();
+        }
+        // Refresh validation indicator
+        const vi = document.getElementById('validation-indicator');
+        if (vi && vi.style.display !== 'none') {
+            vi.textContent = i18n.t(vi.classList.contains('valid') ? 'valid' : 'invalid');
+        }
+    }
+
+    /* ==============================================================
        Output Line Numbers
     ============================================================== */
     function renderLineNumbers(lineCount) {
@@ -1618,28 +2003,28 @@
             var idMatch = msg.match(/["']([^"']+)["']/);
             var id = idMatch ? idMatch[1] : '';
             if (id && /^[a-zA-Z_$]/.test(id)) {
-                return '检测到未加引号的标识符 "' + id + '"\nJSON 中的键名和字符串值必须用双引号包裹' + context;
+                return i18n.t('unquotedIdDetected', {id: id}) + '\n' + i18n.t('unquotedIdHint') + context;
             }
-            return 'JSON 格式错误：' + msg + context;
+            return i18n.t('jsonSyntaxError', {msg: msg}) + context;
         }
 
         if (msg.indexOf('Unexpected end of JSON') >= 0) {
-            return 'JSON 不完整，可能缺少闭合的括号、逗号或值' + context;
+            return i18n.t('jsonIncomplete') + context;
         }
 
         if (msg.indexOf('Expected') >= 0 && msg.indexOf('got') >= 0) {
-            return 'JSON 语法错误：' + msg + context;
+            return i18n.t('jsonSyntaxError', {msg: msg}) + context;
         }
 
         if (msg.indexOf('Unexpected string') >= 0) {
-            return 'JSON 字符串位置不当，检查是否缺少逗号或括号' + context;
+            return i18n.t('stringMisplaced') + context;
         }
 
         if (msg.indexOf('Unexpected number') >= 0) {
-            return '数字格式错误或位置不当' + context;
+            return i18n.t('numberError') + context;
         }
 
-        return 'JSON 格式错误：' + msg + context;
+        return i18n.t('jsonSyntaxError', {msg: msg}) + context;
     }
 
     function tryFixUnquotedKeys(input) {
@@ -1659,13 +2044,15 @@
         return { success: ok, json: fixed };
     }
 
+    function getIndent() { return 2; }
+
     function formatJSON() {
         const input = document.getElementById('input');
         const value = input.value.trim();
         clearNotifications();
         if (!value) {
             renderOutput('', 'empty');
-            setStatus('输入为空');
+            setStatus(i18n.t('inputEmpty'));
             return;
         }
 
@@ -1681,7 +2068,7 @@
                 try {
                     jsonObj = JSON.parse(uq);
                     fixed = true;
-                    fixMsg = '（已自动为标识符添加引号）';
+                    fixMsg = i18n.t('autoQuoteId');
                 } catch (e2) {}
             }
             if (!jsonObj) {
@@ -1690,7 +2077,7 @@
                     try {
                         jsonObj = JSON.parse(fixResult.json);
                         fixed = true;
-                        fixMsg = fixMsg || '（已自动补全括号）';
+                        fixMsg = fixMsg || i18n.t('autoBracket');
                     } catch (e2) {
                         showError(error, value);
                         return;
@@ -1706,7 +2093,7 @@
         window.lastFormattedContent = JSON.stringify(jsonObj, null, indent);
         window.lastParsedJson = jsonObj;
         renderOutput(window.lastFormattedContent, 'json', fixed, jsonObj);
-        setStatus('格式化成功' + (fixed ? fixMsg : ''));
+        setStatus(i18n.t('formatSuccess') + (fixed ? fixMsg : ''));
         updateOutputStatus(window.lastFormattedContent);
     }
 
@@ -1715,7 +2102,7 @@
         const value = input.value.trim();
         clearNotifications();
         if (!value) {
-            showToast('请先输入 JSON', 2000, 'icon-alert-triangle');
+            showToast(i18n.t('inputEmptyToast'), 2000, 'icon-alert-triangle');
             return;
         }
 
@@ -1746,7 +2133,7 @@
         window.lastFormattedContent = JSON.stringify(jsonObj);
         window.lastParsedJson = jsonObj;
         renderOutput(window.lastFormattedContent, 'text', fixed, jsonObj);
-        setStatus('压缩成功' + (fixed ? '（已自动补全括号）' : ''));
+        setStatus(i18n.t('minifySuccess') + (fixed ? i18n.t('autoBracket') : ''));
         updateOutputStatus(window.lastFormattedContent);
     }
 
@@ -1787,26 +2174,26 @@
         var lineCount = input ? input.substring(0, pos).split('\n').length : 0;
 
         var hints = [
-            '键名和字符串值必须用双引号（"）包裹',
-            '对象和数组的最后一个元素后不能有逗号',
-            '布尔值只能为 true 或 false（小写）',
-            'null 必须为小写',
-            '括号和花括号必须成对出现'
+            i18n.t('ruleKeys'),
+            i18n.t('ruleComma'),
+            i18n.t('ruleBool'),
+            i18n.t('ruleNull'),
+            i18n.t('ruleBracket')
         ];
 
         area.innerHTML = '<div class="error-display">' +
-            '<div class="error-title">JSON 格式错误</div>' +
+            '<div class="error-title">' + i18n.t('errorTitle') + '</div>' +
             '<div class="error-msg">' + escapeHtml(msg.split('\n')[0]) + '</div>' +
             (snippetHtml ? '<div class="error-snippet">' + snippetHtml + '</div>' : '') +
-            (lineCount ? '<div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono)">第 ' + lineCount + ' 行附近</div>' : '') +
-            '<div class="error-hint">JSON 语法规则：' + hints.join('；') + '</div>' +
+            (lineCount ? '<div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono)">' + i18n.t('nearLine', {line: lineCount}) + '</div>' : '') +
+            '<div class="error-hint">' + i18n.t('jsonRules') + hints.join('; ') + '</div>' +
             '</div>';
         renderLineNumbers(0);
     }
 
     function showError(error, input) {
         renderErrorOutput(error, input);
-        setStatus('JSON 格式错误');
+        setStatus(i18n.t('jsonError'));
     }
 
     function renderEmptyContent() {
@@ -1814,7 +2201,7 @@
         area.innerHTML = `
             <div class="output-placeholder" id="output-placeholder">
                 <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-braces"/></svg>
-                格式化后的 JSON 将显示在这里
+                ${i18n.t('outputPlaceholder')}
             </div>`;
         renderLineNumbers(0);
     }
@@ -1833,6 +2220,12 @@
     }
 
     function renderOutput(content, type, fixed, parsedObj) {
+        // Store for re-render on language change
+        window._lastRenderContent = content;
+        window._lastRenderType = type;
+        window._lastRenderFixed = fixed || false;
+        window._lastRenderParsedObj = parsedObj || null;
+
         if (type === 'empty') {
             renderEmptyContent();
             return;
@@ -1850,7 +2243,7 @@
                 renderRegularOutput(content);
             }
             if (fixed) {
-                showNotification('warning', '原始 JSON 缺失部分括号，已自动补全');
+                showNotification('warning', i18n.t('autoBracketNotification'));
             }
         }
     }
@@ -1884,15 +2277,15 @@
             <div class="list-view" id="list-view">
                 <div class="list-panel" id="list-panel">
                     <div class="list-panel-header">
-                        <span class="list-title">列表 (${arr.length})</span>
-                        <button class="list-panel-toggle" id="list-panel-toggle" onclick="toggleListPanel()" title="收起列表">
+                        <span class="list-title">${i18n.t('listTitle', {count: arr.length})}</span>
+                        <button class="list-panel-toggle" id="list-panel-toggle" onclick="toggleListPanel()" title="${i18n.t('collapseList')}">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                         </button>
                     </div>
                     <div class="list-panel-body" id="list-panel-body"></div>
                 </div>
                 <div class="list-detail" id="list-detail">
-                    <div class="list-expand-tab" id="list-expand-tab" onclick="toggleListPanel()" title="展开列表">
+                    <div class="list-expand-tab" id="list-expand-tab" onclick="toggleListPanel()" title="${i18n.t('expandList')}">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                     </div>
                     <div class="list-detail-linenos" id="list-detail-linenos"></div>
@@ -1904,7 +2297,7 @@
         window._listArr = arr;
 
         if (arr.length === 0) {
-            listPanelBody.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:12px;text-align:center">空数组</div>';
+            listPanelBody.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:12px;text-align:center">' + i18n.t('emptyArray') + '</div>';
             return;
         }
 
@@ -1958,7 +2351,7 @@
             var count = value.length;
             if (count === 0) return '<span class="jt-line">' + prefix + '<span class="jt-bracket">[]</span></span>';
             var html = '<div class="jt-group">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + count + ' 项]</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
             html += '<div class="jt-children">';
             for (var i = 0; i < count; i++) {
                 html += renderJsonNode(String(i), value[i]);
@@ -1977,7 +2370,7 @@
             var count = keys.length;
             if (count === 0) return '<span class="jt-line">' + prefix + '<span class="jt-bracket">{}</span></span>';
             var html = '<div class="jt-group">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + count + ' 键}</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
             html += '<div class="jt-children">';
             for (var k = 0; k < count; k++) {
                 html += renderJsonNode(keys[k], value[keys[k]]);
@@ -2039,12 +2432,12 @@
             return item.length > 50 ? '"' + item.substring(0, 50) + '..."' : JSON.stringify(item);
         }
         if (Array.isArray(item)) {
-            return '[...] (' + item.length + ' 项)';
+            return '[...] (' + i18n.t('items', {count: item.length}) + ')';
         }
         if (typeof item === 'object') {
             const keys = Object.keys(item);
             const preview = keys.slice(0, 2).join(', ');
-            return '{' + preview + (keys.length > 2 ? ', ...' : '') + '} (' + keys.length + ' 键)';
+            return '{' + preview + (keys.length > 2 ? ', ...' : '') + '} (' + i18n.t('keys', {count: keys.length}) + ')';
         }
         return String(item);
     }
@@ -2052,7 +2445,7 @@
     function updateOutputStatus(content) {
         const lines = content.split('\n').length;
         const size = new Blob([content]).size;
-        document.getElementById('output-status').textContent = lines + ' 行 ' + formatBytes(size);
+        document.getElementById('output-status').textContent = lines + ' ' + i18n.t('lineCount') + ' ' + formatBytes(size);
     }
 
     /* ==============================================================
@@ -2061,11 +2454,11 @@
     function copyOutput() {
         let content = window.lastDetailContent || window.lastFormattedContent;
         if (!content) {
-            showToast('没有可复制的内容', 2000, 'icon-alert-triangle');
+            showToast(i18n.t('nothingToCopy'), 2000, 'icon-alert-triangle');
             return;
         }
         navigator.clipboard.writeText(content).then(() => {
-            showToast('已复制到剪贴板', 2000, 'icon-check');
+            showToast(i18n.t('copied'), 2000, 'icon-check');
         }).catch(() => {
             const ta = document.createElement('textarea');
             ta.value = content;
@@ -2073,13 +2466,13 @@
             ta.select();
             document.execCommand('copy');
             document.body.removeChild(ta);
-            showToast('已复制到剪贴板', 2000, 'icon-check');
+            showToast(i18n.t('copied'), 2000, 'icon-check');
         });
     }
 
     function downloadJSON() {
         if (!window.lastFormattedContent) {
-            showToast('没有可下载的内容', 2000, 'icon-alert-triangle');
+            showToast(i18n.t('nothingToDownload'), 2000, 'icon-alert-triangle');
             return;
         }
         const blob = new Blob([window.lastFormattedContent], { type: 'application/json' });
@@ -2089,7 +2482,7 @@
         a.download = 'formatted_' + Date.now() + '.json';
         a.click();
         URL.revokeObjectURL(url);
-        showToast('已下载 JSON 文件', 2000, 'icon-download');
+        showToast(i18n.t('downloaded'), 2000, 'icon-download');
     }
 
     function clearContent() {
@@ -2101,7 +2494,7 @@
         renderOutput('', 'empty');
         document.getElementById('input-size').textContent = '';
         document.getElementById('output-status').textContent = '';
-        setStatus('已清空');
+        setStatus(i18n.t('cleared'));
     }
 
     /* ==============================================================
@@ -2118,7 +2511,7 @@
             reader.onload = () => {
                 document.getElementById('input').value = String(reader.result);
                 document.getElementById('input').dispatchEvent(new Event('input'));
-                showToast('已加载 ' + file.name, 2000, 'icon-folder-open');
+                showToast(i18n.t('loaded', {name: file.name}), 2000, 'icon-folder-open');
             };
             reader.readAsText(file);
         };
@@ -2130,7 +2523,7 @@
         const value = input.value.trim();
         clearNotifications();
         if (!value) {
-            showToast('请先输入 JSON', 2000, 'icon-alert-triangle');
+            showToast(i18n.t('inputEmptyToast'), 2000, 'icon-alert-triangle');
             return;
         }
 
@@ -2162,7 +2555,7 @@
         window.lastFormattedContent = result;
         window.lastParsedJson = jsonObj;
         renderOutput(result, 'text', false, result);
-        setStatus('JSON 转义成功' + (fixed ? '（已自动补全括号）' : ''));
+        setStatus(i18n.t('escapeSuccess') + (fixed ? i18n.t('autoBracket') : ''));
         updateOutputStatus(result);
     }
 
@@ -2171,7 +2564,7 @@
     ============================================================== */
     function saveHistory() {
         if (!window.lastFormattedContent) {
-            showToast('请先格式化有效的 JSON', 2000, 'icon-alert-triangle');
+            showToast(i18n.t('needFormatFirst'), 2000, 'icon-alert-triangle');
             return;
         }
         openSaveModal();
@@ -2189,14 +2582,14 @@
     }
 
     function confirmSave() {
-        let name = document.getElementById('save-name-input').value.trim() || '未命名';
+        let name = document.getElementById('save-name-input').value.trim() || i18n.t('unnamed');
         const id = Date.now();
         const history = getHistory();
         history.unshift({ id, name, content: window.lastFormattedContent });
         setHistory(history);
         closeSaveModal();
         renderHistory();
-        showToast('已保存：' + name, 2000, 'icon-save');
+        showToast(i18n.t('saved', {name: name}), 2000, 'icon-save');
     }
 
     function deleteHistory(id) {
@@ -2211,7 +2604,7 @@
         setHistory([]);
         window.selectedIds = [];
         renderHistory();
-        showToast('历史已清空', 2000, 'icon-trash');
+        showToast(i18n.t('historyCleared'), 2000, 'icon-trash');
     }
 
     function loadHistory(id) {
@@ -2220,7 +2613,7 @@
         if (!item) return;
         document.getElementById('input').value = item.content;
         formatJSON();
-        showToast('已加载：' + item.name, 2000, 'icon-file-text');
+        showToast(i18n.t('loaded', {name: item.name}), 2000, 'icon-file-text');
     }
 
     function toggleSelect(id) {
@@ -2245,8 +2638,8 @@
             list.innerHTML = `
                 <div class="history-empty">
                     <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-clock"/></svg>
-                    <div>暂无历史记录</div>
-                    <div style="font-size:11px;opacity:0.6">格式化后保存即可</div>
+                    <div>${i18n.t('noHistory')}</div>
+                    <div style="font-size:11px;opacity:0.6">${i18n.t('noHistoryHint')}</div>
                 </div>`;
             compareBtn.disabled = true;
             return;
@@ -2260,12 +2653,12 @@
                 <div class="history-item ${selected}" onclick="loadHistory(${item.id})">
                     <input type="checkbox" class="history-checkbox"
                            onclick="event.stopPropagation();toggleSelect(${item.id})"
-                           ${checked} title="选中用于对比" />
+                           ${checked} title="${i18n.t('selectForCompare')}" />
                     <div class="history-info">
                         <div class="history-name">${escapeHtml(item.name)}</div>
                         <div class="history-snippet">${escapeHtml(snippet)}</div>
                     </div>
-                    <button class="history-delete" onclick="event.stopPropagation();deleteHistory(${item.id})" title="删除">&times;</button>
+                    <button class="history-delete" onclick="event.stopPropagation();deleteHistory(${item.id})" title="${i18n.t('deleteItem')}">&times;</button>
                 </div>`;
         }).join('');
 
@@ -2293,8 +2686,8 @@
 
         document.getElementById('compare-left-title').textContent = items[0].name;
         document.getElementById('compare-right-title').textContent = items[1].name;
-        document.getElementById('compare-left-content').innerHTML = '<div style="padding:16px;color:var(--text-muted);text-align:center">正在比对…</div>';
-        document.getElementById('compare-right-content').innerHTML = '<div style="padding:16px;color:var(--text-muted);text-align:center">正在比对…</div>';
+        document.getElementById('compare-left-content').innerHTML = '<div style="padding:16px;color:var(--text-muted);text-align:center">' + i18n.t('compareLoading') + '</div>';
+        document.getElementById('compare-right-content').innerHTML = '<div style="padding:16px;color:var(--text-muted);text-align:center">' + i18n.t('compareLoading') + '</div>';
         document.getElementById('compare-container').classList.add('active');
 
         const leftScroll = document.getElementById('compare-left-content');
@@ -2398,7 +2791,7 @@
             if (count === 0) return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-bracket">[]</span></span>';
             var groupCls = diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '';
             var html = '<div class="jt-group' + groupCls + '">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + count + ' 项]</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
             html += '<div class="jt-children">';
             for (var i = 0; i < count; i++) {
                 html += renderJsonNodeWithDiff(String(i), value[i], path ? path + '/' + i : String(i), diffMap, side, rootVal);
@@ -2418,7 +2811,7 @@
             if (count === 0) return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-bracket">{}</span></span>';
             var groupCls = diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '';
             var html = '<div class="jt-group' + groupCls + '">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + count + ' 键}</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
             html += '<div class="jt-children">';
             for (var k = 0; k < count; k++) {
                 var keyStr = keys[k];
@@ -2478,7 +2871,7 @@
             if (!file) return;
 
             if (!file.name.endsWith('.json') && file.type !== 'application/json') {
-                showToast('请拖入 .json 文件', 3000, 'icon-alert-triangle');
+                showToast(i18n.t('jsonOnly'), 3000, 'icon-alert-triangle');
                 return;
             }
 
@@ -2486,7 +2879,7 @@
             reader.onload = (evt) => {
                 document.getElementById('input').value = evt.target.result;
                 formatJSON();
-                showToast('已加载：' + file.name, 3000, 'icon-file-text');
+                showToast(i18n.t('loaded', {name: file.name}), 3000, 'icon-file-text');
             };
             reader.readAsText(file);
         });
@@ -2564,11 +2957,11 @@
                     JSON.parse(val);
                     indicator.style.display = 'inline-flex';
                     indicator.className = 'validation-indicator valid';
-                    indicator.innerHTML = '<span class="dot"></span> 有效';
+                    indicator.innerHTML = '<span class="dot"></span> ' + i18n.t('valid');
                 } catch (e) {
                     indicator.style.display = 'inline-flex';
                     indicator.className = 'validation-indicator invalid';
-                    indicator.innerHTML = '<span class="dot"></span> 无效';
+                    indicator.innerHTML = '<span class="dot"></span> ' + i18n.t('invalid');
                 }
             }, 400);
         });
@@ -2604,18 +2997,28 @@
        Init
     ============================================================== */
     window.addEventListener('DOMContentLoaded', () => {
+        // 移动端检测兜底：UA 优先（不受"请求桌面网站"模式影响 innerWidth 的干扰）
+        var checkMobile = (function() {
+            var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent + ' ' + (navigator.platform||''));
+            return function() {
+                var mobile = isMobileUA || window.innerWidth <= 1024;
+                document.body.classList.toggle('mobile', mobile);
+                document.documentElement.classList.toggle('mobile', mobile);
+            };
+        })();
+        checkMobile();
+        setTimeout(checkMobile, 300);
+        window.addEventListener('resize', checkMobile);
+        window.addEventListener('orientationchange', checkMobile);
+
+        applyAllTranslations();
         applyTheme(getTheme());
         renderHistory();
         initDragDrop();
         initKeyboard();
         initInputTracker();
-        setStatus('就绪');
+        setStatus(i18n.t('statusReady'));
     });
     </script>
-<script>
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(function() {});
-}
-</script>
 </body>
 </html>
