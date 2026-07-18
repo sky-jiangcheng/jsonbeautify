@@ -1,24 +1,41 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <script>
-    (function(){
-      var d = document.documentElement;
-      var ua = navigator.userAgent;
-      var pf = navigator.platform || '';
-      var isMobilePlatform = /iPhone|iPad|iPod/i.test(pf);
-      var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-      var isNarrow = window.innerWidth <= 900;
-      d.setAttribute('data-device', (isMobilePlatform || isMobileUA || isNarrow) ? 'mobile' : 'desktop');
-      window.addEventListener('resize', function(){
-        d.setAttribute('data-device',
-          (isMobilePlatform || isMobileUA || window.innerWidth <= 900) ? 'mobile' : 'desktop');
-      });
-    })();
-  </script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <script>
+    (function(){
+      try {
+        var d = document.documentElement;
+        var ua = navigator.userAgent || '';
+        var pf = navigator.platform || '';
+        // 多重检测：platform / UA / maxTouchPoints / 触摸事件
+        var isMobilePlatform = /iPhone|iPad|iPod|Android/i.test(pf);
+        var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|iOS|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+        var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+        var isNarrow = window.innerWidth <= 900;
+        var isMobile = isMobilePlatform || isMobileUA || (isTouch && isNarrow);
+        d.setAttribute('data-device', isMobile ? 'mobile' : 'desktop');
+        window.addEventListener('resize', function(){
+          var narrow = window.innerWidth <= 900;
+          d.setAttribute('data-device',
+            (isMobilePlatform || isMobileUA || (isTouch && narrow) || narrow) ? 'mobile' : 'desktop');
+        });
+        window.addEventListener('orientationchange', function(){
+          setTimeout(function(){
+            var narrow = window.innerWidth <= 900;
+            d.setAttribute('data-device',
+              (isMobilePlatform || isMobileUA || (isTouch && narrow) || narrow) ? 'mobile' : 'desktop');
+          }, 100);
+        });
+      } catch(e) {
+        // 兜底：出错时强制用 UA 判断，避免完全失效
+        var ua2 = navigator.userAgent || '';
+        document.documentElement.setAttribute('data-device',
+          /Mobi|Android|iPhone|iPad|iPod|iOS/i.test(ua2) ? 'mobile' : 'desktop');
+      }
+    })();
+  </script>
     <title>JSON Formatter</title>
     <!-- iOS PWA：以独立应用模式启动，不显示 Safari UI -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1293,7 +1310,7 @@
         /* ========== 设备布局（UA 同步检测驱动） ========== */
         [data-device="desktop"] .mobile-only { display: none !important; }
         [data-device="mobile"] .desktop-only { display: none !important; }
-        [data-device="mobile"] .mobile-only { display: revert !important; }
+        [data-device="mobile"] .mobile-only { display: flex !important; }
         [data-device="mobile"] header { flex-wrap: wrap; height: auto; padding: 8px 10px; gap: 6px; }
         [data-device="mobile"] .btn { padding: 4px 7px; font-size: 11px; }
         [data-device="mobile"] .btn .shortcut { display: none; }
@@ -1363,6 +1380,33 @@
 </head>
 <body>
     <script>(function(){if(document.documentElement.getAttribute("data-device")==="mobile")document.body.classList.add("mobile")})()</script>
+    <!-- 调试指示器：URL 加 ?debug=1 显示，用于排查移动端检测问题 -->
+    <div id="mobile-debug" style="position:fixed;bottom:8px;right:8px;z-index:99999;background:rgba(0,0,0,0.85);color:#fff;font-size:10px;padding:6px 8px;border-radius:4px;font-family:monospace;line-height:1.5;display:none;pointer-events:none;white-space:pre"></div>
+    <script>
+      (function(){
+        if(location.search.indexOf('debug=1')>-1 || location.hash.indexOf('debug=1')>-1) {
+          var el = document.getElementById('mobile-debug');
+          if(el) {
+            el.style.display = 'block';
+            var d = document.documentElement;
+            var up = function(){
+              el.textContent =
+                'data-device: ' + d.getAttribute('data-device') +
+                '\nbody.mobile: ' + document.body.classList.contains('mobile') +
+                '\ninnerWidth: ' + window.innerWidth +
+                '\ninnerHeight: ' + window.innerHeight +
+                '\nUA: ' + (navigator.userAgent||'').substring(0,80) +
+                '\nplatform: ' + (navigator.platform||'') +
+                '\ntouch: ' + ('ontouchstart' in window) +
+                '\nmaxTouchPoints: ' + (navigator.maxTouchPoints||0);
+            };
+            up();
+            window.addEventListener('resize', up);
+            window.addEventListener('orientationchange', function(){ setTimeout(up, 200); });
+          }
+        }
+      })();
+    </script>
     <!-- SVG Icon Definitions -->
     <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
         <symbol id="icon-braces" viewBox="0 0 24 24" fill="currentColor">
