@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="zh">
-<head>
+<head>  <script>
+    (function(){
+      var d = document.documentElement;
+      var ua = navigator.userAgent;
+      var pf = navigator.platform || '\u200B';  // zero-width space to avoid empty concatenation
+      d.setAttribute('data-device',
+        /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(ua + ' ' + pf) ? 'mobile' : 'desktop');
+    })();
+  </script>
+  
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>JSON Formatter</title>
@@ -1255,43 +1264,117 @@
             .logo { font-size: 12px; }
         }
 
-        /* ========== JS 兜底移动端布局（html.mobile, body.mobile）==========
-           当 CSS 媒体查询因 viewport 解析问题未触发时，
-           由 JS 检测后给 body 加 .mobile class，强制移动端布局 */
-        html.mobile .editor-area, body.mobile .editor-area {
+                /* ========== 移动端布局 [data-device="mobile"] ==========
+           在 <head> 同步检测设备类型，从第一帧起正确渲染。
+           兼容 .mobile class 运行时检测（双重保障） */
+        [data-device="mobile"] .editor-area,
+        .mobile .editor-area {
             flex-direction: column !important;
         }
-        html.mobile .panel-left, body.mobile .panel-left {
-            border-right: none; border-bottom: 2px solid var(--border) !important;
+        [data-device="mobile"] .panel-left,
+        .mobile .panel-left {
+            border-right: none !important;
+            border-bottom: 2px solid var(--border) !important;
         }
-        html.mobile .sidebar, body.mobile .sidebar {
-
+        [data-device="mobile"] .panel-right,
+        .mobile .panel-right {
             width: 100% !important;
+            min-width: 0 !important;
+        }
+        [data-device="mobile"] .sidebar,
+        .mobile .sidebar {
+            width: 100% !important;
+            min-width: 0 !important;
             border-left: none !important;
             border-top: 1px solid var(--border) !important;
             max-height: 260px !important;
-
+            overflow-y: auto !important;
         }
-        html.mobile .sidebar.collapsed, body.mobile .sidebar.collapsed {
+        [data-device="mobile"] .sidebar.collapsed,
+        .mobile .sidebar.collapsed {
             max-height: 0 !important;
         }
-        html.mobile .btn .shortcut, body.mobile .btn .shortcut {
+        [data-device="mobile"] .sidebar-header,
+        .mobile .sidebar-header {
+            padding: 6px 10px !important;
+        }
+        [data-device="mobile"] .history-item,
+        .mobile .history-item {
+            padding: 6px 8px !important;
+        }
+        [data-device="mobile"] .list-panel,
+        .mobile .list-panel {
+            width: 50% !important;
+            min-width: 80px !important;
+        }
+        [data-device="mobile"] .list-view,
+        .mobile .list-view {
+            flex-direction: column !important;
+        }
+        [data-device="mobile"] .btn .shortcut,
+        .mobile .btn .shortcut {
             display: none !important;
         }
-        html.mobile .btn, body.mobile .btn {
-            padding: 4px 8px; font-size: 11px !important;
+        [data-device="mobile"] .btn,
+        .mobile .btn {
+            padding: 8px 12px !important;
+            font-size: 13px !important;
+            min-height: 36px !important;
         }
-        html.mobile header, body.mobile header {
-            padding: 0 12px !important;
+        [data-device="mobile"] .btn-lang,
+        .mobile .btn-lang {
+            min-width: 40px !important;
+            padding: 6px 10px !important;
         }
-        html.mobile header, body.mobile header {
-            flex-wrap: wrap; height: auto; padding: 8px 10px; gap: 8px !important;
+        [data-device="mobile"] header,
+        .mobile header {
+            padding: 6px 10px !important;
+            flex-wrap: wrap !important;
+            height: auto !important;
+            gap: 6px !important;
         }
-        html.mobile .toolbar, body.mobile .toolbar {
-            width: 100%; justify-content: center !important;
-        }
-        html.mobile .logo, body.mobile .logo {
+        [data-device="mobile"] .logo,
+        .mobile .logo {
             font-size: 12px !important;
+        }
+        [data-device="mobile"] .toolbar,
+        .mobile .toolbar {
+            width: 100% !important;
+            justify-content: center !important;
+            flex-wrap: wrap !important;
+            gap: 4px !important;
+        }
+        [data-device="mobile"] .statusbar,
+        .mobile .statusbar {
+            flex-wrap: wrap !important;
+            gap: 4px !important;
+            font-size: 11px !important;
+        }
+        [data-device="mobile"] textarea,
+        .mobile textarea {
+            font-size: 16px !important;
+        }
+        [data-device="mobile"] .compare-body,
+        .mobile .compare-body {
+            flex-direction: column !important;
+        }
+        [data-device="mobile"] .compare-col,
+        .mobile .compare-col {
+            max-height: 50vh !important;
+        }
+        [data-device="mobile"] .compare-divider,
+        .mobile .compare-divider {
+            width: 100% !important;
+            height: 1px !important;
+        }
+        [data-device="mobile"] .modal,
+        .mobile .modal {
+            width: 90vw !important;
+            max-height: 80vh !important;
+        }
+        [data-device="mobile"] .main-layout,
+        .mobile .main-layout {
+            flex-direction: column !important;
         }
     </style>
     <meta name="theme-color" content="#0d1117">
@@ -2915,14 +2998,15 @@
     ============================================================== */
     window.addEventListener('DOMContentLoaded', () => {
         // 移动端检测兜底：UA 优先（不受"请求桌面网站"模式影响 innerWidth 的干扰）
-        const isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
-        const checkMobile = () => {
-            const isMobile = isMobileUA || window.innerWidth <= 900;
-            document.body.classList.toggle('mobile', isMobile);
-            document.documentElement.classList.toggle('mobile', isMobile);
-        };
+        var checkMobile = (function() {
+            var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent + ' ' + (navigator.platform||''));
+            return function() {
+                var mobile = isMobileUA || window.innerWidth <= 1024;
+                document.body.classList.toggle('mobile', mobile);
+                document.documentElement.classList.toggle('mobile', mobile);
+            };
+        })();
         checkMobile();
-        // 延迟再判定一次，确保视口宽度已稳定
         setTimeout(checkMobile, 300);
         window.addEventListener('resize', checkMobile);
         window.addEventListener('orientationchange', checkMobile);
