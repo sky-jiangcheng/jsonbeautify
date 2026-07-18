@@ -7,6 +7,9 @@ license = "MIT"
 repository = "https://github.com/sky-jiangcheng/jsonbeautify"
 edition = "2021"
 
+[lib]
+crate-type = ["staticlib", "cdylib", "lib"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
