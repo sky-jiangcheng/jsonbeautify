@@ -289,6 +289,7 @@ jobs:
 
           team_id = os.environ.get("APPLE_TEAM_ID", "")
           profile_name = os.environ.get("PROFILE_NAME", "")
+          profile_uuid = os.environ.get("PROFILE_UUID", "")
           pbxproj_path = "src-tauri/gen/apple/json-formatter.xcodeproj/project.pbxproj"
 
           with open(pbxproj_path, "r") as f:
@@ -326,10 +327,12 @@ jobs:
               settings_to_add = {
                   "DEVELOPMENT_TEAM": f'"{team_id}"',
                   "CODE_SIGN_STYLE": "Manual",
-                  "CODE_SIGN_IDENTITY": '"Apple Distribution"',
+                  "CODE_SIGN_IDENTITY": '"iPhone Distribution"',
               }
               if profile_name:
                   settings_to_add["PROVISIONING_PROFILE_SPECIFIER"] = f'"{profile_name}"'
+              if profile_uuid:
+                  settings_to_add["PROVISIONING_PROFILE"] = f'"{profile_uuid}"'
 
               for key, value in settings_to_add.items():
                   # 如果已存在则替换
