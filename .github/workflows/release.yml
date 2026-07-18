@@ -390,11 +390,30 @@ jobs:
           echo "=== exportOptions.plist ==="
           cat src-tauri/gen/apple/export/exportOptions.plist
 
-      - name: Build and export iOS IPA
+      - name: Build iOS archive
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           npx tauri ios build \
             --target aarch64 \
             --config src-tauri/tauri.ios.conf.json \
-            -- --export-options-plist src-tauri/gen/apple/export/exportOptions.plist
+            -- --features "tauri/custom-protocol"
+
+      - name: Export iOS IPA
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # 查找生成的 .xcarchive
+          ARCHIVE=$(find src-tauri/gen/apple/build -name "*.xcarchive" -type d | head -1)
+          echo "Archive: $ARCHIVE"
+          ls -la "$ARCHIVE" 2>/dev/null || echo "Archive not found, checking other locations..."
+          find . -name "*.xcarchive" -type d 2>/dev/null
+          
+          # 导出 IPA
+          if [ -n "$ARCHIVE" ]; then
+            xcodebuild -exportArchive \
+              -archivePath "$ARCHIVE" \
+              -exportPath src-tauri/gen/apple/build/export \
+              -exportOptionsPlist src-tauri/gen/apple/export/exportOptions.plist \
+              -allowProvisioningUpdates
+          fi
