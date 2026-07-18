@@ -101,6 +101,11 @@ jobs:
     runs-on: macos-latest
     environment:
       name: appstore
+    env:
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      PROVISIONING_PROFILE: ${{ secrets.PROVISIONING_PROFILE }}
+      APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+      APPLE_INSTALLER_CERTIFICATE: ${{ secrets.APPLE_INSTALLER_CERTIFICATE }}
     steps:
       - uses: actions/checkout@v4
 
@@ -180,6 +185,107 @@ jobs:
           prerelease: false
           args: --target universal-apple-darwin --config src-tauri/tauri.appstore.conf.json
 
+      - name: Import Apple Installer certificate
+        if: env.APPLE_INSTALLER_CERTIFICATE != ''
+        env:
+          APPLE_INSTALLER_CERTIFICATE: ${{ secrets.APPLE_INSTALLER_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+        run: |
+          echo "$APPLE_INSTALLER_CERTIFICATE" | base64 --decode > installer-cert.p12
+          # 导入 Installer 证书到 build.keychain 和 login.keychain（productbuild 默认搜 login.keychain）
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain 2>/dev/null || true
+          security import installer-cert.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/productbuild 2>/dev/null || true
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" login.keychain 2>/dev/null || true
+          security import installer-cert.p12 -k login.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/productbuild 2>/dev/null || true
+          security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$APPLE_KEYCHAIN_PASSWORD" login.keychain 2>/dev/null || true
+          security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain 2>/dev/null || true
+          # 检测 installer 签名身份
+          echo "=== Installer identities ==="
+          security find-identity -v -p codesigning | grep -i installer || true
+          INSTALLER_ID=$(security find-identity -v -p codesigning | grep -i "3rd Party Mac Developer Installer" | grep -o '"[^"]*"' | head -1 | tr -d '"')
+          if [ -z "$INSTALLER_ID" ]; then
+            # 兜底：取任意 installer 身份
+            INSTALLER_ID=$(security find-identity -v -p codesigning | grep -i installer | grep -o '"[^"]*"' | head -1 | tr -d '"')
+          fi
+          echo "Detected installer identity: $INSTALLER_ID"
+          echo "APPLE_INSTALLER_IDENTITY=$INSTALLER_ID" >> $GITHUB_ENV
+
+      - name: Build and sign PKG
+        if: env.APPLE_INSTALLER_CERTIFICATE != ''
+        run: |
+          # 找到 .app bundle（tauri 输出在 target/universal-apple-darwin/release/bundle/macos/）
+          APP=$(find src-tauri/target -name "*.app" -type d -path "*universal-apple-darwin*" | head -1)
+          if [ -z "$APP" ]; then
+            echo "ERROR: No .app bundle found"
+            exit 1
+          fi
+          echo "App bundle: $APP"
+
+          # 用 productbuild 把 .app 打包成 .pkg 并用 Installer 证书签名
+          PKG_DIR="src-tauri/target/universal-apple-darwin/release/bundle/pkg"
+          mkdir -p "$PKG_DIR"
+          PKG="$PKG_DIR/$(basename "$APP" .app).pkg"
+
+          productbuild \
+            --component "$APP" /Applications \
+            --sign "$APPLE_INSTALLER_IDENTITY" \
+            "$PKG"
+
+          echo "=== Generated PKG ==="
+          ls -lh "$PKG"
+          echo "PKG_PATH=$PKG" >> $GITHUB_ENV
+
+      - name: Upload PKG to App Store Connect
+        if: env.APP_STORE_CONNECT_API_KEY != '' && env.APPLE_INSTALLER_CERTIFICATE != ''
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          # 写入 API Key
+          mkdir -p ~/private_keys
+          echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode > ~/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
+
+          PKG="${PKG_PATH}"
+          if [ -z "$PKG" ] || [ ! -f "$PKG" ]; then
+            PKG=$(find src-tauri/target -name "*.pkg" -type f -path "*universal-apple-darwin*" | head -1)
+          fi
+          if [ -z "$PKG" ]; then
+            echo "ERROR: No PKG found"
+            exit 1
+          fi
+          echo "Uploading PKG: $PKG"
+
+          xcrun altool --upload-app \
+            -f "$PKG" \
+            --type mac \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
+            --verbose
+
+          echo "✓ PKG uploaded to App Store Connect"
+
+      - name: Submit for review
+        if: env.APP_STORE_CONNECT_API_KEY != '' && env.APPLE_INSTALLER_CERTIFICATE != ''
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          APP_STORE_CONNECT_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID_MAC }}
+          APP_VERSION: ${{ github.ref_name }}
+          MAX_WAIT_MINUTES: "25"
+        run: |
+          # 写入 API Key 并设置路径供 Python 脚本使用
+          mkdir -p ~/private_keys
+          KEY_PATH="$HOME/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
+          echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode > "$KEY_PATH"
+          export APP_STORE_CONNECT_KEY_PATH="$KEY_PATH"
+
+          # 清理版本号前缀 (v1.4.0 -> 1.4.0)
+          CLEAN_VERSION="${APP_VERSION#v}"
+          APP_VERSION="$CLEAN_VERSION" python3 scripts/submit-appstore-review.py MAC_OS
+
   ios:
     if: github.ref_name == 'appstore' || startsWith(github.ref, 'refs/tags/')
     runs-on: macos-latest
@@ -188,6 +294,7 @@ jobs:
     env:
       IOS_APPLE_CERTIFICATE: ${{ secrets.IOS_APPLE_CERTIFICATE }}
       IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+      APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -412,3 +519,50 @@ jobs:
 
           echo "=== Generated IPA ==="
           find src-tauri/gen/apple/build -name "*.ipa" -type f 2>/dev/null
+
+      - name: Upload IPA to App Store Connect
+        if: env.APP_STORE_CONNECT_API_KEY != ''
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          # 写入 API Key
+          mkdir -p ~/private_keys
+          echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode > ~/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
+
+          IPA=$(find src-tauri/gen/apple/build -name "*.ipa" -type f | head -1)
+          if [ -z "$IPA" ]; then
+            echo "ERROR: No IPA found"
+            exit 1
+          fi
+          echo "Uploading IPA: $IPA"
+
+          xcrun altool --upload-app \
+            -f "$IPA" \
+            --type ios \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
+            --verbose
+
+          echo "✓ IPA uploaded to App Store Connect"
+
+      - name: Submit for review
+        if: env.APP_STORE_CONNECT_API_KEY != ''
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          APP_STORE_CONNECT_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID_IOS }}
+          APP_VERSION: ${{ github.ref_name }}
+          MAX_WAIT_MINUTES: "25"
+        run: |
+          # 写入 API Key 并设置路径供 Python 脚本使用
+          mkdir -p ~/private_keys
+          KEY_PATH="$HOME/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
+          echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode > "$KEY_PATH"
+          export APP_STORE_CONNECT_KEY_PATH="$KEY_PATH"
+
+          # 清理版本号前缀 (v1.4.0 -> 1.4.0)
+          CLEAN_VERSION="${APP_VERSION#v}"
+          APP_VERSION="$CLEAN_VERSION" python3 scripts/submit-appstore-review.py IOS
