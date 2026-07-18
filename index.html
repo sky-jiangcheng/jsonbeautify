@@ -1258,13 +1258,13 @@
         /* ========== JS 兜底移动端布局（html.mobile, body.mobile）==========
            当 CSS 媒体查询因 viewport 解析问题未触发时，
            由 JS 检测后给 body 加 .mobile class，强制移动端布局 */
-        html.mobile, body.mobile .editor-area  {
+        html.mobile .editor-area, body.mobile .editor-area {
             flex-direction: column !important;
         }
-        html.mobile, body.mobile .panel-left  {
+        html.mobile .panel-left, body.mobile .panel-left {
             border-right: none; border-bottom: 2px solid var(--border) !important;
         }
-        html.mobile, body.mobile .sidebar  {
+        html.mobile .sidebar, body.mobile .sidebar {
 
             width: 100% !important;
             border-left: none !important;
@@ -1272,25 +1272,25 @@
             max-height: 260px !important;
 
         }
-        html.mobile, body.mobile .sidebar.collapsed  {
+        html.mobile .sidebar.collapsed, body.mobile .sidebar.collapsed {
             max-height: 0 !important;
         }
-        html.mobile, body.mobile .btn .shortcut  {
+        html.mobile .btn .shortcut, body.mobile .btn .shortcut {
             display: none !important;
         }
-        html.mobile, body.mobile .btn  {
+        html.mobile .btn, body.mobile .btn {
             padding: 4px 8px; font-size: 11px !important;
         }
-        html.mobile, body.mobile header  {
+        html.mobile header, body.mobile header {
             padding: 0 12px !important;
         }
-        html.mobile, body.mobile header  {
+        html.mobile header, body.mobile header {
             flex-wrap: wrap; height: auto; padding: 8px 10px; gap: 8px !important;
         }
-        html.mobile, body.mobile .toolbar  {
+        html.mobile .toolbar, body.mobile .toolbar {
             width: 100%; justify-content: center !important;
         }
-        html.mobile, body.mobile .logo  {
+        html.mobile .logo, body.mobile .logo {
             font-size: 12px !important;
         }
     </style>
