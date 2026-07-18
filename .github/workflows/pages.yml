@@ -27,10 +27,25 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build
-        run: node scripts/build.js
-
-      - name: Verify dist/
-        run: ls -la dist/ && echo "---" && head -3 dist/index.html
+        run: |
+          set -e
+          rm -rf dist
+          mkdir -p dist/styles dist/scripts dist/icons
+          # Copy HTML and fix paths (../ → flat)
+          sed 's|\.\./||g' src/index.html > dist/index.html
+          # Copy source files
+          cp -r src/styles/* dist/styles/
+          cp -r src/scripts/* dist/scripts/
+          # Copy static assets
+          for f in highlight.min.js highlight-atom-one-dark.min.css highlight-atom-one-light.min.css manifest.json sw.js icon.svg favicon-32.png icon-192.png icon-512.png; do
+            [ -f "$f" ] && cp "$f" dist/
+          done
+          # Copy icons directory
+          [ -d icons ] && cp -r icons/* dist/icons/
+          # Create .nojekyll
+          touch dist/.nojekyll
+          # Verify
+          echo "=== dist/ contents ===" && ls -la dist/ && echo "=== index.html head ===" && head -5 dist/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
