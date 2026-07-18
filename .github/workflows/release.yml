@@ -189,15 +189,15 @@ jobs:
         if: env.APPLE_INSTALLER_CERTIFICATE != ''
         env:
           APPLE_INSTALLER_CERTIFICATE: ${{ secrets.APPLE_INSTALLER_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_INSTALLER_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_INSTALLER_CERTIFICATE_PASSWORD }}
           APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
         run: |
           echo "$APPLE_INSTALLER_CERTIFICATE" | base64 --decode > installer-cert.p12
           # 导入 Installer 证书到 build.keychain 和 login.keychain（productbuild 默认搜 login.keychain）
           security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain 2>/dev/null || true
-          security import installer-cert.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/productbuild 2>/dev/null || true
+          security import installer-cert.p12 -k build.keychain -P "$APPLE_INSTALLER_CERTIFICATE_PASSWORD" -T /usr/bin/productbuild 2>/dev/null || true
           security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" login.keychain 2>/dev/null || true
-          security import installer-cert.p12 -k login.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/productbuild 2>/dev/null || true
+          security import installer-cert.p12 -k login.keychain -P "$APPLE_INSTALLER_CERTIFICATE_PASSWORD" -T /usr/bin/productbuild 2>/dev/null || true
           security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$APPLE_KEYCHAIN_PASSWORD" login.keychain 2>/dev/null || true
           security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain 2>/dev/null || true
           # 检测 installer 签名身份
@@ -239,7 +239,7 @@ jobs:
       - name: Upload PKG to App Store Connect
         if: env.APP_STORE_CONNECT_API_KEY != '' && env.APPLE_INSTALLER_CERTIFICATE != ''
         env:
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
@@ -261,7 +261,7 @@ jobs:
             -f "$PKG" \
             --type mac \
             --apiKey "$APP_STORE_CONNECT_KEY_ID" \
-            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER" \
             --verbose
 
           echo "✓ PKG uploaded to App Store Connect"
@@ -269,7 +269,7 @@ jobs:
       - name: Submit for review
         if: env.APP_STORE_CONNECT_API_KEY != '' && env.APPLE_INSTALLER_CERTIFICATE != ''
         env:
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
           APP_STORE_CONNECT_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID_MAC }}
@@ -295,6 +295,7 @@ jobs:
       IOS_APPLE_CERTIFICATE: ${{ secrets.IOS_APPLE_CERTIFICATE }}
       IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
       APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+      APP_STORE_CONNECT_APP_ID_IOS: ${{ secrets.APP_STORE_CONNECT_APP_ID_IOS }}
     steps:
       - uses: actions/checkout@v4
 
@@ -484,7 +485,7 @@ jobs:
               <string>${APPLE_TEAM_ID}</string>
               <key>provisioningProfiles</key>
               <dict>
-                  <key>com.jsonbeautify.desktop.appstore</key>
+                  <key>com.jsonbeautify.desktop.appstore.ios</key>
                   <string>${PROFILE_NAME}</string>
               </dict>
               <key>signingStyle</key>
@@ -521,9 +522,9 @@ jobs:
           find src-tauri/gen/apple/build -name "*.ipa" -type f 2>/dev/null
 
       - name: Upload IPA to App Store Connect
-        if: env.APP_STORE_CONNECT_API_KEY != ''
+        if: env.APP_STORE_CONNECT_API_KEY != '' && env.APP_STORE_CONNECT_APP_ID_IOS != ''
         env:
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
@@ -542,15 +543,15 @@ jobs:
             -f "$IPA" \
             --type ios \
             --apiKey "$APP_STORE_CONNECT_KEY_ID" \
-            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER" \
             --verbose
 
           echo "✓ IPA uploaded to App Store Connect"
 
       - name: Submit for review
-        if: env.APP_STORE_CONNECT_API_KEY != ''
+        if: env.APP_STORE_CONNECT_API_KEY != '' && env.APP_STORE_CONNECT_APP_ID_IOS != ''
         env:
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
           APP_STORE_CONNECT_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID_IOS }}

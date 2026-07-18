@@ -4,7 +4,7 @@
 用法: python3 submit-appstore-review.py IOS|MAC_OS
 
 环境变量:
-  APP_STORE_CONNECT_ISSUER_ID  - App Store Connect API Issuer ID
+  APP_STORE_CONNECT_ISSUER  - App Store Connect API Issuer ID
   APP_STORE_CONNECT_KEY_ID     - API Key ID
   APP_STORE_CONNECT_KEY_PATH   - .p8 私钥文件路径
   APP_STORE_CONNECT_APP_ID     - App 的 numeric ID (App Store Connect URL 里 apps/ 后面的数字)
@@ -250,7 +250,7 @@ def main():
         print(f"ERROR: 无效平台 {platform}，应为 IOS 或 MAC_OS")
         sys.exit(1)
 
-    issuer_id = os.environ.get("APP_STORE_CONNECT_ISSUER_ID", "")
+    issuer_id = os.environ.get("APP_STORE_CONNECT_ISSUER", "")
     key_id = os.environ.get("APP_STORE_CONNECT_KEY_ID", "")
     key_path = os.environ.get("APP_STORE_CONNECT_KEY_PATH", "")
     app_id = os.environ.get("APP_STORE_CONNECT_APP_ID", "")
@@ -259,7 +259,7 @@ def main():
 
     missing = []
     if not issuer_id:
-        missing.append("APP_STORE_CONNECT_ISSUER_ID")
+        missing.append("APP_STORE_CONNECT_ISSUER")
     if not key_id:
         missing.append("APP_STORE_CONNECT_KEY_ID")
     if not key_path:
