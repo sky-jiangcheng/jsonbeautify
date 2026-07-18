@@ -8,6 +8,7 @@
     "dev": "tauri dev",
     "check:cdn": "node scripts/pre-commit-check.js",
     "build:dist": "node scripts/build.js",
+    "bump": "node scripts/bump-version.js",
     "build": "npm run check:cdn && npm run build:dist && tauri build",
     "build:macos": "npm run check:cdn && tauri build --target universal-apple-darwin",
     "build:appstore": "npm run check:cdn && tauri build --target universal-apple-darwin --config src-tauri/tauri.appstore.conf.json",
