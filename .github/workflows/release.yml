@@ -132,28 +132,22 @@ jobs:
           APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
         run: |
           echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
-          # 创建构建用 keychain
+          # 创建构建用 keychain（只用这一个，避免 login.keychain 干扰）
           security create-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
-          security set-keychain-settings -lut 21600 build.keychain
+          # 关键：不设 timeout，永不自动锁定（避免 productbuild 运行中 keychain 锁定卡死）
+          security set-keychain-settings build.keychain
           security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
-          # 导入证书到 build.keychain
-          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          # 导入证书到 build.keychain（同时授权 codesign 和 productbuild 访问）
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild -T /usr/bin/security
+          # 设置 partition list，让 Apple 工具能无密码访问私钥（关键，不吞错误）
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain
-          # 同时导入到 login.keychain（Xcode 默认会搜）
-          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" login.keychain 2>/dev/null || true
-          security import certificate.p12 -k login.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security 2>/dev/null || true
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$APPLE_KEYCHAIN_PASSWORD" login.keychain 2>/dev/null || true
-          # 设置 keychain 搜索路径
-          security list-keychains -d user -s build.keychain login.keychain
+          # 设置 keychain 搜索路径（只放 build.keychain）
+          security list-keychains -d user -s build.keychain
           security default-keychain -s build.keychain
           # 验证并自动检测签名身份
-          echo "=== All signing identities (all keychains) ==="
-          security find-identity -v -p codesigning
-          echo "=== Login keychain identities ==="
-          security find-identity -v -p codesigning login.keychain 2>/dev/null || echo "(login.keychain not found)"
           echo "=== Build keychain identities ==="
           security find-identity -v -p codesigning build.keychain
-          SIGNING_ID=$(security find-identity -v -p codesigning | grep -o '"[^"]*"' | head -1 | tr -d '"')
+          SIGNING_ID=$(security find-identity -v -p codesigning build.keychain | grep -o '"[^"]*"' | head -1 | tr -d '"')
           echo "Detected signing identity: $SIGNING_ID"
           echo "APPLE_SIGNING_IDENTITY=$SIGNING_ID" >> $GITHUB_ENV
           # 输出证书完整信息（类型、颁发者、有效期）
@@ -196,26 +190,20 @@ jobs:
           # 优先用 installer 专用密码，否则回退到通用密码
           INSTALLER_PWD="${APPLE_INSTALLER_CERTIFICATE_PASSWORD:-$APPLE_CERTIFICATE_PASSWORD}"
           echo "$APPLE_INSTALLER_CERTIFICATE" | base64 --decode > installer-cert.p12
-          # 导入 Installer 证书到 build.keychain 和 login.keychain
-          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain 2>/dev/null || true
-          security import installer-cert.p12 -k build.keychain -P "$INSTALLER_PWD" -T /usr/bin/productbuild -T /usr/bin/security 2>&1 || true
-          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" login.keychain 2>/dev/null || true
-          security import installer-cert.p12 -k login.keychain -P "$INSTALLER_PWD" -T /usr/bin/productbuild -T /usr/bin/security 2>&1 || true
-          security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$APPLE_KEYCHAIN_PASSWORD" login.keychain 2>/dev/null || true
-          security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain 2>/dev/null || true
+          # 解锁 build.keychain
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+          # 导入 Installer 证书到 build.keychain（不吞错误，确保导入成功）
+          security import installer-cert.p12 -k build.keychain -P "$INSTALLER_PWD" -T /usr/bin/productbuild -T /usr/bin/security
+          # 关键：重新设置 partition list，让 productbuild 能无密码访问 Installer 私钥（不吞错误）
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain
 
-          # 列出所有证书身份（Installer 证书会出现在 "valid identities" 列表里）
-          echo "=== All valid identities ==="
+          # 列出 build.keychain 里的所有身份
+          echo "=== All valid identities in build.keychain ==="
           security find-identity -v build.keychain
-          echo "=== Login keychain identities ==="
-          security find-identity -v login.keychain
 
           # 从 find-identity 输出里抓 Installer 身份
           # 格式: 1) SHA "3rd Party Mac Developer Installer: Name (TEAM)"
           INSTALLER_ID=$(security find-identity -v build.keychain | grep -i "Installer" | grep -o '"[^"]*"' | head -1 | tr -d '"')
-          if [ -z "$INSTALLER_ID" ]; then
-            INSTALLER_ID=$(security find-identity -v login.keychain | grep -i "Installer" | grep -o '"[^"]*"' | head -1 | tr -d '"')
-          fi
           if [ -z "$INSTALLER_ID" ]; then
             # 兜底：列出所有证书 CN，找 Installer 关键字
             INSTALLER_ID=$(security find-certificate -a -p build.keychain | openssl x509 -noout -subject 2>/dev/null | grep -i installer | sed -n 's/.*CN = //p' | tr -d '"' | head -1)
@@ -233,9 +221,11 @@ jobs:
         env:
           APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
         run: |
-          # 解锁所有 keychain，确保 productbuild 能访问证书私钥
-          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain 2>/dev/null || true
-          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" login.keychain 2>/dev/null || true
+          # 解锁 build.keychain
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+          # 诊断：确认 keychain 里有 Installer 身份
+          echo "=== Identities before productbuild ==="
+          security find-identity -v build.keychain
 
           # 找到 .app bundle（tauri 输出在 target/universal-apple-darwin/release/bundle/macos/）
           APP=$(find src-tauri/target -name "*.app" -type d -path "*universal-apple-darwin*" | head -1)
@@ -251,12 +241,32 @@ jobs:
           mkdir -p "$PKG_DIR"
           PKG="$PKG_DIR/JSON-Formatter.pkg"
 
-          # productbuild 签名（设置 PRODUCTBUILD_IDENTITY_CHECK=1 避免卡在交互）
+          # productbuild 签名 + 300s 超时看门狗，防止 keychain ACL 弹窗导致无限卡死
           export PRODUCTBUILD_IDENTITY_CHECK=1
-          productbuild \
-            --component "$APP" /Applications \
-            --sign "$APPLE_INSTALLER_IDENTITY" \
-            "$PKG" < /dev/null
+          (
+            productbuild \
+              --component "$APP" /Applications \
+              --sign "$APPLE_INSTALLER_IDENTITY" \
+              "$PKG" < /dev/null
+          ) &
+          PB_PID=$!
+          (
+            sleep 300
+            if kill -0 $PB_PID 2>/dev/null; then
+              echo "::error::productbuild timed out after 300s (likely keychain ACL prompt). Killing."
+              kill -TERM $PB_PID 2>/dev/null
+              sleep 2
+              kill -KILL $PB_PID 2>/dev/null
+            fi
+          ) &
+          WD_PID=$!
+          wait $PB_PID
+          PB_EXIT=$?
+          kill $WD_PID 2>/dev/null || true
+          if [ $PB_EXIT -ne 0 ]; then
+            echo "::error::productbuild exited with $PB_EXIT"
+            exit $PB_EXIT
+          fi
 
           echo "=== Generated PKG ==="
           ls -lh "$PKG"
