@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="zh">
-<head>
+<head>  <script>
+    (function(){
+      var d = document.documentElement;
+      var ua = navigator.userAgent;
+      var pf = navigator.platform || '';
+      d.setAttribute('data-device',
+        /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(ua + ' ' + pf) ? 'mobile' : 'desktop');
+    })();
+  </script>
+  
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON Formatter</title>
@@ -1248,7 +1257,21 @@
             .toolbar { width: 100%; justify-content: center; }
             .logo { font-size: 12px; }
         }
-    </style>
+    
+        /* ========== 移动端布局 ========== */
+        [data-device="mobile"] .editor-area, .mobile .editor-area { flex-direction: column !important; }
+        [data-device="mobile"] .panel-left, .mobile .panel-left { border-right: none !important; border-bottom: 2px solid var(--border) !important; }
+        [data-device="mobile"] .panel-right, .mobile .panel-right { width: 100% !important; min-width: 0 !important; }
+        [data-device="mobile"] .sidebar, .mobile .sidebar { width: 100% !important; min-width: 0 !important; border-left: none !important; border-top: 1px solid var(--border) !important; max-height: 260px !important; overflow-y: auto !important; }
+        [data-device="mobile"] .sidebar.collapsed, .mobile .sidebar.collapsed { max-height: 0 !important; }
+        [data-device="mobile"] .list-panel, .mobile .list-panel { width: 50% !important; min-width: 80px !important; }
+        [data-device="mobile"] .btn .shortcut, .mobile .btn .shortcut { display: none !important; }
+        [data-device="mobile"] .btn, .mobile .btn { padding: 8px 12px !important; font-size: 13px !important; min-height: 36px !important; }
+        [data-device="mobile"] header, .mobile header { padding: 6px 10px !important; flex-wrap: wrap !important; height: auto !important; gap: 6px !important; }
+        [data-device="mobile"] .logo, .mobile .logo { font-size: 12px !important; }
+        [data-device="mobile"] .toolbar, .mobile .toolbar { width: 100% !important; justify-content: center !important; flex-wrap: wrap !important; }
+        [data-device="mobile"] textarea, .mobile textarea { font-size: 16px !important; }
+        [data-device="mobile"] .statusbar, .mobile .statusbar { flex-wrap: wrap !important; font-size: 11px !important; }</style>
     <meta name="theme-color" content="#0d1117">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=8">
     <link rel="icon" type="image/svg+xml" href="icon.svg?v=8">
@@ -2878,5 +2901,14 @@
         setStatus(i18n.t('statusReady'));
     });
     </script>
-</body>
+  <script>
+    (function(){
+      var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent + ' ' + (navigator.platform||''));
+      var checkMobile = function(){ var m = isMobileUA || window.innerWidth <= 1024; document.body.classList.toggle('mobile', m); document.documentElement.classList.toggle('mobile', m); };
+      checkMobile();
+      setTimeout(checkMobile, 300);
+      window.addEventListener('resize', checkMobile);
+      window.addEventListener('orientationchange', checkMobile);
+    })();
+  </script></body>
 </html>
