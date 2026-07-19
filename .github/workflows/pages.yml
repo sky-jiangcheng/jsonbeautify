@@ -14,25 +14,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build
+      - name: Build to docs/
         run: |
-          rm -rf dist
-          mkdir -p dist/styles dist/scripts dist/icons
-          sed 's|\.\./||g' src/index.html > dist/index.html
-          cp src/styles/*.css dist/styles/
-          cp src/scripts/*.js dist/scripts/
-          for f in highlight.min.js highlight-atom-one-dark.min.css highlight-atom-one-light.min.css manifest.json sw.js icon.svg favicon-32.png icon-192.png icon-512.png; do
-            [ -f "$f" ] && cp "$f" dist/ || echo "  SKIP $f"
+          rm -rf docs
+          mkdir -p docs/styles docs/scripts docs/icons
+          sed 's|\.\./||g' src/index.html > docs/index.html
+          cp src/styles/*.css docs/styles/
+          cp src/scripts/*.js docs/scripts/
+          for f in highlight.min.js highlight-atom-one-dark.min.css highlight-atom-one-light.min.css manifest.json icon.svg favicon-32.png icon-192.png icon-512.png; do
+            [ -f "$f" ] && cp "$f" docs/ || echo "  SKIP $f"
           done
-          [ -d icons ] && ls icons/*.png >/dev/null 2>&1 && cp icons/*.png dist/icons/
-          touch dist/.nojekyll
-          test -f dist/index.html || exit 1
+          [ -d icons ] && ls icons/*.png >/dev/null 2>&1 && cp icons/*.png docs/icons/
+          touch docs/.nojekyll
+          test -f docs/index.html || exit 1
           echo "Build OK"
 
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          publish_branch: gh-pages
-          force_orphan: true
+      - name: Commit and push docs/
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/ -f
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "deploy: update docs/ from src/"
+          git push
