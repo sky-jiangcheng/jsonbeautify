@@ -1,6 +1,11 @@
 {
   "identifier": "com.jsonbeautify.desktop.appstore",
   "bundle": {
+    "icon": [
+      "icons/icon.icns",
+      "icons/icon.ico",
+      "icons/icon.png"
+    ],
     "macOS": {
       "entitlements": "./Entitlements.plist",
       "files": {

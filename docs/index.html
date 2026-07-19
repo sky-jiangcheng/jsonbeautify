@@ -3,17 +3,28 @@
 <head>
   <script>
     (function(){
-      var d = document.documentElement;
-      var ua = navigator.userAgent;
-      var pf = navigator.platform || '';
-      var isMobilePlatform = /iPhone|iPad|iPod/i.test(pf);
-      var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-      var isNarrow = window.innerWidth <= 900;
-      d.setAttribute('data-device', (isMobilePlatform || isMobileUA || isNarrow) ? 'mobile' : 'desktop');
-      window.addEventListener('resize', function(){
-        d.setAttribute('data-device',
-          (isMobilePlatform || isMobileUA || window.innerWidth <= 900) ? 'mobile' : 'desktop');
-      });
+      try {
+        var d = document.documentElement;
+        var ua = navigator.userAgent || '';
+        var pf = navigator.platform || '';
+        var isMobilePlatform = /iPhone|iPad|iPod|Android/i.test(pf);
+        var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+        var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+        function detect() {
+          var narrow = window.innerWidth <= 900;
+          return (isMobilePlatform || isMobileUA || (isTouch && narrow) || narrow) ? 'mobile' : 'desktop';
+        }
+        d.setAttribute('data-device', detect());
+        window.addEventListener('resize', function(){
+          d.setAttribute('data-device', detect());
+        });
+        window.addEventListener('orientationchange', function(){
+          setTimeout(function(){ d.setAttribute('data-device', detect()); }, 100);
+        });
+      } catch(e) {
+        document.documentElement.setAttribute('data-device',
+          /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') ? 'mobile' : 'desktop');
+      }
     })();
   </script>
 
@@ -1815,7 +1826,7 @@
         </div>
     </header>
     <!-- ========== 移动端控制栏（data-device=mobile 时显示） ========== -->
-    <div class="mobile-only" style="display:none" id="mobile-input-actions">
+    <div class="mobile-only" id="mobile-input-actions">
     <!-- === Minimal Header === -->
     <header class="mob-header">
         <div class="mob-header-left">
@@ -2053,7 +2064,13 @@
     }
 
     function getHistory() {
-        return JSON.parse(localStorage.getItem('jsonHistory') || '[]');
+        try {
+            return JSON.parse(localStorage.getItem('jsonHistory') || '[]');
+        } catch (e) {
+            console.warn('History corrupted, resetting:', e);
+            try { localStorage.removeItem('jsonHistory'); } catch (_) {}
+            return [];
+        }
     }
 
     function setHistory(arr) {
@@ -2166,6 +2183,13 @@
             valid: '有效',
             invalid: '无效',
             lineCount: '行',
+            mobTitle: 'JSON工具',
+            more: '更多',
+            moreOps: '更多操作',
+            openFile: '打开文件',
+            downloadFile: '下载文件',
+            clearContent: '清空内容',
+            cancelMore: '取消',
         },
         en: {
             title: 'JSON Formatter',
@@ -2261,6 +2285,13 @@
             valid: 'Valid',
             invalid: 'Invalid',
             lineCount: 'lines',
+            mobTitle: 'JSON Tools',
+            more: 'More',
+            moreOps: 'More Actions',
+            openFile: 'Open File',
+            downloadFile: 'Download File',
+            clearContent: 'Clear Content',
+            cancelMore: 'Cancel',
         }
     };
 
@@ -2331,9 +2362,9 @@
         }
         // Refresh compare open state
         const cc = document.getElementById('compare-container');
-        if (cc && cc.classList.contains('visible')) {
+        if (cc && cc.classList.contains('active')) {
             renderHistory();
-            refreshCompareView();
+            if (window.selectedIds.length === 2) compareSelected();
         }
         // Refresh validation indicator
         const vi = document.getElementById('validation-indicator');
@@ -2426,10 +2457,22 @@
 
     function tryFixJson(str) {
         let s = str.trim();
-        let lc = (s.match(/\{/g) || []).length;
-        let rc = (s.match(/\}/g) || []).length;
-        let ls = (s.match(/\[/g) || []).length;
-        let rs = (s.match(/\]/g) || []).length;
+        let lc = 0, rc = 0, ls = 0, rs = 0;
+        let inString = false, escape = false;
+        for (let i = 0; i < s.length; i++) {
+            const ch = s[i];
+            if (escape) { escape = false; continue; }
+            if (inString) {
+                if (ch === '\\') { escape = true; continue; }
+                if (ch === '"') inString = false;
+                continue;
+            }
+            if (ch === '"') { inString = true; continue; }
+            if (ch === '{') lc++;
+            else if (ch === '}') rc++;
+            else if (ch === '[') ls++;
+            else if (ch === ']') rs++;
+        }
         let fixed = s, ok = false;
         while (lc > rc) { fixed += '}'; rc++; ok = true; }
         while (ls > rs) { fixed += ']'; rs++; ok = true; }
@@ -2481,7 +2524,7 @@
             }
         }
 
-        const indent = 2;
+        const indent = getIndent();
         window.lastFormattedContent = JSON.stringify(jsonObj, null, indent);
         window.lastParsedJson = jsonObj;
         renderOutput(window.lastFormattedContent, 'json', fixed, jsonObj);
@@ -3061,6 +3104,7 @@
         const sidebar = document.getElementById('sidebar');
         const openBtn = document.getElementById('sidebar-open-btn');
         sidebar.classList.toggle('collapsed');
+        sidebar.classList.toggle('active');
         openBtn.style.display = sidebar.classList.contains('collapsed') ? 'block' : 'none';
     }
 
@@ -3084,19 +3128,26 @@
 
         const leftScroll = document.getElementById('compare-left-content');
         const rightScroll = document.getElementById('compare-right-content');
+
+        if (window._compareScrollController) {
+            window._compareScrollController.abort();
+        }
+        const scrollController = new AbortController();
+        window._compareScrollController = scrollController;
+
         let syncing = false;
         leftScroll.addEventListener('scroll', () => {
             if (syncing) return;
             syncing = true;
             rightScroll.scrollTop = leftScroll.scrollTop;
             requestAnimationFrame(() => { syncing = false; });
-        });
+        }, { signal: scrollController.signal });
         rightScroll.addEventListener('scroll', () => {
             if (syncing) return;
             syncing = true;
             leftScroll.scrollTop = rightScroll.scrollTop;
             requestAnimationFrame(() => { syncing = false; });
-        });
+        }, { signal: scrollController.signal });
 
         requestAnimationFrame(() => {
             var oldObj, newObj;
@@ -3228,6 +3279,10 @@
 
     function closeCompare() {
         document.getElementById('compare-container').classList.remove('active');
+        if (window._compareScrollController) {
+            window._compareScrollController.abort();
+            window._compareScrollController = null;
+        }
     }
 
     /* ==============================================================
@@ -3370,8 +3425,8 @@
         document.documentElement.setAttribute('data-theme', theme);
         var icon = document.getElementById('theme-icon');
         if (icon) icon.querySelector('use').setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
-        var mIcon = document.getElementById('mobile-theme-icon');
-        if (mIcon) mIcon.querySelector('use').setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
+        var mIconUse = document.getElementById('mobile-theme-icon-use');
+        if (mIconUse) mIconUse.setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
         var d = document.getElementById('hljs-dark');
         var l = document.getElementById('hljs-light');
         if (d) d.disabled = theme === 'light';
@@ -3409,6 +3464,14 @@
         initKeyboard();
         initInputTracker();
         setStatus(i18n.t('statusReady'));
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => {
+                    console.warn('SW registration failed:', err);
+                });
+            });
+        }
     });
     </script>
 <script>

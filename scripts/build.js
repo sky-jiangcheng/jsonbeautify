@@ -70,12 +70,6 @@ html = html.replace(/\.\.\//g, '');
 fs.writeFileSync(path.join(DIST, 'index.html'), html);
 console.log(`  HTML ${path.relative(ROOT, path.join(SRC, 'index.html'))} → ${path.relative(ROOT, path.join(DIST, 'index.html'))} (paths fixed)`);
 
-// Copy src/styles/
-copyDir(path.join(SRC, 'styles'), path.join(DIST, 'styles'));
-
-// Copy src/scripts/
-copyDir(path.join(SRC, 'scripts'), path.join(DIST, 'scripts'));
-
 // Copy static assets from root to dist/
 console.log('');
 for (const asset of STATIC_ASSETS) {

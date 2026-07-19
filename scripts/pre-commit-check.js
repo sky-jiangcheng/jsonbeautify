@@ -10,7 +10,6 @@ const cdnPatterns = [
 
 const filesToCheck = [
   'src/index.html',
-  'src/styles/main.css',
 ];
 
 function checkCDN() {
