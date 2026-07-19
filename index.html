@@ -1657,11 +1657,11 @@
         /* --- Smaller buttons on small screens --- */
         @media (max-width: 400px) {
             [data-device="mobile"] .mob-btn {
-                padding: 8px 10px;
-                font-size: 12px;
+                padding: 6px 8px;
+                font-size: clamp(12px, 3vw, 14px);
             }
             [data-device="mobile"] .mob-btn-primary {
-                padding: 8px 14px;
+                padding: 6px 8px;
             }
         }
         /* --- Sidebar hidden by default on mobile --- */
