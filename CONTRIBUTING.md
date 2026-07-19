@@ -76,3 +76,46 @@ src-tauri/Cargo.toml      → version
 
 - `release.yml` 的 `if:` 条件**禁止引用 `secrets` 上下文**，需用 `env.*`（先在步骤 `env:` 把 secret 转成 env 变量再判）。
 - `pages.yml` 每次部署先 `rm -rf docs` 再重建，`docs/` 的内容以 `src/` 为准。
+
+### 6.1 🔴 App Store Connect API 鉴权（核心坑：JWT 签名格式）
+
+`release.yml` 上架 macOS/iOS 时，`scripts/check-appstore-version.py` 与 `scripts/submit-appstore-review.py` 会调用 Apple App Store Connect API，用 **ES256 JWT** 鉴权。
+
+**坑**：Python `cryptography` 的 `private_key.sign(...)` 返回的是 **DER 编码**的 ECDSA 签名，但 Apple **要求 raw `r‖s` 拼接（P-256 = 64 字节）**。若直接把 DER base64 塞进 JWT，Apple 验签失败 → `HTTP 401 NOT_AUTHORIZED`，且报错文案只说「凭证缺失或无效」，**完全不提示是签名格式问题**，极易误判成「密钥被撤销 / ISSUER 填错 / Key ID 不对」。
+
+**正确写法**（签名后必须做 DER→raw 转换，自 v1.5.5 起已修正）：
+
+```python
+from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+
+der_sig = private_key.sign(signing_input.encode(), ec.ECDSA(hashes.SHA256()))
+r, s = decode_dss_signature(der_sig)
+raw_sig = r.to_bytes(32, "big") + s.to_bytes(32, "big")   # 64 字节 raw
+sig_b64 = b64u(raw_sig)
+jwt = f"{signing_input}.{sig_b64}"
+```
+
+> 历史上 1.5.0~1.5.4 连续多版被 401 卡住，反复怀疑密钥/Issuer 配置，最终定位是脚本漏了上面这步转换——**与密钥是否有效无关**。
+
+### 6.2 如何区分「密钥问题」还是「代码问题」（401 调试法）
+
+CI 报 401 时，**先本地验证凭证本身**，避免盲改 GitHub secret：
+
+1. 用 `openssl` 对 `.p8` 签名（openssl 默认输出 raw，无需 DER 转换），生成 JWT 后 `curl https://api.appstoreconnect.apple.com/v1/apps`；返回 **200** 即证明 `Key ID + Issuer + .p8` 三者有效且匹配 → 401 必是代码侧签名格式问题。
+2. `check-appstore-version.py` 内置 `[DIAG]` 打印（ISSUER / KEY_ID / KEY_FILE 头 / JWT payload），CI 日志里可直接核对这些参数是否被正确读取、文件路径是否完整。
+
+### 6.3 `appstore` 环境 secret 配置
+
+`release.yml` 的 `macos-appstore` / `ios` 作业带 `environment: appstore`，**优先取环境级 secret**（不是仓库级）。
+
+必填三项（须同源：即**同一把** ASC 钥匙）：
+
+| Secret | 值 | 来源 |
+|---|---|---|
+| `APP_STORE_CONNECT_KEY_ID` | 例 `VAYNC6SYBD` | `.p8` 文件名中的 Key ID |
+| `APP_STORE_CONNECT_API_KEY` | `.p8` 文件 base64 | 本地私钥 |
+| `APP_STORE_CONNECT_ISSUER` | UUID | ASC → 用户和访问 → 集成 → App Store Connect API 顶部 |
+
+其余（`APP_STORE_CONNECT_APP_ID_IOS` / `_MAC`、证书、`IOS_PROVISIONING_PROFILE`）同属账号，勿随意改动。
+
+> 注意区分三个 ID：`App ID`（纯数字，App 自身）、`Issuer ID`（UUID，密钥页顶部）、`Key ID`（字母数字，钥匙文件名）——401 调试时别搞混。
