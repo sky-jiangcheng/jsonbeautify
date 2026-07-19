@@ -120,3 +120,8 @@ docs/screenshots/            — 截图
 .github/workflows/           — CI/CD (GitHub Pages + Release)
 LICENSE                      — MIT 许可证
 ```
+
+
+## 优化记录
+
+- **[v13 移动端适配与国际化修复记录](OPTIMIZATION_LOG-v13.md)** — 包含 flexbox 溢出调试、CSS 级联覆盖、i18n 初始化修复等问题的详细根因分析和修复方法论。
