@@ -6,10 +6,10 @@ const urlsToCache = [
   './highlight.min.js',
   './highlight-atom-one-dark.min.css',
   './highlight-atom-one-light.min.css',
-  './icon.svg?v=8',
-  './icon-192.png?v=8',
-  './icon-512.png?v=8',
-  './favicon-32.png?v=8'
+  './icon.svg?v=9',
+  './icon-192.png?v=9',
+  './icon-512.png?v=9',
+  './favicon-32.png?v=9'
 ];
 
 self.addEventListener('install', event => {
