@@ -1087,6 +1087,13 @@
 
         .modal-actions .btn { height: 32px; padding: 6px 14px; }
 
+        [data-device="mobile"] .modal {
+            width: calc(100vw - 32px);
+            max-width: 340px;
+            padding: 20px;
+        }
+        [data-device="mobile"] .modal-actions .btn { flex: 1; }
+
         /* ========== Compare View ========== */
         .compare-container {
             position: fixed;
@@ -1887,6 +1894,10 @@
             <button class="mob-sheet-item" onclick="toggleSidebar()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 <span data-i18n="history">历史记录</span>
+            </button>
+            <button class="mob-sheet-item" onclick="saveHistory()">
+                <svg class="svg-icon"><use href="#icon-save"/></svg>
+                <span data-i18n="save">保存</span>
             </button>
             <button class="mob-sheet-item" onclick="stringifyJSON()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 6.1H3M21 12.1H3M17 18.1H3"/><path d="M21 4v16"/></svg>
