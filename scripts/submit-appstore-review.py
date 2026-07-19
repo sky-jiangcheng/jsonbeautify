@@ -114,7 +114,7 @@ def wait_for_build(app_id, jwt_factory, platform, max_wait_minutes):
         try:
             resp = api_request(
                 "GET",
-                f"/v1/apps/{app_id}/builds?sort=-uploadedDate&limit=10",
+                f"/v1/apps/{app_id}/builds?limit=10",
                 jwt,
             )
         except urllib.error.HTTPError:
