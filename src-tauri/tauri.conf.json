@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicedoc/nicedoc/master/web.json",
   "productName": "JSON 格式化工具",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "identifier": "com.jsonbeautify.desktop",
   "build": {
     "frontendDist": "../dist",

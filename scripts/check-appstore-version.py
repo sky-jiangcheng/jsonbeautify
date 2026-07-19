@@ -113,9 +113,31 @@ def main():
     print(f"App ID: {app_id}")
     print(f"版本: {version}")
 
+    # ---- 诊断输出 (定位 401 根因，确认 secret 解码无误) ----
+    print(f"[DIAG] ISSUER   = {issuer[:8]}...{issuer[-4:]}" if len(issuer) > 12 else f"[DIAG] ISSUER   = {issuer}")
+    print(f"[DIAG] KEY_ID   = {key_id}")
+    if os.path.isfile(key_path):
+        sz = os.path.getsize(key_path)
+        with open(key_path) as kf:
+            first_line = kf.readline().strip()
+        print(f"[DIAG] KEY_FILE = {key_path}  size={sz}B  head={first_line}")
+    else:
+        print(f"[DIAG] KEY_FILE MISSING: {key_path}")
+
     _, ec, hashes = ensure_crypto()
     from cryptography.hazmat.primitives import serialization
     jwt = generate_jwt(issuer, key_id, key_path, serialization, ec, hashes)
+    # 打印 JWT 的 header+payload (不含签名), 确认 issuer/kid 嵌入正确
+    jwt_head, jwt_payload, _ = jwt.split(".", 2)
+    import base64 as b64mod
+    def b64d(s):
+        s += "=" * (4 - len(s) % 4)
+        return b64mod.urlsafe_b64decode(s)
+    hdr = json.loads(b64d(jwt_head))
+    pld = json.loads(b64d(jwt_payload))
+    print(f"[DIAG] JWT header kid={hdr.get('kid')} alg={hdr.get('alg')}")
+    print(f"[DIAG] JWT payload iss={pld.get('iss')[:8]}... exp-iat={pld.get('exp',0)-pld.get('iat',0)}s")
+    # ---- 诊断结束 ----
 
     resp = api_get(
         f"/v1/apps/{app_id}/appStoreVersions"
