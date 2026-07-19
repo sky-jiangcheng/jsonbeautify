@@ -1345,113 +1345,266 @@
             align-items: center;
         }
 
-/* ========== 移动端 v8 重构 ========== */
+/* ========== 移动端 v9 — 现代原生风 ========== */
+        /* --- Base container --- */
         [data-device="mobile"] #mobile-input-actions {
             display: flex !important;
             flex-direction: column;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
-            z-index: 50;
+            z-index: 100;
+            background: var(--bg-primary);
+            /* Safe area support */
+            padding-top: env(safe-area-inset-top, 0px);
         }
-        [data-device="mobile"] .m-topbar {
+
+        /* --- Header --- */
+        [data-device="mobile"] .mob-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 6px 12px;
+            padding: 8px 14px;
+            min-height: 44px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-primary);
         }
-        [data-device="mobile"] .m-brand {
+        [data-device="mobile"] .mob-header-left {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
-        [data-device="mobile"] .m-brand-text {
+        [data-device="mobile"] .mob-logo-icon {
+            color: var(--accent-color, #5b9cf5);
+        }
+        [data-device="mobile"] .mob-title {
+            font-size: clamp(14px, 3.5vw, 17px);
             font-weight: 600;
-            font-size: 14px;
+            color: var(--text-primary);
         }
-        [data-device="mobile"] .m-top-actions {
+        [data-device="mobile"] .mob-header-right {
             display: flex;
-            gap: 4px;
+            align-items: center;
+            gap: 2px;
         }
-        [data-device="mobile"] .m-icon-btn {
+        [data-device="mobile"] .mob-icon-btn {
             background: none;
             border: none;
             color: var(--text-secondary);
             padding: 6px 10px;
             cursor: pointer;
-            font-size: 12px;
-            border-radius: 6px;
+            font-size: 13px;
+            border-radius: 8px;
             -webkit-tap-highlight-color: transparent;
+            transition: background 0.15s;
         }
-        [data-device="mobile"] .m-icon-btn:active {
-            background: var(--bg-surface);
+        [data-device="mobile"] .mob-icon-btn:active {
+            background: var(--bg-hover, rgba(128,128,128,0.1));
         }
-        [data-device="mobile"] .m-bottombar {
+        [data-device="mobile"] .mob-lang-text {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        /* --- Toolbar --- */
+        [data-device="mobile"] .mob-toolbar {
+            padding: 6px 10px;
+            padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border);
+        }
+        [data-device="mobile"] .mob-toolbar-scroll {
             display: flex;
-            gap: 4px;
-            padding: 4px 8px 6px;
+            gap: 6px;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
+            overscroll-behavior: contain;
         }
-        [data-device="mobile"] .m-bottombar::-webkit-scrollbar { display: none; }
-        [data-device="mobile"] .m-btn {
+        [data-device="mobile"] .mob-toolbar-scroll::-webkit-scrollbar { display: none; }
+
+        [data-device="mobile"] .mob-btn {
             display: flex;
             align-items: center;
-            gap: 4px;
-            padding: 8px 12px;
-            background: var(--bg-surface);
+            gap: 5px;
+            padding: 9px 14px;
+            background: var(--bg-surface, var(--bg-secondary));
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: 12px;
             color: var(--text-primary);
-            font-size: 13px;
+            font-size: clamp(12px, 3vw, 14px);
+            font-weight: 500;
             cursor: pointer;
             white-space: nowrap;
+            flex-shrink: 0;
             -webkit-tap-highlight-color: transparent;
+            transition: all 0.15s ease;
+            touch-action: manipulation;
+            min-height: 40px;
+        }
+        [data-device="mobile"] .mob-btn:active {
+            transform: scale(0.95);
+            background: var(--bg-hover, rgba(128,128,128,0.1));
+        }
+        [data-device="mobile"] .mob-btn svg {
             flex-shrink: 0;
         }
-        [data-device="mobile"] .m-btn:active {
-            background: var(--accent-bg);
-            transform: scale(0.96);
-        }
-        [data-device="mobile"] .m-btn-primary {
+
+        [data-device="mobile"] .mob-btn-primary {
             background: var(--accent-color, #3b82f6);
             color: #fff;
             border-color: var(--accent-color, #3b82f6);
+            font-weight: 600;
+            padding: 9px 20px;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
         }
-        [data-device="mobile"] .m-btn-primary:active {
+        [data-device="mobile"] .mob-btn-primary:active {
             background: var(--accent-hover, #2563eb);
+            box-shadow: 0 1px 4px rgba(59, 130, 246, 0.15);
         }
-        [data-device="mobile"] .m-more-panel {
+        [data-device="mobile"] .mob-more-btn {
+            background: var(--bg-surface, var(--bg-secondary));
+        }
+
+        /* --- Bottom Sheet --- */
+        [data-device="mobile"] .mob-sheet-overlay {
             display: none;
-            flex-direction: column;
-            border-top: 1px solid var(--border);
-            padding: 4px 8px 8px;
-            gap: 2px;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 200;
+            -webkit-backdrop-filter: blur(2px);
+            backdrop-filter: blur(2px);
         }
-        [data-device="mobile"] .m-more-panel.open {
+        [data-device="mobile"] .mob-sheet-overlay.open { display: block; }
+
+        [data-device="mobile"] .mob-sheet {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 201;
+            background: var(--bg-primary);
+            border-radius: 16px 16px 0 0;
+            padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        [data-device="mobile"] .mob-sheet.open {
+            display: block;
+            transform: translateY(0);
+        }
+
+        [data-device="mobile"] .mob-sheet-handle {
+            width: 36px;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--border);
+            margin: 0 auto 12px;
+        }
+        [data-device="mobile"] .mob-sheet-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        [data-device="mobile"] .mob-sheet-items {
             display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-bottom: 8px;
         }
-        [data-device="mobile"] .m-more-item {
+        [data-device="mobile"] .mob-sheet-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 12px;
+            gap: 12px;
+            padding: 12px 14px;
             background: none;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             color: var(--text-primary);
-            font-size: 14px;
+            font-size: 15px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.15s;
+            width: 100%;
+            text-align: left;
+        }
+        [data-device="mobile"] .mob-sheet-item:active {
+            background: var(--bg-hover, rgba(128,128,128,0.08));
+        }
+        [data-device="mobile"] .mob-sheet-item svg {
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        [data-device="mobile"] .mob-sheet-close {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-surface, var(--bg-secondary));
+            border: none;
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 500;
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
         }
-        [data-device="mobile"] .m-more-item:active {
-            background: var(--bg-surface);
+        [data-device="mobile"] .mob-sheet-close:active {
+            background: var(--bg-hover, rgba(128,128,128,0.1));
         }
-        [data-device="mobile"] .m-more-item:last-child {
-            color: var(--danger, #e74c3c);
-        }</style>
+
+        /* --- Editor Area (mobile auto-adapt) --- */
+        [data-device="mobile"] .editor-area {
+            flex-direction: column !important;
+        }
+        @media (orientation: landscape) and (max-height: 500px) {
+            [data-device="mobile"] .editor-area {
+                flex-direction: row !important;
+            }
+            [data-device="mobile"] .panel-left {
+                width: 50% !important;
+                max-width: 50% !important;
+            }
+            [data-device="mobile"] .panel-right {
+                width: 50% !important;
+                max-width: 50% !important;
+            }
+        }
+        [data-device="mobile"] .panel-left {
+            border-right: none !important;
+            border-bottom: 1px solid var(--border);
+            min-height: 120px;
+            max-height: 50vh;
+        }
+        [data-device="mobile"] .panel-right {
+            min-height: 80px;
+            max-height: 40vh;
+        }
+        [data-device="mobile"] .panel-header {
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+        [data-device="mobile"] .panel-body {
+            padding: 8px 10px;
+            font-size: clamp(12px, 2.8vw, 14px);
+        }
+        [data-device="mobile"] #input {
+            padding: 10px 12px;
+            font-size: clamp(13px, 3vw, 15px);
+            min-height: 80px;
+        }
+
+        /* --- Sidebar (mobile) --- */
+        [data-device="mobile"] .sidebar {
+            width: 100% !important;
+            border-left: none !important;
+            border-top: 1px solid var(--border);
+            max-height: 220px;
+        }
+        [data-device="mobile"] .sidebar.collapsed { max-height: 0; padding: 0; overflow: hidden; }
+        [data-device="mobile"] .main-layout { flex-direction: column; }</style>
     <meta name="theme-color" content="#0d1117">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=8">
     <link rel="icon" type="image/svg+xml" href="icon.svg?v=8">
@@ -1591,58 +1744,77 @@
     </header>
     <!-- ========== 移动端控制栏（data-device=mobile 时显示） ========== -->
     <div class="mobile-only" style="display:none" id="mobile-input-actions">
-    <!-- Minimal top bar -->
-    <div class="m-topbar">
-        <div class="m-brand">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#icon-braces"/></svg>
-            <span class="m-brand-text">JSON Beautify</span>
+    <!-- === Minimal Header === -->
+    <header class="mob-header">
+        <div class="mob-header-left">
+            <svg class="mob-logo-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+            <span class="mob-title">JSON Beautify</span>
         </div>
-        <div class="m-top-actions">
-            <button class="m-icon-btn" onclick="toggleMobileLang()" id="mobile-lang-btn" title="语言"><span id="mobile-lang-label">中</span></button>
-            <button class="m-icon-btn" onclick="toggleTheme()" id="mobile-theme-btn" title="主题"><svg width="16" height="16"><use href="#icon-sun" id="mobile-theme-icon-use"/></svg></button>
+        <div class="mob-header-right">
+            <button class="mob-icon-btn" onclick="toggleMobileLang()" id="mobile-lang-btn" aria-label="Language">
+                <span id="mobile-lang-label" class="mob-lang-text">中</span>
+            </button>
+            <button class="mob-icon-btn" onclick="toggleTheme()" id="mobile-theme-btn" aria-label="Theme">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <use href="#icon-sun" id="mobile-theme-icon-use"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- === Bottom Toolbar === -->
+    <div class="mob-toolbar" id="mob-toolbar">
+        <div class="mob-toolbar-scroll">
+            <button class="mob-btn mob-btn-primary" onclick="formatJSON()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                <span>格式化</span>
+            </button>
+            <button class="mob-btn" onclick="minifyJSON()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                <span>压缩</span>
+            </button>
+            <button class="mob-btn" onclick="copyOutput()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span>复制</span>
+            </button>
+            <button class="mob-btn" onclick="stringifyJSON()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 6.1H3M21 12.1H3M17 18.1H3"/><path d="M21 4v16"/></svg>
+                <span>转义</span>
+            </button>
+            <button class="mob-btn mob-more-btn" id="mob-more-btn" onclick="toggleMobileMore()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                <span>更多</span>
+            </button>
         </div>
     </div>
-    <!-- Bottom action bar -->
-    <div class="m-bottombar" id="m-bottombar">
-        <button class="m-btn m-btn-primary" onclick="formatJSON()">
-            <svg width="16" height="16"><use href="#icon-zap"/></svg>
-            <span>格式化</span>
-        </button>
-        <button class="m-btn" onclick="copyOutput()">
-            <svg width="16" height="16"><use href="#icon-copy"/></svg>
-            <span>复制</span>
-        </button>
-        <button class="m-btn" onclick="minifyJSON()">
-            <svg width="16" height="16"><use href="#icon-minimize"/></svg>
-            <span>压缩</span>
-        </button>
-        <button class="m-btn" onclick="stringifyJSON()">
-            <svg width="16" height="16"><use href="#icon-share"/></svg>
-            <span>转义</span>
-        </button>
-        <button class="m-btn" id="m-more-btn" onclick="toggleMobileMore()">
-            <svg width="16" height="16"><use href="#icon-more-horizontal"/></svg>
-            <span>更多</span>
-        </button>
-    </div>
-    <!-- More panel (collapsible) -->
-    <div class="m-more-panel" id="m-more-panel">
-        <button class="m-more-item" onclick="uploadFile()">
-            <svg width="14" height="14"><use href="#icon-folder"/></svg>
-            <span>打开文件</span>
-        </button>
-        <button class="m-more-item" onclick="downloadJSON()">
-            <svg width="14" height="14"><use href="#icon-download"/></svg>
-            <span>下载</span>
-        </button>
-        <button class="m-more-item" onclick="toggleSidebar()">
-            <svg width="14" height="14"><use href="#icon-clock"/></svg>
-            <span>历史</span>
-        </button>
-        <button class="m-more-item" onclick="clearContent()">
-            <svg width="14" height="14"><use href="#icon-trash"/></svg>
-            <span>清空</span>
-        </button>
+
+    <!-- === More Bottom Sheet (overlay) === -->
+    <div class="mob-sheet-overlay" id="mob-sheet-overlay" onclick="toggleMobileMore()"></div>
+    <div class="mob-sheet" id="mob-sheet">
+        <div class="mob-sheet-handle"></div>
+        <div class="mob-sheet-title">更多操作</div>
+        <div class="mob-sheet-items">
+            <button class="mob-sheet-item" onclick="uploadFile()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                <span>打开文件</span>
+            </button>
+            <button class="mob-sheet-item" onclick="downloadJSON()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>下载文件</span>
+            </button>
+            <button class="mob-sheet-item" onclick="toggleSidebar()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>历史记录</span>
+            </button>
+            <button class="mob-sheet-item" onclick="clearContent()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <span>清空内容</span>
+            </button>
+        </div>
+        <button class="mob-sheet-close" onclick="toggleMobileMore()">取消</button>
     </div>
 </div>
     <!-- ========== 移动端控制栏结束 ========== -->
@@ -3168,11 +3340,7 @@
         var label = document.getElementById('mobile-lang-label');
         if (label) label.textContent = val === 'zh' ? '中文' : 'English';
     };
-    window.toggleMobileMore = function() {
-        var panel = document.getElementById('m-more-panel');
-        if (!panel) return;
-        panel.classList.toggle('open');
-    };
+    window.toggleMobileMore = function(){var s=document.getElementById("mob-sheet"),o=document.getElementById("mob-sheet-overlay"),b=document.getElementById("mob-more-btn");if(!s)return;var isOpen=s.classList.toggle("open");o&&o.classList.toggle("open",isOpen);b&&b.classList.toggle("active",isOpen);};
     window.toggleMobileLang = function() {
         var current = (window.i18n && window.i18n._lang) || 'zh';
         var next = current === 'zh' ? 'en' : 'zh';
