@@ -1,6 +1,6 @@
 # JSON 格式化工具
 
-一个现代化的 JSON 格式化与验证工具，纯前端单文件实现，支持桌面端。
+一个现代化的 JSON 格式化与验证工具，纯前端单文件实现，支持桌面端、iOS 与网页端。
 
 **在线使用**: https://sky-jiangcheng.github.io/jsonbeautify/
 
@@ -16,15 +16,13 @@
 |----------|---------|
 | ![错误提示](screenshots/phone/invalid-json.jpg) | ![更多操作](screenshots/phone/more-action-menu.jpg) |
 
-### iPad
+### iPad (竖屏)
 
-| 主界面 | 编辑界面 | 文件选择器 |
-|--------|---------|-----------|
-| ![主界面](screenshots/ipad/main-interface.jpg) | ![编辑界面](screenshots/ipad/editor.jpg) | ![文件选择器](screenshots/ipad/file-picker.jpg) |
+| 界面 1 | 界面 2 | 界面 3 | 界面 4 |
+|--------|---------|---------|---------|
+| ![screen-01](screenshots/ipad-portrait/screen-01.png) | ![screen-02](screenshots/ipad-portrait/screen-02.png) | ![screen-03](screenshots/ipad-portrait/screen-03.png) | ![screen-04](screenshots/ipad-portrait/screen-04.png) |
 
-| 更多操作 | 更多操作(折叠) |
-|----------|--------------|
-| ![更多操作](screenshots/ipad/more-actions.jpg) | ![更多操作2](screenshots/ipad/more-actions-2.jpg) |
+> 截图源文件见 `screenshots/`。App Store 交付包（`appstore-screenshots/`、`ipad-screenshots/`）由 `scripts/` 下脚本生成，详见 [screenshots/README.md](screenshots/README.md)。
 
 ## 功能
 
@@ -76,9 +74,11 @@ macOS 上使用 `Cmd` 替代 `Ctrl`。
 ### 拖放
 支持拖拽 `.json` 文件到输入区域自动加载并格式化。
 
-## 桌面应用 (Tauri)
+## 桌面应用与 iOS (Tauri + Capacitor)
 
-支持打包为原生桌面应用，每次推送 `v*` tag 自动构建三平台安装包。
+支持打包为原生桌面应用与 iOS App。推送 `v*` tag 后由 CI（`release.yml`）自动构建并上架：
+- **桌面端**：macOS / Windows / Linux 安装包
+- **App Store**：macOS App Store 与 iOS App Store 上架构建
 
 [![Deploy Status](https://github.com/sky-jiangcheng/jsonbeautify/actions/workflows/pages.yml/badge.svg)](https://github.com/sky-jiangcheng/jsonbeautify/actions/workflows/pages.yml)
 
@@ -105,31 +105,41 @@ npm run build
 - 语法高亮: highlight.js
 - 存储: localStorage
 - 桌面端: Tauri v2 (Rust)
+- iOS 端: Capacitor / Tauri iOS
 
 ## 部署
 
 纯静态站点，部署到任意托管服务：
 
 ```bash
-# 本地开发
-python3 -m http.server 8000
+# 本地预览 (由 src/index.html 提供)
+npm run preview
 ```
 
 已部署于 GitHub Pages: https://sky-jiangcheng.github.io/jsonbeautify/
 
+> 部署源 `docs/` 由 CI（`pages.yml`）从 `src/index.html` 自动生成，无需手动维护。
+
 ## 文件结构
 
 ```
-index.html                  — 核心应用 (HTML + CSS + JS)
-dist/index.html              — 同步副本
-package.json                 — 项目配置与脚本
-src-tauri/                   — Tauri v2 桌面应用 (Rust)
-docs/screenshots/            — 截图
-.github/workflows/           — CI/CD (GitHub Pages + Release)
-LICENSE                      — MIT 许可证
+src/index.html               — Web 应用唯一源码真源 (HTML + CSS + JS 单文件)
+src/                        — Web 静态资源 (CSS / JS)
+scripts/                    — 构建与工具脚本 (build.js, bump-version.js, check-versions.js, 截图生成等)
+src-tauri/                 — Tauri v2 桌面应用 (Rust, macOS/Windows/Linux)
+ios/                       — iOS 工程 (Capacitor / Tauri iOS)
+capacitor.config.json       — iOS / Capacitor 配置
+docs/                       — GitHub Pages 部署源 (由 src/index.html 经 CI 生成)
+screenshots/               — 截图源文件 (phone/ 与 ipad-portrait/) 及说明 README
+appstore-screenshots/       — iPhone 截屏交付包 (gitignore, 由脚本生成)
+ipad-screenshots/          — iPad 截屏交付包 (gitignore, 由脚本生成)
+.github/workflows/          — CI/CD (GitHub Pages 部署 + Release / App Store 上架)
+CONTRIBUTING.md            — 项目规范 (目录归属 / 构建链路 / 版本 / 提交约定)
+LICENSE                     — MIT 许可证
 ```
 
+> 注意：`src/index.html` 是网页唯一真源；`docs/index.html` 与 `dist/` 均为 CI / 构建生成产物，请勿手动编辑。
 
-## 优化记录
+## 开发规范
 
-- **[v13 移动端适配与国际化修复记录](OPTIMIZATION_LOG-v13.md)** — 包含 flexbox 溢出调试、CSS 级联覆盖、i18n 初始化修复等问题的详细根因分析和修复方法论。
+项目约定（目录归属、构建链路、资源单一真源、版本一致性与提交规范）见 **[CONTRIBUTING.md](CONTRIBUTING.md)**。
