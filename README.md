@@ -20,15 +20,15 @@
 
 ### 📟 iPad
 
-| 主界面 | 编辑界面 | 文件选择器 |
-|:---:|:---:|:---:|
-| ![主界面](screenshots/ipad/main-interface.jpg) | ![编辑界面](screenshots/ipad/editor.jpg) | ![文件选择器](screenshots/ipad/file-picker.jpg) |
+| 空状态首页 | 格式化结果 | 对比视图 | 历史记录 |
+|:---:|:---:|:---:|:---:|
+| ![空状态](screenshots/ipad-portrait/screen-01.png) | ![格式化](screenshots/ipad-portrait/screen-02.png) | ![对比](screenshots/ipad-portrait/screen-03.png) | ![历史](screenshots/ipad-portrait/screen-04.png) |
 
-| 更多操作 | 更多操作（折叠） |
-|:---:|:---:|
-| ![更多操作](screenshots/ipad/more-actions.jpg) | ![更多操作2](screenshots/ipad/more-actions-2.jpg) |
+| 更多操作 |
+|:---:|
+| ![更多操作](screenshots/ipad-portrait/screen-05.png) |
 
-> 截图源文件见 [`screenshots/`](screenshots/) 目录，按平台分 `phone/` 和 `ipad/` 子目录存放。
+> 截图源文件见 [`screenshots/`](screenshots/) 目录，按平台分 `phone/` 和 `ipad-portrait/` 子目录存放。
 
 ---
 
@@ -137,12 +137,7 @@ npm run preview    # 本地预览
 ```
 main/
 ├── src/index.html   ← Web 应用唯一真源（手动编辑）
-├── index.html        ← GitHub Pages 备用
 └── docs/index.html   ← 由 CI 从 src/ 自动生成
-appstore/
-├── index.html
-├── dist/index.html
-└── docs/index.html
 ```
 
 > **注意**：`docs/` 由 CI（`pages.yml`）从 `src/index.html` 自动构建，**不要手动编辑** `docs/` 下的文件，会被覆盖。
@@ -159,7 +154,7 @@ src-tauri/                   — Tauri v2 桌面端（Rust）
 ios/                         — iOS 工程（Capacitor）
 screenshots/                 — 截图文件
   ├── phone/                 — 手机端截图
-  └── ipad/                  — iPad 截图
+  └── ipad-portrait/         — iPad 竖屏截图
 .github/workflows/           — CI/CD 配置
 CONTRIBUTING.md              — 项目规范与贡献指南
 DEVLOG-v13.md                — v13 系列开发日志（移动端适配修复全过程）
