@@ -97,14 +97,26 @@ jwt = f"{signing_input}.{sig_b64}"
 
 > 历史上 1.5.0~1.5.4 连续多版被 401 卡住，反复怀疑密钥/Issuer 配置，最终定位是脚本漏了上面这步转换——**与密钥是否有效无关**。
 
-### 6.2 如何区分「密钥问题」还是「代码问题」（401 调试法）
+### 6.2 ASC API 不支持的参数（`sort` / 400 PARAMETER_ERROR）
+
+**症状**：`submit-appstore-review.py` 的「等待构建处理」步骤反复报 HTTP 400：
+
+```json
+{"code": "PARAMETER_ERROR.ILLEGAL", "detail": "The parameter 'sort' can not be used with this request"}
+```
+
+**根因**：`/v1/builds` 端点**不支持 `sort` 查询参数**。Apple 的 `filter` 和 `include` 可用，但 `sort` 不行。
+
+**修法**：去掉 `?sort=-uploadedDate`，在 Python 端排序返回结果即可。
+
+### 6.3 如何区分「密钥问题」还是「代码问题」（401 调试法）
 
 CI 报 401 时，**先本地验证凭证本身**，避免盲改 GitHub secret：
 
 1. 用 `openssl` 对 `.p8` 签名（openssl 默认输出 raw，无需 DER 转换），生成 JWT 后 `curl https://api.appstoreconnect.apple.com/v1/apps`；返回 **200** 即证明 `Key ID + Issuer + .p8` 三者有效且匹配 → 401 必是代码侧签名格式问题。
 2. `check-appstore-version.py` 内置 `[DIAG]` 打印（ISSUER / KEY_ID / KEY_FILE 头 / JWT payload），CI 日志里可直接核对这些参数是否被正确读取、文件路径是否完整。
 
-### 6.3 `appstore` 环境 secret 配置
+### 6.4 `appstore` 环境 secret 配置
 
 `release.yml` 的 `macos-appstore` / `ios` 作业带 `environment: appstore`，**优先取环境级 secret**（不是仓库级）。
 
