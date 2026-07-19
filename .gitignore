@@ -4,3 +4,19 @@ dist/
 .DS_Store
 *.log
 src-tauri/gen/
+
+# ---- 生成物 / 交付物（由脚本重生成，不入库）----
+appstore-screenshots/
+ipad-screenshots/
+*.zip
+
+# ---- App Store 路由覆盖文件（交付物）----
+routing-app-coverage.geojson
+
+# ---- 本地 / 工具目录 ----
+.workbuddy/
+
+# ---- 截图源（保留）vs 生成包（忽略）----
+# screenshots/ 为原始截屏源，纳入版本控制
+# 其下各 *-screenshots/ 包由 scripts/ 生成，已忽略
+

@@ -79,11 +79,4 @@ for (const asset of STATIC_ASSETS) {
     }
 }
 
-// Copy icons/ directory
-const iconsSrc = path.join(ROOT, 'icons');
-const iconsDst = path.join(DIST, 'icons');
-if (fs.existsSync(iconsSrc)) {
-    copyDir(iconsSrc, iconsDst);
-}
-
 console.log('\nBuild complete. dist/ is ready for deployment.');

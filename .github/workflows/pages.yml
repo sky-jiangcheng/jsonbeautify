@@ -22,7 +22,6 @@ jobs:
           for f in highlight.min.js highlight-atom-one-dark.min.css highlight-atom-one-light.min.css manifest.json icon.svg favicon-32.png icon-192.png icon-512.png sw.js; do
             [ -f "$f" ] && cp "$f" docs/ || echo "  SKIP $f"
           done
-          [ -d icons ] && ls icons/*.png >/dev/null 2>&1 && cp icons/*.png docs/icons/
           touch docs/.nojekyll
           test -f docs/index.html || exit 1
           echo "Build OK"
