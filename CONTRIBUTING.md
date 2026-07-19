@@ -131,3 +131,28 @@ CI 报 401 时，**先本地验证凭证本身**，避免盲改 GitHub secret：
 其余（`APP_STORE_CONNECT_APP_ID_IOS` / `_MAC`、证书、`IOS_PROVISIONING_PROFILE`）同属账号，勿随意改动。
 
 > 注意区分三个 ID：`App ID`（纯数字，App 自身）、`Issuer ID`（UUID，密钥页顶部）、`Key ID`（字母数字，钥匙文件名）——401 调试时别搞混。
+
+### 6.5 创建 App Store 版本报 409（App 当前状态不允许）
+
+`submit-appstore-review.py` 的 `get_or_create_version` 早期用 `filter[versionString]=X&filter[platform]=IOS` 组合查询，再决定创建。v1.5.6 的 `ios` job 在此踩到：
+
+```
+HTTP 409: {"code":"ENTITY_ERROR.RELATIONSHIP.INVALID",
+ "detail":"You cannot create a new version of the App in the current state.",
+ "source":{"pointer":"/data/relationships/app"}}
+```
+
+**含义**：该 App 在 **iOS 平台已有一个处于"可编辑"状态的版本**占着位（版本号往往不是我们要提交的 X，所以按 X 过滤查不到），于是 POST 创建被 ASC 拒绝。
+
+**排查要点**（能到这一步说明 401 已过了，不是密钥/签名问题；也不是 `sort` 参数问题——那是 400）：
+- 用 `filter[versionString]+filter[platform]` 组合有时漏查已存在版本 → 误判"不存在" → 再去 POST → 409。
+- 也可能是 ASC 里确实存在一个**别的版本号**（如 1.5.5）占着 iOS 可编辑位（手动建的、或历史 job 残留）。
+
+**修复（见 `scripts/submit-appstore-review.py` 的 `get_or_create_version` 注释）**：
+1. `get_or_create_version` 改为**只按 `filter[platform]` 列出该平台全部版本，客户端精确匹配 `versionString`**（不再用 versionString 过滤）。
+2. 若仍要 POST 创建，捕获 409：重新查询并**列出当前该平台所有版本及其 state**，明确报出"阻塞版本（versionString / state）"，而不是抛栈崩溃。
+3. 重查时若发现目标版本号其实已存在（刚被并行 job / 手动创建，或之前漏查），直接复用，继续关联构建 + 提交审核。
+
+**本地排障（无需重跑整条 CI）**：ASC 网页 → App → iOS → 查看当前版本列表：
+- 若目标版本号（如 1.5.6）已存在且处于 `PREPARE_FOR_SUBMISSION` 等可编辑态 → 多半只是过滤器漏查，**直接手动点 Submit for Review** 即可，不必重建。
+- 若存在一个**别的版本号**占着可编辑位 → 先在 ASC 里把它「拒绝 / 删除」，再重跑 CI 的 `ios` job（注意：需先把本修复提交进**触发 CI 的 ref**，否则重跑用的还是旧脚本）。

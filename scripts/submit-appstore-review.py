@@ -158,14 +158,17 @@ def get_or_create_version(app_id, jwt, platform, version_string):
     resp = api_request(
         "GET",
         f"/v1/apps/{app_id}/appStoreVersions"
-        f"?filter[versionString]={version_string}&filter[platform]={platform}",
+        f"?filter[platform]={platform}&limit=50",
         jwt,
     )
-    versions = resp.get("data", [])
-
-    if versions:
-        version_id = versions[0].get("id")
-        state = versions[0].get("attributes", {}).get("appStoreState", "")
+    match = None
+    for _v in resp.get("data", []):
+        if _v.get("attributes", {}).get("versionString") == version_string:
+            match = _v
+            break
+    if match:
+        version_id = match.get("id")
+        state = match.get("attributes", {}).get("appStoreState", "")
         print(f"  版本已存在 (id={version_id}, state={state})")
         return version_id, state
 
@@ -183,10 +186,50 @@ def get_or_create_version(app_id, jwt, platform, version_string):
             },
         }
     }
-    resp = api_request("POST", "/v1/appStoreVersions", jwt, body)
-    version_id = resp.get("data", {}).get("id")
-    print(f"  已创建版本 (id={version_id})")
-    return version_id, "PREPARE_FOR_SUBMISSION"
+    try:
+        resp = api_request("POST", "/v1/appStoreVersions", jwt, body)
+        version_id = resp.get("data", {}).get("id")
+        print(f"  已创建版本 (id={version_id})")
+        return version_id, "PREPARE_FOR_SUBMISSION"
+    except urllib.error.HTTPError as e:
+        if e.code != 409:
+            raise
+        # 409: App 已有同平台版本占用了"可编辑"位, 或刚被并行 job / 手动创建。
+        # 重新查询以定位真实状态, 不要直接崩栈。
+        print(f"\n  ⚠️ 创建版本被拒 (HTTP 409): App 当前状态不允许创建新版本。")
+        try:
+            resp2 = api_request(
+                "GET",
+                f"/v1/apps/{app_id}/appStoreVersions"
+                f"?filter[platform]={platform}&limit=50",
+                jwt,
+            )
+            existing = resp2.get("data", [])
+        except urllib.error.HTTPError:
+            existing = []
+
+        if existing:
+            print(f"  当前 {platform} 平台已存在以下版本:")
+            for v in existing:
+                a = v.get("attributes", {})
+                print(f"    - versionString={a.get('versionString')} "
+                      f"state={a.get('appStoreState')} id={v.get('id')}")
+            # 二次匹配 (覆盖刚被创建/被漏查的情形)
+            for v in existing:
+                if v.get("attributes", {}).get("versionString") == version_string:
+                    vid = v.get("id")
+                    st = v.get("attributes", {}).get("appStoreState", "")
+                    print(f"  发现版本 {version_string}，直接使用 (id={vid})")
+                    return vid, st
+            blocker = existing[0]
+            b_ver = blocker.get("attributes", {}).get("versionString", "")
+            b_state = blocker.get("attributes", {}).get("appStoreState", "")
+            print(f"\n  阻塞版本: {b_ver} (state={b_state})")
+            print(f"  请到 App Store Connect 将该版本拒绝/删除后重新运行，")
+            print(f"  或确认是否应提交该版本而非 {version_string}。")
+        else:
+            print("  未能查询到阻塞版本，请到 App Store Connect 检查 App 状态。")
+        sys.exit(1)
 
 
 def associate_build(version_id, build_id, build_version, jwt):
