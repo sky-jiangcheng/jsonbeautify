@@ -46,7 +46,7 @@ def generate_jwt(issuer_id, key_id, key_path, serialization, ec, hashes):
     payload = {
         "iss": issuer_id,
         "iat": now,
-        "exp": now + 1200,
+        "exp": now + 900,
         "aud": "appstoreconnect-v1",
     }
 
@@ -68,8 +68,17 @@ def api_get(path, jwt):
         with urllib.request.urlopen(req) as resp:
             return json.loads(resp.read().decode())
     except urllib.error.HTTPError as e:
-        print(f"  HTTP {e.code}: {e.read().decode()[:300]}")
-        raise
+        body = e.read().decode()[:400]
+        print(f"  HTTP {e.code}: {body}")
+        if e.code == 401:
+            print("ERROR: App Store Connect 拒绝该 JWT —— 密钥无效。请核对：")
+            print("  1) App Store Connect → 用户和访问 → 密钥：该 Key ID 状态是否为 Active（被撤销会直接 401）")
+            print("  2) GitHub → Settings → Environments → appstore → Environment secrets：")
+            print("     APP_STORE_CONNECT_KEY_ID / ISSUER 必须与 APP_STORE_CONNECT_API_KEY(即 .p8) 是同一把钥匙")
+            print("     （macos/ios 作业带 environment: appstore，优先取环境级 secret，不是仓库级）")
+        else:
+            print("ERROR: 查询 App Store Connect 版本失败 (检查 API 权限 / 网络)")
+        sys.exit(2)
 
 
 def main():
@@ -108,15 +117,11 @@ def main():
     from cryptography.hazmat.primitives import serialization
     jwt = generate_jwt(issuer, key_id, key_path, serialization, ec, hashes)
 
-    try:
-        resp = api_get(
-            f"/v1/apps/{app_id}/appStoreVersions"
-            f"?filter[versionString]={version}&filter[platform]={platform}",
-            jwt,
-        )
-    except urllib.error.HTTPError:
-        print("ERROR: 查询 App Store Connect 版本失败 (检查 API 密钥/权限)")
-        sys.exit(2)
+    resp = api_get(
+        f"/v1/apps/{app_id}/appStoreVersions"
+        f"?filter[versionString]={version}&filter[platform]={platform}",
+        jwt,
+    )
 
     versions = resp.get("data", [])
     if versions:
