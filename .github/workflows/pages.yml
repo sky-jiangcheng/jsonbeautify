@@ -17,11 +17,9 @@ jobs:
       - name: Build to docs/
         run: |
           rm -rf docs
-          mkdir -p docs/styles docs/scripts docs/icons
+          mkdir -p docs/icons
           sed 's|\.\./||g' src/index.html > docs/index.html
-          cp src/styles/*.css docs/styles/
-          cp src/scripts/*.js docs/scripts/
-          for f in highlight.min.js highlight-atom-one-dark.min.css highlight-atom-one-light.min.css manifest.json icon.svg favicon-32.png icon-192.png icon-512.png; do
+          for f in highlight.min.js highlight-atom-one-dark.min.css highlight-atom-one-light.min.css manifest.json icon.svg favicon-32.png icon-192.png icon-512.png sw.js; do
             [ -f "$f" ] && cp "$f" docs/ || echo "  SKIP $f"
           done
           [ -d icons ] && ls icons/*.png >/dev/null 2>&1 && cp icons/*.png docs/icons/
