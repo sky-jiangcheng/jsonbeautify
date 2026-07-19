@@ -1291,6 +1291,7 @@
         body.mobile .logo { font-size: 12px; }
     
         /* ========== 设备布局（UA 同步检测驱动） ========== */
+        [data-device="mobile"] .mobile-hide { display: none !important; }
         [data-device="desktop"] .mobile-only { display: none !important; }
         [data-device="mobile"] .desktop-only { display: none !important; }
         [data-device="mobile"] .mobile-only { display: revert !important; }
@@ -1960,7 +1961,7 @@
             <span id="status-msg" data-i18n="statusReady">就绪</span>
         </div>
         <div class="statusbar-right">
-            <span id="status-shortcuts" data-i18n="statusShortcuts">Ctrl+Enter 格式化 &middot; Ctrl+S 保存 &middot; Ctrl+D 下载</span>
+            <span id="status-shortcuts" class="mobile-hide" data-i18n="statusShortcuts">Ctrl+Enter 格式化 &middot; Ctrl+S 保存 &middot; Ctrl+D 下载</span>
         </div>
     </div>
 
@@ -2184,7 +2185,7 @@
             collapseSidebar: 'Collapse sidebar',
             clearAllTitle: 'Clear all history',
             expandSidebar: 'Expand sidebar',
-            inputPlaceholder: 'Paste JSON here, or drag a JSON file here\n\nShortcuts:\n  Ctrl+Enter  Format\n  Ctrl+S      Save\n  Ctrl+D      Download',
+            inputPlaceholder: 'Paste JSON text here',
             listTitle: 'List ({count})',
             collapseList: 'Collapse list',
             expandList: 'Expand list',
