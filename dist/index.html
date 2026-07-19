@@ -1818,7 +1818,7 @@
             <span class="mob-title" data-i18n="mobTitle">JSON工具</span>
         </div>
         <div class="mob-header-right">
-            <button class="mob-icon-btn" onclick="toggleMobileLang()" id="mobile-lang-btn" aria-label="Language">
+            <button class="mob-icon-btn" onclick="i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh');var l=document.getElementById('mobile-lang-label');if(l)l.textContent=(i18n._lang==='zh'?'中文':'English')" id="mobile-lang-btn" aria-label="Language">
                 <span id="mobile-lang-label" class="mob-lang-text">中</span>
             </button>
             <button class="mob-icon-btn" onclick="toggleTheme()" id="mobile-theme-btn" aria-label="Theme">
@@ -3432,11 +3432,11 @@
             themeIconUse.setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
         }
         var langLabel = document.getElementById('mobile-lang-label');
-        if (langLabel && window.i18n) {
-            var lang = (window.i18n._lang || 'zh');
-            langLabel.textContent = lang === 'zh' ? '中文' : 'English';
+        if (langLabel && window.i18n && typeof i18n.setLang === 'function') {
+            // Apply initial translations from saved language
+            i18n.setLang(i18n._lang);
             var langLabel2 = document.getElementById('mobile-lang-label2');
-            if (langLabel2) langLabel2.textContent = lang === 'zh' ? '中文' : 'English';
+            if (langLabel2) langLabel2.textContent = i18n._lang === 'zh' ? '中文' : 'English';
         }
     });
 </script>
