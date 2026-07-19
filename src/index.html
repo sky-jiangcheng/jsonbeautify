@@ -1814,7 +1814,7 @@
                 <polyline points="16 18 22 12 16 6"></polyline>
                 <polyline points="8 6 2 12 8 18"></polyline>
             </svg>
-            <span class="mob-title">JSON工具</span>
+            <span class="mob-title" data-i18n="mobTitle">JSON工具</span>
         </div>
         <div class="mob-header-right">
             <button class="mob-icon-btn" onclick="toggleMobileLang()" id="mobile-lang-btn" aria-label="Language">
@@ -1833,19 +1833,19 @@
         <div class="mob-toolbar-scroll">
             <button class="mob-btn mob-btn-primary" onclick="formatJSON()">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-                <span>格式化</span>
+                <span data-i18n="format">格式化</span>
             </button>
             <button class="mob-btn" onclick="minifyJSON()">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-                <span>压缩</span>
+                <span data-i18n="minify">压缩</span>
             </button>
             <button class="mob-btn" onclick="copyOutput()">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                <span>复制</span>
+                <span data-i18n="copy">复制</span>
             </button>
             <button class="mob-btn mob-more-btn" id="mob-more-btn" onclick="toggleMobileMore()">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                <span>更多</span>
+                <span data-i18n="more">更多</span>
             </button>
         </div>
     </div>
@@ -1854,30 +1854,30 @@
     <div class="mob-sheet-overlay" id="mob-sheet-overlay" onclick="toggleMobileMore()"></div>
     <div class="mob-sheet" id="mob-sheet">
         <div class="mob-sheet-handle"></div>
-        <div class="mob-sheet-title">更多操作</div>
+        <div class="mob-sheet-title" data-i18n="moreOps">更多操作</div>
         <div class="mob-sheet-items">
             <button class="mob-sheet-item" onclick="uploadFile()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                <span>打开文件</span>
+                <span data-i18n="openFile">打开文件</span>
             </button>
             <button class="mob-sheet-item" onclick="downloadJSON()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                <span>下载文件</span>
+                <span data-i18n="downloadFile">下载文件</span>
             </button>
             <button class="mob-sheet-item" onclick="toggleSidebar()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <span>历史记录</span>
+                <span data-i18n="history">历史记录</span>
             </button>
             <button class="mob-sheet-item" onclick="stringifyJSON()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 6.1H3M21 12.1H3M17 18.1H3"/><path d="M21 4v16"/></svg>
-                <span>转义</span>
+                <span data-i18n="escape">转义</span>
             </button>
             <button class="mob-sheet-item" onclick="clearContent()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                <span>清空内容</span>
+                <span data-i18n="clearContent">清空内容</span>
             </button>
         </div>
-        <button class="mob-sheet-close" onclick="toggleMobileMore()">取消</button>
+        <button class="mob-sheet-close" onclick="toggleMobileMore()" data-i18n="cancelMore">取消</button>
     </div>
 </div>
     <!-- ========== 移动端控制栏结束 ========== -->
@@ -2066,14 +2066,19 @@
         zh: {
             title: 'JSON 格式化工具',
             logoText: 'JSON 格式化工具',
+            mobTitle: 'JSON工具',
+            more: '更多',
             format: '格式化',
             minify: '压缩',
             escape: '转义',
             copy: '复制',
             download: '下载',
+            downloadFile: '下载文件',
             upload: '上传',
             save: '保存',
+            openFile: '打开文件',
             clear: '清空',
+            clearContent: '清空',
             input: '输入',
             output: '输出',
             dropHint: '释放以加载文件',
@@ -2082,6 +2087,8 @@
             compare: '对比',
             swap: '交换',
             close: '关闭',
+            moreOps: '更多操作',
+            cancelMore: '取消',
             statusReady: '就绪',
             statusShortcuts: 'Ctrl+Enter 格式化 \u00b7 Ctrl+S 保存 \u00b7 Ctrl+D 下载',
             saveModalTitle: '保存到历史记录',
@@ -2154,14 +2161,19 @@
         en: {
             title: 'JSON Formatter',
             logoText: 'JSON Formatter',
+            mobTitle: 'JSON Tool',
+            more: 'More',
             format: 'Format',
             minify: 'Minify',
             escape: 'Escape',
             copy: 'Copy',
             download: 'Download',
+            downloadFile: 'Download',
             upload: 'Upload',
             save: 'Save',
+            openFile: 'Open File',
             clear: 'Clear',
+            clearContent: 'Clear',
             input: 'Input',
             output: 'Output',
             dropHint: 'Drop to load file',
@@ -2170,6 +2182,8 @@
             compare: 'Compare',
             swap: 'Swap',
             close: 'Close',
+            moreOps: 'More Actions',
+            cancelMore: 'Cancel',
             statusReady: 'Ready',
             statusShortcuts: 'Ctrl+Enter Format \u00b7 Ctrl+S Save \u00b7 Ctrl+D Download',
             saveModalTitle: 'Save to History',
