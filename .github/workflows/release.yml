@@ -158,7 +158,7 @@ jobs:
           echo "APP_STORE_CONNECT_KEY_PATH=$HOME/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8" >> $GITHUB_ENV
 
       - name: Fail fast if macOS App Store version already exists
-        if: env.APP_STORE_CONNECT_API_KEY != '' && secrets.APP_STORE_CONNECT_APP_ID_MAC != ''
+        if: env.APP_STORE_CONNECT_API_KEY != ''
         env:
           APP_STORE_CONNECT_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
@@ -411,7 +411,7 @@ jobs:
           echo "APP_STORE_CONNECT_KEY_PATH=$HOME/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8" >> $GITHUB_ENV
 
       - name: Fail fast if iOS App Store version already exists
-        if: env.APP_STORE_CONNECT_API_KEY != '' && secrets.APP_STORE_CONNECT_APP_ID_IOS != ''
+        if: env.APP_STORE_CONNECT_API_KEY != ''
         env:
           APP_STORE_CONNECT_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
