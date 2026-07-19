@@ -1407,6 +1407,9 @@
 
         /* --- Toolbar --- */
         [data-device="mobile"] .mob-toolbar {
+            width: 100%;
+            max-width: 100vw;
+            overflow: hidden;
             padding: 6px 10px;
             padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
             background: var(--bg-primary);
@@ -1414,7 +1417,7 @@
         }
         [data-device="mobile"] .mob-toolbar-scroll {
             display: flex;
-            gap: 6px;
+            gap: 4px;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
@@ -1426,10 +1429,10 @@
             display: flex;
             align-items: center;
             gap: 5px;
-            padding: 9px 14px;
+            padding: 6px 8px;
             background: var(--bg-surface, var(--bg-secondary));
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 10px;
             color: var(--text-primary);
             font-size: clamp(12px, 3vw, 14px);
             font-weight: 500;
@@ -1454,7 +1457,7 @@
             color: #fff;
             border-color: var(--accent-color, #3b82f6);
             font-weight: 600;
-            padding: 9px 20px;
+            padding: 6px 14px;
             box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
         }
         [data-device="mobile"] .mob-btn-primary:active {
@@ -1888,7 +1891,7 @@
                     <span id="input-size" style="font-weight:400;text-transform:none;letter-spacing:0;font-family:var(--font-mono)"></span>
                 </div>
                 <div class="panel-body" id="input-body">
-                    <textarea id="input" data-i18n-placeholder="inputPlaceholder" placeholder="在此粘贴 JSON，或拖拽 JSON 文件到此处&#10;&#10;快捷键：&#10;  Ctrl+Enter  格式化&#10;  Ctrl+S      保存&#10;  Ctrl+D      下载" spellcheck="false"></textarea>
+                    <textarea id="input" data-i18n-placeholder="inputPlaceholder" placeholder="在此粘贴 JSON 文本" spellcheck="false"></textarea>
                     <div class="drop-overlay" id="drop-overlay">
                         <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>
                         <span data-i18n="dropHint">释放以加载文件</span>
@@ -2093,7 +2096,7 @@
             collapseSidebar: '收起侧栏',
             clearAllTitle: '清空所有历史',
             expandSidebar: '展开侧栏',
-            inputPlaceholder: '在此粘贴 JSON，或拖拽 JSON 文件到此处\n\n快捷键：\n  Ctrl+Enter  格式化\n  Ctrl+S      保存\n  Ctrl+D      下载',
+            inputPlaceholder: '在此粘贴 JSON 文本',
             listTitle: '列表 ({count})',
             collapseList: '收起列表',
             expandList: '展开列表',
