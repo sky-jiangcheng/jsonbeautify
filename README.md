@@ -6,13 +6,25 @@
 
 ## 截图
 
+### 手机端 (Phone)
+
 | 首页空状态 | 格式化结果 | 非法输入 |
 |------------|-----------|----------|
-| ![空状态](screenshots/json-empty-state.jpg) | ![格式化成功](screenshots/format-success.jpg) | ![非法输入](screenshots/invalid-json-input.jpg) |
+| ![空状态](screenshots/phone/json-empty-state.jpg) | ![格式化成功](screenshots/phone/format-success.jpg) | ![非法输入](screenshots/phone/invalid-json-input.jpg) |
 
 | 错误提示 | 更多操作 |
 |----------|---------|
-| ![错误提示](screenshots/invalid-json.jpg) | ![更多操作](screenshots/more-action-menu.jpg) |
+| ![错误提示](screenshots/phone/invalid-json.jpg) | ![更多操作](screenshots/phone/more-action-menu.jpg) |
+
+### iPad
+
+| 主界面 | 编辑界面 | 文件选择器 |
+|--------|---------|-----------|
+| ![主界面](screenshots/ipad/main-interface.jpg) | ![编辑界面](screenshots/ipad/editor.jpg) | ![文件选择器](screenshots/ipad/file-picker.jpg) |
+
+| 更多操作 | 更多操作(折叠) |
+|----------|--------------|
+| ![更多操作](screenshots/ipad/more-actions.jpg) | ![更多操作2](screenshots/ipad/more-actions-2.jpg) |
 
 ## 功能
 
