@@ -12,17 +12,40 @@ permissions:
   contents: write
 
 jobs:
-  linux:
+  # ============================================================
+  # 版本门禁: 所有构建/上架作业都依赖它
+  #   - 三处版本号 (package.json / tauri.conf.json / Cargo.toml) 必须一致
+  #   - 打 v* tag 时, tag 版本号必须等于文件当前版本
+  #     否则会静默上传错误/重复的版本到 App Store
+  # ============================================================
+  version-gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Verify version consistency (3 files)
+        run: node scripts/check-versions.js check
+
+      - name: Verify tag version matches files
+        if: startsWith(github.ref, 'refs/tags/')
+        run: node scripts/check-versions.js tag "${GITHUB_REF_NAME#v}"
+
+  linux:
+    needs: [version-gate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
 
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libglib2.0-dev
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -46,14 +69,15 @@ jobs:
           args: --bundles deb,rpm,appimage
 
   macos:
+    needs: [version-gate]
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install Rust targets
         run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -79,11 +103,12 @@ jobs:
           args: --target universal-apple-darwin --bundles dmg,app
 
   windows:
+    needs: [version-gate]
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -107,6 +132,7 @@ jobs:
 
   macos-appstore:
     if: github.ref_name == 'appstore' || startsWith(github.ref, 'refs/tags/')
+    needs: [version-gate]
     runs-on: macos-latest
     environment:
       name: appstore
@@ -116,12 +142,35 @@ jobs:
       APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
       APPLE_INSTALLER_CERTIFICATE: ${{ secrets.APPLE_INSTALLER_CERTIFICATE }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      # ---- App Store 版本重复快速拦截 (在耗时构建之前失败) ----
+      - name: Write App Store Connect API key
+        if: env.APP_STORE_CONNECT_API_KEY != ''
+        env:
+          APP_STORE_CONNECT_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          APP_STORE_CONNECT_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID_MAC }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode > ~/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
+          echo "APP_STORE_CONNECT_KEY_PATH=$HOME/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8" >> $GITHUB_ENV
+
+      - name: Fail fast if macOS App Store version already exists
+        if: env.APP_STORE_CONNECT_API_KEY != '' && secrets.APP_STORE_CONNECT_APP_ID_MAC != ''
+        env:
+          APP_STORE_CONNECT_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          APP_STORE_CONNECT_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID_MAC }}
+          APP_VERSION: ${{ github.ref_name }}
+        run: python3 scripts/check-appstore-version.py MAC_OS "${GITHUB_REF_NAME#v}"
 
       - name: Install Rust targets
         run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -336,6 +385,7 @@ jobs:
 
   ios:
     if: github.ref_name == 'appstore' || startsWith(github.ref, 'refs/tags/')
+    needs: [version-gate]
     runs-on: macos-latest
     environment:
       name: appstore
@@ -345,12 +395,35 @@ jobs:
       APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
       APP_STORE_CONNECT_APP_ID_IOS: ${{ secrets.APP_STORE_CONNECT_APP_ID_IOS }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      # ---- App Store 版本重复快速拦截 (在耗时构建之前失败) ----
+      - name: Write App Store Connect API key
+        if: env.APP_STORE_CONNECT_API_KEY != ''
+        env:
+          APP_STORE_CONNECT_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          APP_STORE_CONNECT_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID_IOS }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode > ~/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
+          echo "APP_STORE_CONNECT_KEY_PATH=$HOME/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8" >> $GITHUB_ENV
+
+      - name: Fail fast if iOS App Store version already exists
+        if: env.APP_STORE_CONNECT_API_KEY != '' && secrets.APP_STORE_CONNECT_APP_ID_IOS != ''
+        env:
+          APP_STORE_CONNECT_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          APP_STORE_CONNECT_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID_IOS }}
+          APP_VERSION: ${{ github.ref_name }}
+        run: python3 scripts/check-appstore-version.py IOS "${GITHUB_REF_NAME#v}"
 
       - name: Install Rust targets
         run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
 

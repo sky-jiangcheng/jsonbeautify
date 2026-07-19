@@ -1,0 +1,52 @@
+name: Version Check
+
+# 版本一致性"check 流程"
+#   1) PR -> main: 自动检测 package.json / tauri.conf.json / Cargo.toml 三处版本
+#      是否一致; 不一致则自动 fix(以 package.json 为准同步) 并推回 PR 分支。
+#   2) 推送 v* tag: 校验三处一致, 且 tag 版本号必须等于文件当前版本,
+#      否则直接失败 (不允许静默上传错误/重复版本到 App Store)。
+on:
+  pull_request:
+    branches: [main]
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # PR 模式下需要, 用于自动 fix 后推回分支
+
+jobs:
+  consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # PR 模式下检出源分支, 以便把自动修复推回该分支
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Check version consistency
+        id: check
+        run: node scripts/check-versions.js check
+
+      # ---- PR 模式: 不一致 -> 自动修复并推回 ----
+      - name: Auto-fix & push (PR only)
+        if: ${{ failure() && github.event_name == 'pull_request' }}
+        run: |
+          node scripts/check-versions.js fix
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
+          git commit -m "ci: auto-sync versions to $(node -p "require('./package.json').version")" \
+            || echo "nothing to commit"
+          git push
+
+      # ---- Tag 模式: tag 版本号必须等于文件当前版本 ----
+      # (不一致直接失败, 不自动改写发版文件; 提示先 bump 再打 tag)
+      - name: Tag version must match files (tag only)
+        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+        run: node scripts/check-versions.js tag "${GITHUB_REF_NAME#v}"

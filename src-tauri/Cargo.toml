@@ -1,6 +1,6 @@
 [package]
 name = "json-formatter"
-version = "1.5.0"
+version = "1.5.1"
 description = "JSON 格式化工具 - 支持格式化、压缩、树形视图、对比和历史记录"
 authors = ["sky-jiangcheng"]
 license = "MIT"
