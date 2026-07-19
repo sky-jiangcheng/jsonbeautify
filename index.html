@@ -1604,7 +1604,62 @@
             max-height: 220px;
         }
         [data-device="mobile"] .sidebar.collapsed { max-height: 0; padding: 0; overflow: hidden; }
-        [data-device="mobile"] .main-layout { flex-direction: column; }</style>
+        [data-device="mobile"] .main-layout { flex-direction: column; }
+        /* --- Overflow protection (v10) --- */
+        [data-device="mobile"] html,
+        [data-device="mobile"] body {
+            overflow-x: hidden !important;
+            width: 100%;
+            max-width: 100vw;
+        }
+        [data-device="mobile"] .main-layout {
+            width: 100%;
+            max-width: 100vw;
+            overflow: hidden;
+        }
+        [data-device="mobile"] .editor-area {
+            width: 100%;
+            max-width: 100vw;
+            overflow: hidden;
+        }
+        [data-device="mobile"] .panel {
+            min-width: 0;
+            max-width: 100%;
+        }
+        [data-device="mobile"] .panel-body {
+            word-break: break-all;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+        [data-device="mobile"] .panel-body pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-width: 100%;
+        }
+        [data-device="mobile"] #input {
+            max-width: 100%;
+        }
+        /* --- Compact header title (v10) --- */
+        [data-device="mobile"] .mob-title {
+            max-width: calc(100vw - 140px);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        /* --- Smaller buttons on small screens --- */
+        @media (max-width: 400px) {
+            [data-device="mobile"] .mob-btn {
+                padding: 8px 10px;
+                font-size: 12px;
+            }
+            [data-device="mobile"] .mob-btn-primary {
+                padding: 8px 14px;
+            }
+        }
+        /* --- Sidebar hidden by default on mobile --- */
+        [data-device="mobile"] .sidebar:not(.active) {
+            display: none;
+        }</style>
     <meta name="theme-color" content="#0d1117">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=8">
     <link rel="icon" type="image/svg+xml" href="icon.svg?v=8">
@@ -1612,7 +1667,7 @@
     <link rel="manifest" href="manifest.json?v=8">
 </head>
 <body>
-    <script>(function(){if(document.documentElement.getAttribute("data-device")==="mobile")document.body.classList.add("mobile")})()</script>
+    <script>(function(){if(document.documentElement.getAttribute("data-device")==="mobile"){document.body.classList.add("mobile");document.documentElement.style.overflowX="hidden";document.body.style.overflowX="hidden"}})()</script>
     <!-- SVG Icon Definitions -->
     <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
         <symbol id="icon-braces" viewBox="0 0 24 24" fill="currentColor">
@@ -1751,7 +1806,7 @@
                 <polyline points="16 18 22 12 16 6"></polyline>
                 <polyline points="8 6 2 12 8 18"></polyline>
             </svg>
-            <span class="mob-title">JSON Beautify</span>
+            <span class="mob-title">JSON工具</span>
         </div>
         <div class="mob-header-right">
             <button class="mob-icon-btn" onclick="toggleMobileLang()" id="mobile-lang-btn" aria-label="Language">
@@ -1780,10 +1835,6 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 <span>复制</span>
             </button>
-            <button class="mob-btn" onclick="stringifyJSON()">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 6.1H3M21 12.1H3M17 18.1H3"/><path d="M21 4v16"/></svg>
-                <span>转义</span>
-            </button>
             <button class="mob-btn mob-more-btn" id="mob-more-btn" onclick="toggleMobileMore()">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                 <span>更多</span>
@@ -1808,6 +1859,10 @@
             <button class="mob-sheet-item" onclick="toggleSidebar()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 <span>历史记录</span>
+            </button>
+            <button class="mob-sheet-item" onclick="stringifyJSON()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 6.1H3M21 12.1H3M17 18.1H3"/><path d="M21 4v16"/></svg>
+                <span>转义</span>
             </button>
             <button class="mob-sheet-item" onclick="clearContent()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
