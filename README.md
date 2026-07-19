@@ -6,17 +6,13 @@
 
 ## 截图
 
-| 实时验证 | 格式化 | 压缩 |
-|----------|--------|------|
-| ![实时验证](docs/screenshots/01-empty.png) | ![格式化](docs/screenshots/02-formatted.png) | ![压缩](docs/screenshots/03-minified.png) |
+| 首页空状态 | 格式化结果 | 非法输入 |
+|------------|-----------|----------|
+| ![空状态](screenshots/json-empty-state.jpg) | ![格式化成功](screenshots/format-success.jpg) | ![非法输入](screenshots/invalid-json-input.jpg) |
 
-| 列表/详情视图 | JSON 对比 | 历史记录 |
-|--------------|-----------|----------|
-| ![列表视图](docs/screenshots/04-list-view.png) | ![对比](docs/screenshots/06-compare.png) | ![历史记录](docs/screenshots/05-history.png) |
-
-| 暗色模式 | 错误提示 |
-|----------|----------|
-| ![暗色模式](docs/screenshots/07-dark.png) | ![错误提示](docs/screenshots/08-error.png) |
+| 错误提示 | 更多操作 |
+|----------|---------|
+| ![错误提示](screenshots/invalid-json.jpg) | ![更多操作](screenshots/more-action-menu.jpg) |
 
 ## 功能
 
