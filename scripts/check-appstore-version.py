@@ -56,8 +56,13 @@ def generate_jwt(issuer_id, key_id, key_path, serialization, ec, hashes):
     header_b64 = b64(json.dumps(header, separators=(",", ":")).encode())
     payload_b64 = b64(json.dumps(payload, separators=(",", ":")).encode())
     signing_input = f"{header_b64}.{payload_b64}"
-    signature = private_key.sign(signing_input.encode(), ec.ECDSA(hashes.SHA256()))
-    sig_b64 = b64(signature)
+    # cryptography 的 EC sign() 返回 DER 编码签名(SEQUENCE{r,s}),
+    # 但 JWT / Apple 要求原始 r||s 拼接 (P-256 = 64 字节)。必须转换, 否则验签 401。
+    from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+    der_sig = private_key.sign(signing_input.encode(), ec.ECDSA(hashes.SHA256()))
+    r, s = decode_dss_signature(der_sig)
+    raw_sig = r.to_bytes(32, "big") + s.to_bytes(32, "big")
+    sig_b64 = b64(raw_sig)
     return f"{signing_input}.{sig_b64}"
 
 
