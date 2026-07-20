@@ -1034,6 +1034,7 @@ setStatus(i18n.t('formatSuccess') + fixMsg);
 - [ ] i18n 翻译 key 中英文版一一对应，无缺失
 - [ ] GitHub Pages 部署：确认仓库 Settings > Pages 指向 `main:/docs`
 - [ ] 新增文件后确认 `.gitignore` 覆盖到位（`docs/`、`dist/`）
+- [ ] Pages 站点端侧访问故障：先用 curl 第三方环境验证服务端状态，再排查客户端 iCloud Private Relay / 运营商 / DNS
 
 ---
 
@@ -1115,3 +1116,88 @@ cp src/scripts/*.js dist/scripts/
 - 编辑器对 `.css`、`.js` 文件的语法高亮、补全、lint 完全可用
 - 多人协作时冲突范围缩小（修改 CSS 不会触发 HTML 冲突）
 - Pages 构建产物提交到 `docs/` 而非 `dist/`，源码部署同分支
+
+---
+
+## 15. Pages 站点端侧访问故障排查
+
+### 15.1 现象
+
+iPhone Safari（含无痕模式）访问 GitHub Pages 站点显示：
+
+```
+Safari浏览器打不开该网页，因为已丢失网络连接
+```
+
+同时：
+- 桌面端浏览器、curl 命令均正常返回 200
+- 无痕模式复现，排除 localStorage / Cookie 缓存
+- GitHub Pages 日志无异常，所有静态文件 200
+
+### 15.2 服务端诊断
+
+用 iPhone Safari 的 User-Agent 模拟请求验证服务端状态：
+
+```bash
+curl -sv -H "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15" \
+  "https://sky-jiangcheng.github.io/jsonbeautify/" 2>&1
+
+curl -s -o /dev/null -w "HTTP %{http_code}\nSize: %{size_download}\nTime: %{time_total}s\nSSL: %{ssl_verify_result}\n" \
+  "https://sky-jiangcheng.github.io/jsonbeautify/"
+```
+
+检查清单：
+- HTTP 状态码 = 200
+- TLS 握手成功（证书 `*.github.io` 有效，Let's Encrypt）
+- SSL 验证结果 = 0
+- 响应大小与预期一致（本项约 25KB）
+- 页面内无外部资源引用（`curl | grep -oP 'http[s]?://...'` 仅出现 SVG namespace）
+
+如果以上全部通过，问题不在服务端，而在客户端网络链路。
+
+### 15.3 根因分析
+
+"丢失网络连接"是 Safari 在 TCP 连接建立失败时的精确提示，不是页面渲染或 JS 错误。可能原因按概率排序：
+
+| 序号 | 原因 | 触发场景 | 影响范围 |
+|------|------|---------|---------|
+| 1 | iCloud Private Relay（专用代理） | iOS 17+ 且开通 iCloud+，默认开启 | Safari 流量经 Apple 中转，某些节点不连通 |
+| 2 | 运营商 DNS 污染 / 阻断 | 国内移动/联通/电信对 `*.github.io` 间歇性阻断 | 蜂窝网络（5G/4G） |
+| 3 | 本地 DNS 缓存错误 | 切换网络后 DNS 未刷新 | 所有浏览器 |
+| 4 | HTTPS 代理/VPN 干扰 | 企业 VPN、抓包工具、广告拦截器 | 当前网络环境 |
+
+### 15.4 排查流程
+
+按顺序尝试，每步后刷新页面：
+
+1. **切换网络**：5G 蜂窝 → WiFi，反之亦然。如果一种通一种不通，问题在运营商/路由。
+
+2. **关闭 iCloud Private Relay**：设置 → Apple ID → iCloud → 专用代理 → 关闭。这是国内用户最常见的原因。关闭后 Safari 流量走直连而非 Apple 中转。
+
+3. **开关飞行模式**：强制刷新 DNS 和 IP 路由表。
+
+4. **换设备/浏览器验证**：用 Android 手机或桌面 Chrome 访问同一 URL。如果桌面秒开、手机打不开，问题在手机网络栈。
+
+5. **查 DNS 解析**：如果桌面也打不开，检查本地 DNS：
+   ```bash
+   nslookup sky-jiangcheng.github.io
+   # 预期解析到 GitHub Pages IP 段：185.199.108.0/22 或 185.199.109.0/22
+   ```
+
+6. **等待**：如果是 GitHub Pages CDN 节点临时故障或运营商临时阻断，通常 2-5 分钟自愈。
+
+### 15.5 应用层面无法修复
+
+此问题发生在 TCP 连接层，先于 HTTP 和应用代码。应用内无法通过 JS 重试、fetch fallback 或 Service Worker 拦截解决。这是 GitHub Pages 分发层与客户端终端网络之间的链路问题。
+
+能做的防御措施：
+- 部署监控（UptimeRobot 等）实时检测站点可达性
+- 备用部署渠道（Cloudflare Pages、Vercel）作为 fallback
+- 在 README 中注明已知的国内访问问题及排查方法
+
+### 15.6 教训
+
+- GitHub Pages 的 `*.github.io` 域名在国内部分网络环境下不稳定，属于已知现象
+- 不能因单设备报错就判定服务端故障——先用 curl 从第三方环境验证
+- 无痕模式能排除浏览器缓存，但无法排除网络层面的 DNS 缓存和路由策略
+- iCloud Private Relay 是 iOS 用户排查"网页打不开"的第一个检查项
