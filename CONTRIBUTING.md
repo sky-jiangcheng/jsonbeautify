@@ -50,17 +50,18 @@ JSON Beautify Tool — 本地优先的 JSON 格式化工具（Tauri v2 桌面 + 
 
 ## 4. 版本规范
 
-三处版本号**必须一致**，由 `scripts/check-versions.js` 门禁校验：
+**四处**版本号**必须一致**（CI `check-versions.js` 只校验前 3 处，**第 4 处 iOS plist 需手动同步**，`bump-version.js` 漏改）：
 
 ```
 package.json              → "version"
 src-tauri/tauri.conf.json → "version"
 src-tauri/Cargo.toml      → version
+ios/App/App/Info.plist    → CFBundleShortVersionString   ← 手动同步（脚本漏改，防 IPA 版本与商店不匹配）
 ```
 
 - 发版打 `vX.Y.Z` tag，tag 版本号必须等于上述文件版本（否则 CI `version-gate` 拒绝）。
-- 升版本用 `npm run bump`，不要手改单处。
-- iOS `Info.plist` 的 `CFBundleShortVersionString` 也需同步（防 IPA 版本与商店不匹配）。
+- 升版本用 `npm run bump`（改前 3 处），**再手动改第 4 处 iOS `Info.plist`**，不要手改单处。
+- **构建号 ≠ 商店版本号**：`APP_VERSION`（如 1.5.11）是构建号用于匹配 build；商店版本是 marketing version（如 1.0），提交脚本按 marketing version 选版本（详见 §6.7）。
 
 ---
 
@@ -156,3 +157,26 @@ HTTP 409: {"code":"ENTITY_ERROR.RELATIONSHIP.INVALID",
 **本地排障（无需重跑整条 CI）**：ASC 网页 → App → iOS → 查看当前版本列表：
 - 若目标版本号（如 1.5.6）已存在且处于 `PREPARE_FOR_SUBMISSION` 等可编辑态 → 多半只是过滤器漏查，**直接手动点 Submit for Review** 即可，不必重建。
 - 若存在一个**别的版本号**占着可编辑位 → 先在 ASC 里把它「拒绝 / 删除」，再重跑 CI 的 `ios` job（注意：需先把本修复提交进**触发 CI 的 ref**，否则重跑用的还是旧脚本）。
+
+### 6.6 提交审核报 403：REJECTED 版本残留 appStoreVersionSubmission
+
+**症状**：`submit-appstore-review.py` 走到 `POST /v1/appStoreVersionSubmissions` 报：
+
+```json
+{"status":"403","code":"FORBIDDEN_ERROR",
+ "detail":"The resource 'appStoreVersionSubmissions' does not allow 'CREATE'. Allowed operation is: DELETE"}
+```
+
+**根因**：版本处于 `REJECTED` / `DEVELOPER_REJECTED` 时，其上仍挂着上一轮（被驳回那次）残留的 `appStoreVersionSubmission` 对象。Apple 不允许对同一版本 CREATE 第二个 submission，所以盲 POST 直接 403（报错明说「只允许 DELETE」）。
+
+**修复**（commit `8083947`，见 `submit_for_review`）：提交前先 `GET /v1/appStoreVersions/{id}/appStoreVersionSubmission`，若存在则 `DELETE /v1/appStoreVersionSubmissions/{id}`（版本回到可编辑），再 POST 创建新 submission；403 时带退避重试。依据 Apple 文档 `DELETE` 返回 204。
+
+> 关键：此 403 发生在「关联构建」**之后**，意味着 build 已上传+挂到版本，最耗时的环节已完成。**不必重跑 CI 重建**，补完 2.1 资料后 ASC UI 手动 Submit 即可。
+
+### 6.7 脚本把「构建号」当「商店版本号」查 → 永远 409
+
+**症状**：CI 长期每次提交都 409，只能手动在 ASC 挂 build。
+
+**根因**：`submit-appstore-review.py` 旧逻辑用 `APP_VERSION`（**构建号**，如 `1.5.11`）去查 App Store `versionString`，而商店版本是 **marketing version**（如 `1.0`）→ 永远查不到 → 每次都 POST 创建新版本 → 永远 409（见 §6.5）。
+
+**修复**（commit `34ebef5`）：`get_submission_version` 按 **marketing version** 查找/自动选当前可编辑版本（排除已上架，取最大），支持可选 `APP_STORE_VERSION` 精确指定；`wait_for_build` 按**构建号**精确匹配 VALID build。**概念必须分清：构建号 ≠ 商店版本号。**
