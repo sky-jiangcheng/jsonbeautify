@@ -90,7 +90,7 @@ jobs:
         run: npm run check:cdn
 
       - name: Generate macOS icons
-        run: npx tauri icon src-tauri/icons/icon.png
+        run: npx tauri icon src-tauri/app-icon-source.png
 
       - uses: tauri-apps/tauri-action@v1
         env:
@@ -183,7 +183,7 @@ jobs:
         run: npm run check:cdn
 
       - name: Generate macOS icons
-        run: npx tauri icon src-tauri/icons/icon.png
+        run: npx tauri icon src-tauri/app-icon-source.png
 
       - name: Import Apple certificate
         if: env.APPLE_CERTIFICATE != ''
@@ -503,7 +503,7 @@ jobs:
           echo "PROFILE_NAME=$PROFILE_NAME" >> $GITHUB_ENV
 
       - name: Generate iOS icons
-        run: npx tauri icon src-tauri/icons/icon.png
+        run: npx tauri icon src-tauri/app-icon-source.png
 
       - name: Initialize iOS project
         run: npx tauri ios init --ci --config src-tauri/tauri.ios.conf.json
