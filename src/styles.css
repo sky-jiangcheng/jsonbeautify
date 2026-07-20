@@ -1575,8 +1575,7 @@
             padding-top: env(safe-area-inset-top, 0px);
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
-            /* 底部留出固定 toolbar 的高度, 避免内容被遮 */
-            padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+            /* 底部留白由 main-layout 单独处理（避免双重 padding） */
         }
         [data-device="mobile"] .main-layout {
             width: 100%;
