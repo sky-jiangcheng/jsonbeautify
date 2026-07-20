@@ -1,4 +1,4 @@
-const CACHE_NAME = 'json-formatter-v13';
+const CACHE_NAME = 'json-formatter-v14';
 const urlsToCache = [
   './',
   './index.html',
