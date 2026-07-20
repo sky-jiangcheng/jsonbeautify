@@ -502,6 +502,9 @@ jobs:
           echo "PROFILE_UUID=$PROFILE_UUID" >> $GITHUB_ENV
           echo "PROFILE_NAME=$PROFILE_NAME" >> $GITHUB_ENV
 
+      - name: Generate iOS icons
+        run: npx tauri icon src-tauri/icons/icon.png
+
       - name: Initialize iOS project
         run: npx tauri ios init --ci --config src-tauri/tauri.ios.conf.json
 
