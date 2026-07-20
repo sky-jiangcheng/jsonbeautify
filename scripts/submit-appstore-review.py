@@ -8,7 +8,9 @@
   APP_STORE_CONNECT_KEY_ID     - API Key ID
   APP_STORE_CONNECT_KEY_PATH   - .p8 私钥文件路径
   APP_STORE_CONNECT_APP_ID     - App 的 numeric ID (App Store Connect URL 里 apps/ 后面的数字)
-  APP_VERSION                  - 版本号 (如 1.4.0)
+  APP_VERSION                  - 构建号 (如 1.5.10)，用于匹配上传的 build
+  APP_STORE_VERSION            - [可选] App Store marketing 版本号 (如 1.0)。
+                                不设置时自动选择当前可编辑/可提交版本。
   MAX_WAIT_MINUTES             - 等待构建处理的最大分钟数 (默认 25)
 """
 import sys
@@ -98,9 +100,13 @@ def api_request(method, path, jwt, body=None):
         raise
 
 
-def wait_for_build(app_id, jwt_factory, platform, max_wait_minutes):
-    """等待构建处理完成，返回可用的 build id 和 version"""
-    print(f"\n=== 等待构建处理 (最多 {max_wait_minutes} 分钟) ===")
+def wait_for_build(app_id, jwt_factory, platform, target_version, max_wait_minutes):
+    """等待目标构建版本处理完成，返回可用的 build id 和 version。
+
+    target_version 是构建号 (如 1.5.10), 与 App Store 的 marketing version (如 1.0) 不同。
+    优先匹配 target_version 的 VALID build；超时未匹配则退而使用最新 VALID build 并警告。
+    """
+    print(f"\n=== 等待构建 {target_version} 处理 (最多 {max_wait_minutes} 分钟) ===")
     jwt = jwt_factory()
     build_id = None
     build_version = None
@@ -134,9 +140,10 @@ def wait_for_build(app_id, jwt_factory, platform, max_wait_minutes):
                     f"uploaded={attrs.get('uploadedDate', '')[:19]}"
                 )
 
+        # 优先匹配目标构建版本
         for b in builds:
             attrs = b.get("attributes", {})
-            if attrs.get("processingState") == "VALID":
+            if attrs.get("processingState") == "VALID" and attrs.get("version") == target_version:
                 build_id = b.get("id")
                 build_version = attrs.get("version")
                 break
@@ -145,35 +152,32 @@ def wait_for_build(app_id, jwt_factory, platform, max_wait_minutes):
             break
 
         elapsed = int(time.time() - (deadline - max_wait_minutes * 60))
-        print(f"  构建处理中... 已等待 {elapsed}s")
+        print(f"  构建 {target_version} 处理中... 已等待 {elapsed}s")
         time.sleep(15)
         check_count += 1
+
+    # 兜底: 超时未匹配到目标版本时, 选最新的 VALID build 并警告 (避免硬失败)
+    if not build_id:
+        try:
+            resp = api_request("GET", f"/v1/apps/{app_id}/builds?limit=10", jwt)
+            for b in resp.get("data", []):
+                attrs = b.get("attributes", {})
+                if attrs.get("processingState") == "VALID":
+                    build_id = b.get("id")
+                    build_version = attrs.get("version")
+                    print(f"  ⚠️ 未找到目标版本 {target_version} 的 VALID build，"
+                          f"退而使用最新 VALID build {build_version}（请确认是否正确）")
+                    break
+        except urllib.error.HTTPError:
+            pass
 
     return build_id, build_version, jwt
 
 
-def get_or_create_version(app_id, jwt, platform, version_string):
-    """获取或创建 App Store 版本"""
-    print(f"\n=== 获取 App Store 版本 {version_string} ===")
-    resp = api_request(
-        "GET",
-        f"/v1/apps/{app_id}/appStoreVersions"
-        f"?filter[platform]={platform}&limit=50",
-        jwt,
-    )
-    match = None
-    for _v in resp.get("data", []):
-        if _v.get("attributes", {}).get("versionString") == version_string:
-            match = _v
-            break
-    if match:
-        version_id = match.get("id")
-        state = match.get("attributes", {}).get("appStoreState", "")
-        print(f"  版本已存在 (id={version_id}, state={state})")
-        return version_id, state
-
-    # 创建新版本
-    print(f"  版本不存在，创建新版本 {version_string}...")
+def create_version(app_id, jwt, platform, version_string):
+    """创建新的 App Store 版本。注意: 同平台已有可编辑版本时通常会 409,
+    调用方应优先复用现有版本 (见 get_submission_version)。"""
+    print(f"  创建新版本 {version_string}...")
     body = {
         "data": {
             "type": "appStoreVersions",
@@ -194,8 +198,7 @@ def get_or_create_version(app_id, jwt, platform, version_string):
     except urllib.error.HTTPError as e:
         if e.code != 409:
             raise
-        # 409: App 已有同平台版本占用了"可编辑"位, 或刚被并行 job / 手动创建。
-        # 重新查询以定位真实状态, 不要直接崩栈。
+        # 409: App 已有同平台版本占用了"可编辑"位。重新查询定位真实状态, 不崩栈。
         print(f"\n  ⚠️ 创建版本被拒 (HTTP 409): App 当前状态不允许创建新版本。")
         try:
             resp2 = api_request(
@@ -207,29 +210,68 @@ def get_or_create_version(app_id, jwt, platform, version_string):
             existing = resp2.get("data", [])
         except urllib.error.HTTPError:
             existing = []
-
         if existing:
             print(f"  当前 {platform} 平台已存在以下版本:")
             for v in existing:
                 a = v.get("attributes", {})
                 print(f"    - versionString={a.get('versionString')} "
                       f"state={a.get('appStoreState')} id={v.get('id')}")
-            # 二次匹配 (覆盖刚被创建/被漏查的情形)
-            for v in existing:
-                if v.get("attributes", {}).get("versionString") == version_string:
-                    vid = v.get("id")
-                    st = v.get("attributes", {}).get("appStoreState", "")
-                    print(f"  发现版本 {version_string}，直接使用 (id={vid})")
-                    return vid, st
-            blocker = existing[0]
-            b_ver = blocker.get("attributes", {}).get("versionString", "")
-            b_state = blocker.get("attributes", {}).get("appStoreState", "")
-            print(f"\n  阻塞版本: {b_ver} (state={b_state})")
-            print(f"  请到 App Store Connect 将该版本拒绝/删除后重新运行，")
-            print(f"  或确认是否应提交该版本而非 {version_string}。")
         else:
             print("  未能查询到阻塞版本，请到 App Store Connect 检查 App 状态。")
         sys.exit(1)
+
+
+def get_submission_version(app_id, jwt, platform, app_store_version, build_version):
+    """找到当前可提交的 App Store 版本 (marketing version, 如 '1.0'), 而非 build version。
+
+    关键修复: 以前误把 APP_VERSION (构建号, 如 1.5.10) 当作 App Store 的 versionString
+    去查, 永远查不到, 于是每次都尝试创建新版本并 409。现在改为:
+      1) 若显式设置 APP_STORE_VERSION (如 1.0) -> 精确匹配;
+      2) 否则自动选择当前可编辑/可提交的版本 (排除已上架, 取 versionString 最大者)。
+    REJECTED / DEVELOPER_REJECTED / PREPARE_FOR_SUBMISSION 等状态下会落入此路径,
+    关联 build 后重新提交即可 (这正是被驳回后重新送审的标准流程)。
+    """
+    print(f"\n=== 查找 {platform} 当前可提交版本 ===")
+    resp = api_request(
+        "GET",
+        f"/v1/apps/{app_id}/appStoreVersions?filter[platform]={platform}&limit=50",
+        jwt,
+    )
+    versions = resp.get("data", [])
+    if not versions:
+        if app_store_version:
+            return create_version(app_id, jwt, platform, app_store_version)
+        print("  未找到任何版本，且未设置 APP_STORE_VERSION，无法继续")
+        sys.exit(1)
+
+    # 1) 显式指定 APP_STORE_VERSION -> 精确匹配
+    if app_store_version:
+        for v in versions:
+            if v.get("attributes", {}).get("versionString") == app_store_version:
+                vid = v.get("id")
+                st = v.get("attributes", {}).get("appStoreState", "")
+                print(f"  命中指定版本 {app_store_version} (id={vid}, state={st})")
+                return vid, st
+        print(f"  未找到指定版本 {app_store_version}，尝试创建...")
+        return create_version(app_id, jwt, platform, app_store_version)
+
+    # 2) 自动选择当前可编辑/可提交版本 (排除已上架)
+    def vkey(v):
+        s = v.get("attributes", {}).get("versionString", "0")
+        try:
+            return tuple(int(x) for x in s.split("."))
+        except Exception:
+            return (0,)
+
+    editable = [v for v in versions
+                if v.get("attributes", {}).get("appStoreState") != "READY_FOR_SALE"]
+    candidates = editable if editable else versions
+    chosen = sorted(candidates, key=vkey)[-1]
+    vid = chosen.get("id")
+    st = chosen.get("attributes", {}).get("appStoreState", "")
+    ver = chosen.get("attributes", {}).get("versionString")
+    print(f"  自动选择当前版本 {ver} (id={vid}, state={st})")
+    return vid, st
 
 
 def associate_build(version_id, build_id, build_version, jwt):
@@ -297,12 +339,12 @@ def main():
     if platform not in ("IOS", "MAC_OS"):
         print(f"ERROR: 无效平台 {platform}，应为 IOS 或 MAC_OS")
         sys.exit(1)
-
     issuer_id = os.environ.get("APP_STORE_CONNECT_ISSUER", "")
     key_id = os.environ.get("APP_STORE_CONNECT_KEY_ID", "")
     key_path = os.environ.get("APP_STORE_CONNECT_KEY_PATH", "")
     app_id = os.environ.get("APP_STORE_CONNECT_APP_ID", "")
-    version_string = os.environ.get("APP_VERSION", "")
+    version_string = os.environ.get("APP_VERSION", "")          # 构建号, 如 1.5.10
+    app_store_version = os.environ.get("APP_STORE_VERSION", "")  # marketing version, 如 1.0 (可选)
     max_wait = int(os.environ.get("MAX_WAIT_MINUTES", "25"))
 
     missing = []
@@ -323,16 +365,17 @@ def main():
 
     print(f"平台: {platform}")
     print(f"App ID: {app_id}")
-    print(f"版本: {version_string}")
+    print(f"构建版本: {version_string}")
+    if app_store_version:
+        print(f"App Store 版本(marketing): {app_store_version}")
 
     serialization, ec, hashes = ensure_crypto()
 
     def jwt_factory():
         return generate_jwt(issuer_id, key_id, key_path, serialization, ec, hashes)
-
-    # 1. 等待构建处理
+    # 1. 等待目标构建处理
     build_id, build_version, jwt = wait_for_build(
-        app_id, jwt_factory, platform, max_wait
+        app_id, jwt_factory, platform, version_string, max_wait
     )
     if not build_id:
         print(f"\nERROR: {max_wait} 分钟内未找到处理完成的构建")
@@ -340,27 +383,30 @@ def main():
         sys.exit(1)
     print(f"  构建就绪: {build_version} (id={build_id})")
 
-    # 2. 获取/创建版本
-    version_id, state = get_or_create_version(app_id, jwt, platform, version_string)
+    # 2. 获取当前可提交版本 (按 marketing version 而非 build version)
+    version_id, state = get_submission_version(
+        app_id, jwt, platform, app_store_version, build_version
+    )
 
     # 如果已经在审核中，跳过
     if state in ("WAITING_FOR_REVIEW", "IN_REVIEW", "PENDING_DEVELOPER_RELEASE"):
         print(f"\n版本状态为 {state}，已在审核流程中，跳过提交")
         print("如需重新提交，请先在 App Store Connect 拒绝当前审核")
         return
-
     if state == "READY_FOR_SALE":
         print(f"\n版本已上架，无需提交审核")
         return
+    # 被驳回 / 草稿 (REJECTED / DEVELOPER_REJECTED / PREPARE_FOR_SUBMISSION) -> 重新关联 build 并提交
+    if state in ("REJECTED", "DEVELOPER_REJECTED", "PREPARE_FOR_SUBMISSION"):
+        print(f"\n版本状态为 {state}，将重新关联构建并提交审核")
 
     # 3. 关联构建
     associate_build(version_id, build_id, build_version, jwt)
-
     # 4. 提交审核
     submit_for_review(version_id, jwt)
 
     print("\n✅ 完成! 请到 App Store Connect 查看审核状态")
-    print(f"   https://appstoreconnect.apple.com/apps/{app_id}/appstore/ios/versions/submission")
+    print(f"   https://appstoreconnect.apple.com/apps/{app_id}/appstore/{platform.lower()}/versions/submission")
 
 
 if __name__ == "__main__":
