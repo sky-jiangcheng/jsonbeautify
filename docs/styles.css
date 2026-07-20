@@ -1569,19 +1569,22 @@
         [data-device="mobile"] body {
             overflow-x: hidden !important;
             width: 100%;
-            max-width: 100vw;
             box-sizing: border-box;
-            /* 安全区: 竖屏避顶部刘海, 横屏避左侧刘海/灵动岛 */
-            padding-top: env(safe-area-inset-top, 0px);
+        }
+        /* 安全区 padding 加在内容容器上，避免 100vw + padding 溢出导致渲染模糊 */
+        [data-device="mobile"] #mobile-input-actions {
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
-            /* 底部留出固定 toolbar 的高度, 避免内容被遮 */
-            padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
         }
         [data-device="mobile"] .main-layout {
             width: 100%;
-            max-width: 100vw;
-            overflow: hidden;
+            box-sizing: border-box;
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
+            /* 顶部留白避刘海 */
+            padding-top: env(safe-area-inset-top, 0px);
+            /* 底部留白避 home indicator + 固定 toolbar */
+            padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
         }
         [data-device="mobile"] .editor-area {
             width: 100%;
@@ -1636,10 +1639,7 @@
            2. 输入/输出 Tab 切换（全屏切换，不再上下挤压）
            3. 历史侧栏改为全屏抽屉（从右侧滑入） */
 
-        /* 1. 底部留白：mob-toolbar 高约 56px + safe-area */
-        [data-device="mobile"] .main-layout {
-            padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-        }
+        /* 底部留白已在 v10 块统一处理（见上）*/
 
         /* 2. Tab 切换：默认只显示输入面板，加 .view-output 后只显示输出面板 */
         [data-device="mobile"] .editor-area .panel-left,
