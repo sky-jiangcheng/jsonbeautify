@@ -14,17 +14,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build to docs/
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build to docs/ (via build.js)
         run: |
+          node scripts/build.js
           rm -rf docs
-          mkdir -p docs/icons
-          sed 's|\.\./||g' src/index.html > docs/index.html
-          for f in highlight.min.js highlight-atom-one-dark.min.css highlight-atom-one-light.min.css manifest.json icon.svg favicon-32.png icon-192.png icon-512.png sw.js; do
-            [ -f "$f" ] && cp "$f" docs/ || echo "  SKIP $f"
-          done
-          touch docs/.nojekyll
-          test -f docs/index.html || exit 1
-          echo "Build OK"
+          mkdir -p docs
+          cp -r dist/* docs/
+          ls docs/
 
       - name: Commit and push docs/
         run: |

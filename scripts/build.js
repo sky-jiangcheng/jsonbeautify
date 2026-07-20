@@ -11,6 +11,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const SRC = path.join(ROOT, 'src');
 const DIST = path.join(ROOT, 'dist');
+// 静态资源：从项目根目录复制
 const STATIC_ASSETS = [
     'highlight.min.js',
     'highlight-atom-one-dark.min.css',
@@ -21,6 +22,12 @@ const STATIC_ASSETS = [
     'favicon-32.png',
     'icon-192.png',
     'icon-512.png',
+];
+
+// 源文件：从 src/ 复制（拆分后的 CSS/JS）
+const SRC_ASSETS = [
+    'styles.css',
+    'app.js',
 ];
 
 function ensureDir(dir) {
@@ -74,6 +81,15 @@ console.log(`  HTML ${path.relative(ROOT, path.join(SRC, 'index.html'))} → ${p
 console.log('');
 for (const asset of STATIC_ASSETS) {
     const src = path.join(ROOT, asset);
+    if (fs.existsSync(src)) {
+        copyFile(src, path.join(DIST, asset));
+    }
+}
+
+// Copy src/ assets (styles.css, app.js) to dist/
+console.log('');
+for (const asset of SRC_ASSETS) {
+    const src = path.join(SRC, asset);
     if (fs.existsSync(src)) {
         copyFile(src, path.join(DIST, asset));
     }
