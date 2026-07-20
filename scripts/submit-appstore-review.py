@@ -305,8 +305,35 @@ def associate_build(version_id, build_id, build_version, jwt):
 
 
 def submit_for_review(version_id, jwt):
-    """提交审核"""
+    """提交审核
+
+    兼容 REJECTED / DEVELOPER_REJECTED 版本的重提:
+    Apple 不允许对同一个版本 CREATE 第二个 appStoreVersionSubmission,
+    被驳回的版本上会残留旧 submission -> 盲 POST 直接 403
+    ("does not allow 'CREATE'. Allowed operation is: DELETE")。
+    因此先查并删除已存在的 submission, 再创建新的。
+    """
     print("\n=== 提交审核 ===")
+    # 1. 查残留 submission (REJECTED 版本可能有)
+    try:
+        existing = api_request(
+            "GET", f"/v1/appStoreVersions/{version_id}/appStoreVersionSubmission"
+        )
+        old_id = (existing.get("data") or {}).get("id")
+    except urllib.error.HTTPError as e:
+        old_id = None
+        if e.code != 404:
+            raise
+    if old_id:
+        print(f"  发现残留 submission {old_id}, 先删除以支持重新提交...")
+        try:
+            api_request("DELETE", f"/v1/appStoreVersionSubmissions/{old_id}")
+            print("  已删除旧 submission, 版本回到可编辑状态")
+            time.sleep(3)  # 防时序: 删除后短暂等待状态切换
+        except urllib.error.HTTPError as e:
+            if e.code != 404:
+                raise
+    # 2. 创建新 submission
     body = {
         "data": {
             "type": "appStoreVersionSubmissions",
@@ -320,18 +347,29 @@ def submit_for_review(version_id, jwt):
             },
         }
     }
-    try:
-        resp = api_request(
-            "POST", "/v1/appStoreVersionSubmissions", jwt, body
-        )
-        sub_id = resp.get("data", {}).get("id")
-        print(f"  已提交审核! (submission id={sub_id})")
-        return True
-    except urllib.error.HTTPError as e:
-        if e.code == 409:
-            print("  版本已在审核中或已提交，跳过")
+    last_err = None
+    for attempt in range(3):
+        try:
+            resp = api_request(
+                "POST", "/v1/appStoreVersionSubmissions", jwt, body
+            )
+            sub_id = resp.get("data", {}).get("id")
+            print(f"  已提交审核! (submission id={sub_id})")
             return True
-        raise
+        except urllib.error.HTTPError as e:
+            last_err = e
+            if e.code == 409:
+                print("  版本已在审核中或已提交，跳过")
+                return True
+            if e.code == 403 and attempt < 2:
+                print(
+                    f"  提交被拒 (403), {5 * (attempt + 1)}s 后重试 "
+                    f"(残留 submission 可能未完全释放)..."
+                )
+                time.sleep(5 * (attempt + 1))
+                continue
+            raise
+    raise last_err
 
 
 def main():
