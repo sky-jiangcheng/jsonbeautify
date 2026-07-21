@@ -713,7 +713,8 @@
             font-family: var(--font-mono);
             font-size: 13px;
             line-height: 1.65;
-            white-space: nowrap;
+            white-space: pre-wrap;
+            word-break: break-all;
         }
         .jt-line {
             display: block;
@@ -1295,7 +1296,8 @@
             align-items: center;
             justify-content: space-between;
             padding: 8px 14px;
-            min-height: 44px;
+            padding-top: calc(8px + env(safe-area-inset-top, 0px));
+            min-height: calc(44px + env(safe-area-inset-top, 0px));
             border-bottom: 1px solid var(--border);
             background: var(--bg-primary);
         }
@@ -1602,6 +1604,17 @@
         }
         [data-device="mobile"] #input {
             max-width: 100%;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        [data-device="mobile"] .output-content pre {
+            white-space: pre-wrap !important;
+            word-break: break-all !important;
+            max-width: 100%;
+        }
+        [data-device="mobile"] .output-content code {
+            white-space: pre-wrap !important;
+            word-break: break-all !important;
         }
         /* --- Compact header title (v10) --- */
         [data-device="mobile"] .mob-title {
