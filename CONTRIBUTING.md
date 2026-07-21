@@ -19,6 +19,7 @@ JSON Beautify Tool — 本地优先的 JSON 格式化工具（Tauri v2 桌面 + 
 | `scripts/` | 构建 / CI / 上架辅助脚本 | ✅ 源码 |
 | `screenshots/` | App Store 截屏**源文件** | ✅ 源码 |
 | `appstore-screenshots/` `ipad-screenshots/` | 截屏**交付包**（脚本生成） | ❌ 已忽略 |
+| `.monkeycode/docs/` | 项目文档（里程碑、优化指南、开发日志、审核回复、隐私政策） | ✅ 源码 |
 | `.workbuddy/` | 本地工具目录 | ❌ 已忽略 |
 
 > **铁律**：`src/index.html` 是网页唯一真源。根目录 `index.html`、`docs/index.html` 都不是源（前者为漂移孤儿已删除，后者为生成产物）。

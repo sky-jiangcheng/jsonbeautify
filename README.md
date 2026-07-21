@@ -156,8 +156,8 @@ screenshots/                 — 截图文件
   ├── phone/                 — 手机端截图
   └── ipad-portrait/         — iPad 竖屏截图
 .github/workflows/           — CI/CD 配置
+.monkeycode/docs/            — 项目文档（开发日志、里程碑、优化指南等）
 CONTRIBUTING.md              — 项目规范与贡献指南
-DEVLOG-v13.md                — v13 系列开发日志（移动端适配修复全过程）
 LICENSE                      — MIT 许可证
 ```
 
@@ -165,7 +165,7 @@ LICENSE                      — MIT 许可证
 
 ## 优化日志
 
-v13 系列移动端适配与国际化修复的完整踩坑记录 → **[DEVLOG-v13.md](DEVLOG-v13.md)**
+v13 系列移动端适配与国际化修复的完整踩坑记录 → **[DEVLOG-v13.md](.monkeycode/docs/DEVLOG-v13.md)**
 
 涵盖：
 - 🐛 3 个主要问题的逐层根因分析
