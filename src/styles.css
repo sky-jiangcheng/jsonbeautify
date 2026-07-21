@@ -84,8 +84,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
 
         /* ========== SVG Icon Styles ========== */
@@ -1355,7 +1354,6 @@
             max-width: 100vw;
             overflow-x: auto;
             overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
             padding: 6px 6px;
             padding-left: calc(6px + env(safe-area-inset-left, 0px));
             padding-right: calc(6px + env(safe-area-inset-right, 0px));
@@ -1729,7 +1727,6 @@
         [data-device="mobile"] .history-list {
             flex: 1;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
         }
         [data-device="mobile"] .sidebar-footer {
             flex-shrink: 0;
