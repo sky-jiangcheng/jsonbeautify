@@ -804,7 +804,7 @@
             gap: 8px;
         }
 
-        .drop-overlay.active { display: flex; }
+        .drop-overlay.active { display: flex; -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
 
         .drop-overlay .svg-icon {
             width: 24px;
