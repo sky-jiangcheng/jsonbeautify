@@ -10,6 +10,7 @@ const sizes = [
   { size: 128, filename: '128x128.png' },
   { size: 256, filename: '256x256.png' },
   { size: 512, filename: '512x512.png' },
+  { size: 1024, filename: '512x512@2x.png' },
   { size: 256, filename: '128x128@2x.png' },
 
   // PWA icons
