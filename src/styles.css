@@ -804,7 +804,7 @@
             gap: 8px;
         }
 
-        .drop-overlay.active { display: flex; }
+        .drop-overlay.active { display: flex; -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
 
         .drop-overlay .svg-icon {
             width: 24px;
@@ -987,8 +987,6 @@
             z-index: 1000;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
             animation: fade-in 0.15s ease;
         }
 
@@ -1711,8 +1709,6 @@
             inset: 0;
             background: rgba(0,0,0,0.4);
             z-index: 250;
-            -webkit-backdrop-filter: blur(2px);
-            backdrop-filter: blur(2px);
         }
         [data-device="mobile"] .sidebar-overlay.active {
             display: block;
