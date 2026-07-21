@@ -317,7 +317,7 @@ def submit_for_review(version_id, jwt):
     # 1. 查残留 submission (REJECTED 版本可能有)
     try:
         existing = api_request(
-            "GET", f"/v1/appStoreVersions/{version_id}/appStoreVersionSubmission"
+            "GET", f"/v1/appStoreVersions/{version_id}/appStoreVersionSubmission", jwt
         )
         old_id = (existing.get("data") or {}).get("id")
     except urllib.error.HTTPError as e:
@@ -327,7 +327,7 @@ def submit_for_review(version_id, jwt):
     if old_id:
         print(f"  发现残留 submission {old_id}, 先删除以支持重新提交...")
         try:
-            api_request("DELETE", f"/v1/appStoreVersionSubmissions/{old_id}")
+            api_request("DELETE", f"/v1/appStoreVersionSubmissions/{old_id}", jwt)
             print("  已删除旧 submission, 版本回到可编辑状态")
             time.sleep(3)  # 防时序: 删除后短暂等待状态切换
         except urllib.error.HTTPError as e:
