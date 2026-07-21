@@ -1719,6 +1719,7 @@
         [data-device="mobile"] .sidebar-overlay.active {
             display: block;
         }
+        [data-device="desktop"] .sidebar-overlay { display: none; }
         [data-device="mobile"] .sidebar-header {
             padding: 12px 14px;
             border-bottom: 1px solid var(--border);
