@@ -85,6 +85,9 @@
             flex-direction: column;
             overflow: hidden;
             text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-size-adjust: 100%;
         }
 
         /* ========== SVG Icon Styles ========== */
