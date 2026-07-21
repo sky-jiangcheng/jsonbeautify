@@ -994,7 +994,7 @@
 
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
-        .modal-backdrop.active { display: flex; }
+        .modal-backdrop.active { display: flex; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 
         .modal {
             background: var(--bg-elevated);
@@ -1432,10 +1432,8 @@
             inset: 0;
             background: rgba(0,0,0,0.4);
             z-index: 200;
-            -webkit-backdrop-filter: blur(2px);
-            backdrop-filter: blur(2px);
         }
-        [data-device="mobile"] .mob-sheet-overlay.open { display: block; }
+        [data-device="mobile"] .mob-sheet-overlay.open { display: block; -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
 
         [data-device="mobile"] .mob-sheet {
             display: none;
@@ -1718,6 +1716,8 @@
         }
         [data-device="mobile"] .sidebar-overlay.active {
             display: block;
+            -webkit-backdrop-filter: blur(2px);
+            backdrop-filter: blur(2px);
         }
         [data-device="desktop"] .sidebar-overlay { display: none; }
         [data-device="mobile"] .sidebar-header {
