@@ -18,7 +18,7 @@
 
     function showToast(msg, duration, iconId) {
         const t = document.getElementById('toast');
-        const iconSvg = iconId ? `<svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#${iconId}"/></svg>` : '';
+        const iconSvg = iconId ? `<svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#${iconId}"/></svg>` : '';
         t.innerHTML = iconSvg + escapeHtml(msg);
         t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), duration || 2000);
@@ -48,7 +48,7 @@
         const sizes = ['B', 'KB', 'MB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         const formatter = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 1 });
-        return formatter.format(bytes / Math.pow(k, i)) + ' ' + sizes[i];
+        return formatter.format(bytes / Math.pow(k, i)) + '\u00a0' + sizes[i];
     }
 
     /* ==============================================================
@@ -82,9 +82,9 @@
             moreOps: '更多操作',
             cancelMore: '取消',
             statusReady: '就绪',
-            statusShortcuts: 'Ctrl+Enter 格式化 \u00b7 Ctrl+S 保存 \u00b7 Ctrl+D 下载',
+            statusShortcuts: 'Ctrl+Enter 格式化\u00a0\u00b7\u00a0Ctrl+S 保存\u00a0\u00b7\u00a0Ctrl+D 下载',
             saveModalTitle: '保存到历史记录',
-            saveNamePlaceholder: '输入记录名称（可选）',
+            saveNamePlaceholder: '输入记录名称（可选）…',
             cancel: '取消',
             compareTitle: 'JSON 对比',
             compareLoading: '正在比对\u2026',
@@ -100,7 +100,7 @@
             collapseSidebar: '收起侧栏',
             clearAllTitle: '清空所有历史',
             expandSidebar: '展开侧栏',
-            inputPlaceholder: '在此粘贴 JSON 文本',
+            inputPlaceholder: '在此粘贴 JSON 文本…',
             listTitle: '列表 ({count})',
             collapseList: '收起列表',
             expandList: '展开列表',
@@ -152,13 +152,6 @@
             valid: '有效',
             invalid: '无效',
             lineCount: '行',
-            mobTitle: 'JSON工具',
-            more: '更多',
-            moreOps: '更多操作',
-            openFile: '打开文件',
-            downloadFile: '下载文件',
-            clearContent: '清空内容',
-            cancelMore: '取消',
         },
         en: {
             title: 'JSON Formatter',
@@ -187,9 +180,9 @@
             moreOps: 'More Actions',
             cancelMore: 'Cancel',
             statusReady: 'Ready',
-            statusShortcuts: 'Ctrl+Enter Format \u00b7 Ctrl+S Save \u00b7 Ctrl+D Download',
+            statusShortcuts: 'Ctrl+Enter Format\u00a0\u00b7\u00a0Ctrl+S Save\u00a0\u00b7\u00a0Ctrl+D Download',
             saveModalTitle: 'Save to History',
-            saveNamePlaceholder: 'Enter name (optional)',
+            saveNamePlaceholder: 'Enter name (optional)…',
             cancel: 'Cancel',
             compareTitle: 'JSON Compare',
             compareLoading: 'Comparing\u2026',
@@ -205,7 +198,7 @@
             collapseSidebar: 'Collapse sidebar',
             clearAllTitle: 'Clear all history',
             expandSidebar: 'Expand sidebar',
-            inputPlaceholder: 'Paste JSON text here',
+            inputPlaceholder: 'Paste JSON text here…',
             listTitle: 'List ({count})',
             collapseList: 'Collapse list',
             expandList: 'Expand list',
@@ -257,13 +250,6 @@
             valid: 'Valid',
             invalid: 'Invalid',
             lineCount: 'lines',
-            mobTitle: 'JSON Tools',
-            more: 'More',
-            moreOps: 'More Actions',
-            openFile: 'Open File',
-            downloadFile: 'Download File',
-            clearContent: 'Clear Content',
-            cancelMore: 'Cancel',
         }
     };
 
@@ -611,7 +597,7 @@
         const area = document.getElementById('output-content-area');
         area.innerHTML = `
             <div class="output-placeholder" id="output-placeholder">
-                <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-braces"/></svg>
+                <svg aria-hidden="true" class="svg-icon" viewBox="0 0 24 24"><use href="#icon-braces"/></svg>
                 ${i18n.t('outputPlaceholder')}
             </div>`;
         renderLineNumbers(0);
@@ -855,10 +841,12 @@
     }
 
     function countVisibleLines(el, skipHidden) {
-        var style = window.getComputedStyle(el);
-        if (!skipHidden && (style.display === 'none' || style.visibility === 'hidden')) return 0;
+        if (!skipHidden) {
+            if (el.classList.contains('collapsed')) return 0;
+            if (el.parentElement && el.parentElement.classList.contains('collapsed') && !el.parentElement.classList.contains('jt-children')) return 0;
+        }
         if (el.classList.contains('jt-line')) {
-            return (skipHidden || style.display !== 'none') ? 1 : 0;
+            return 1;
         }
         var count = 0;
         for (var i = 0; i < el.children.length; i++) {
@@ -1020,7 +1008,10 @@
         document.getElementById('save-modal').classList.add('active');
         const input = document.getElementById('save-name-input');
         input.value = '';
-        setTimeout(() => input.focus(), 50);
+        var isMobile = document.documentElement.getAttribute('data-device') === 'mobile';
+        if (!isMobile) {
+            setTimeout(() => input.focus(), 50);
+        }
     }
 
     function closeSaveModal() {
@@ -1085,7 +1076,7 @@
         if (history.length === 0) {
             list.innerHTML = `
                 <div class="history-empty">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-clock"/></svg>
+                    <svg aria-hidden="true" class="svg-icon" viewBox="0 0 24 24"><use href="#icon-clock"/></svg>
                     <div>${i18n.t('noHistory')}</div>
                     <div style="font-size:11px;opacity:0.6">${i18n.t('noHistoryHint')}</div>
                 </div>`;
@@ -1098,7 +1089,7 @@
             const checked = window.selectedIds.includes(item.id) ? 'checked' : '';
             const selected = window.selectedIds.includes(item.id) ? 'selected' : '';
             return `
-                <button class="history-item ${selected}" onclick="loadHistory(${item.id})" tabindex="0">
+                <div class="history-item ${selected}" onclick="loadHistory(${item.id})" tabindex="0" role="button" aria-label="加载记录 ${escapeHtml(item.name)}">
                     <input type="checkbox" class="history-checkbox"
                            onclick="event.stopPropagation();toggleSelect(${item.id})"
                            ${checked} title="${i18n.t('selectForCompare')}" />
@@ -1107,7 +1098,7 @@
                         <div class="history-snippet">${escapeHtml(snippet)}</div>
                     </div>
                     <button class="history-delete" onclick="event.stopPropagation();deleteHistory(${item.id})" title="${i18n.t('deleteItem')}" aria-label="${i18n.t('deleteItem')}">&times;</button>
-                </button>`;
+                </div>`;
         }).join('');
 
         list.querySelectorAll('.history-item').forEach((btn, i) => {
@@ -1424,11 +1415,24 @@
             if (e.key === 'Escape') {
                 const modal = document.getElementById('save-modal');
                 const compare = document.getElementById('compare-container');
+                const mobSheet = document.getElementById('mob-sheet');
                 if (modal.classList.contains('active')) {
                     closeSaveModal();
                 } else if (compare.classList.contains('active')) {
                     closeCompare();
+                } else if (mobSheet && mobSheet.classList.contains('open')) {
+                    toggleMobileMore();
                 }
+            }
+
+            // Overlay Enter/Space handling
+            if ((e.key === 'Enter' || e.key === ' ') && e.target.id === 'mob-sheet-overlay') {
+                e.preventDefault();
+                toggleMobileMore();
+            }
+            if ((e.key === 'Enter' || e.key === ' ') && e.target.id === 'sidebar-overlay') {
+                e.preventDefault();
+                toggleSidebar();
             }
         });
 
