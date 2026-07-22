@@ -204,6 +204,7 @@
         .btn:active {
             background: var(--bg-elevated);
             transform: scale(0.97);
+            transform-origin: center;
         }
 
         .btn:disabled {
@@ -641,6 +642,11 @@
             align-items: center;
             justify-content: center;
             border-right: 1px solid var(--border);
+            touch-action: manipulation;
+        }
+        .list-expand-tab:focus-visible {
+            outline: 2px solid var(--border-focus);
+            outline-offset: -2px;
         }
         .list-expand-tab:hover {
             background: var(--bg-hover);
@@ -872,7 +878,7 @@
             flex-shrink: 0;
         }
 
-        .sidebar-header h3 {
+        .sidebar-header h2 {
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
@@ -893,6 +899,7 @@
             font-size: 12px;
             border-radius: 4px;
             transition: color var(--transition-fast), background var(--transition-fast);
+            touch-action: manipulation;
         }
 
         .sidebar-toggle:focus-visible {
@@ -1003,6 +1010,7 @@
             opacity: 0;
             transition: color var(--transition-fast), background var(--transition-fast), opacity var(--transition-fast);
             flex-shrink: 0;
+            touch-action: manipulation;
         }
 
         .history-delete:focus-visible {
@@ -1065,6 +1073,10 @@
             margin-bottom: 16px;
             color: var(--text-primary);
             letter-spacing: -0.2px;
+            text-wrap: balance;
+        }
+        .sidebar-header h2 {
+            text-wrap: balance;
         }
 
         .modal input[type="text"] {
