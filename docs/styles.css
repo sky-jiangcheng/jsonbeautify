@@ -1857,9 +1857,12 @@
                 --header-min-height: 36px;
                 --toolbar-padding-bottom: 4px;
             }
-            /* 1. editor-area 改为左右布局 */
+            /* 1. editor-area 改为左右布局，支持水平滚动 */
             [data-device="mobile"] .editor-area {
                 flex-direction: row;
+                overscroll-behavior: contain;
+                touch-action: pan-x pan-y;
+                overflow-x: auto;
             }
 
             /* 2. 覆盖 v11 的 display:none — 横屏下两个面板都显示，限制最小宽度避免挤压 */
@@ -1871,6 +1874,7 @@
                 max-width: 50%;
                 max-height: none;
                 min-height: 0;
+                touch-action: pan-x pan-y;
             }
             [data-device="mobile"] .editor-area .panel-left {
                 border-right: 1px solid var(--border) !important;
