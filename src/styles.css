@@ -974,6 +974,21 @@
         .history-info {
             flex: 1;
             min-width: 0;
+            display: block;
+            text-align: left;
+            background: transparent;
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .history-info:focus-visible {
+            outline: 2px solid var(--border-focus);
+            outline-offset: -2px;
+            border-radius: 2px;
         }
 
         .history-name {
@@ -1847,12 +1862,12 @@
                 flex-direction: row;
             }
 
-            /* 2. 覆盖 v11 的 display:none — 横屏下两个面板都显示 */
+            /* 2. 覆盖 v11 的 display:none — 横屏下两个面板都显示，限制最小宽度避免挤压 */
             [data-device="mobile"] .editor-area .panel-left,
             [data-device="mobile"] .editor-area .panel-right {
                 display: flex !important;
-                flex: 1;
-                width: 50%;
+                flex: 1 1 50%;
+                min-width: 160px;
                 max-width: 50%;
                 max-height: none;
                 min-height: 0;
@@ -1880,17 +1895,30 @@
                 padding: 4px 8px;
             }
 
-            /* 5. 缩减底部 toolbar 高度 */
+            /* 5. 底部 toolbar：图标+小字横向均分，保证最小 44px 触摸目标 */
             [data-device="mobile"] .mob-toolbar {
                 padding: var(--toolbar-padding-bottom) 6px;
                 padding-left: calc(6px + env(safe-area-inset-left, 0px));
                 padding-right: calc(6px + env(safe-area-inset-right, 0px));
                 padding-bottom: calc(var(--toolbar-padding-bottom) + env(safe-area-inset-bottom, 0px));
             }
+            [data-device="mobile"] .mob-toolbar-scroll {
+                gap: 6px;
+            }
             [data-device="mobile"] .mob-btn {
-                min-height: 32px;
+                min-height: 44px;
                 padding: 4px 6px;
-                font-size: 12px;
+                font-size: 11px;
+                flex-direction: column;
+                gap: 2px;
+                border-radius: 8px;
+            }
+            [data-device="mobile"] .mob-btn svg {
+                width: 18px;
+                height: 18px;
+            }
+            [data-device="mobile"] .mob-btn span {
+                font-size: 10px;
             }
 
             /* 6. panel-header 更紧凑 */

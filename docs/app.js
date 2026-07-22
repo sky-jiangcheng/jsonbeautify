@@ -1067,16 +1067,19 @@
             const checked = window.selectedIds.includes(item.id) ? 'checked' : '';
             const selected = window.selectedIds.includes(item.id) ? 'selected' : '';
             return `
-                <div class="history-item ${selected}" role="button" tabindex="0" aria-label="加载历史：${escapeHtml(item.name)}" onclick="loadHistory(${item.id})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();loadHistory(${item.id});}">
+                <div class="history-item ${selected}">
                     <input type="checkbox" class="history-checkbox"
                            onclick="event.stopPropagation();toggleSelect(${item.id})"
                            onkeydown="event.stopPropagation()"
                            ${checked} title="${i18n.t('selectForCompare')}" aria-label="${i18n.t('selectForCompare')}" />
-                    <div class="history-info">
+                    <button type="button" class="history-info"
+                            onclick="loadHistory(${item.id})"
+                            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();loadHistory(${item.id});}"
+                            aria-label="加载历史：${escapeHtml(item.name)}">
                         <div class="history-name">${escapeHtml(item.name)}</div>
                         <div class="history-snippet">${escapeHtml(snippet)}</div>
-                    </div>
-                    <button class="history-delete" onclick="event.stopPropagation();deleteHistory(${item.id})" onkeydown="event.stopPropagation()" title="${i18n.t('deleteItem')}" aria-label="${i18n.t('deleteItem')}">&times;</button>
+                    </button>
+                    <button type="button" class="history-delete" onclick="event.stopPropagation();deleteHistory(${item.id})" onkeydown="event.stopPropagation()" title="${i18n.t('deleteItem')}" aria-label="${i18n.t('deleteItem')}">&times;</button>
                 </div>`;
         }).join('');
 
@@ -1110,16 +1113,25 @@
         const tabs = document.querySelectorAll('.mob-tab');
         if (!inputPanel || !outputPanel) return;
 
-        tabs.forEach(t => t.classList.remove('is-active'));
+        tabs.forEach(t => {
+            t.classList.remove('is-active');
+            t.setAttribute('aria-selected', 'false');
+        });
         inputPanel.classList.remove('is-active');
         outputPanel.classList.remove('is-active');
 
         if (tab === 'input') {
             inputPanel.classList.add('is-active');
-            if (tabs[0]) tabs[0].classList.add('is-active');
+            if (tabs[0]) {
+                tabs[0].classList.add('is-active');
+                tabs[0].setAttribute('aria-selected', 'true');
+            }
         } else {
             outputPanel.classList.add('is-active');
-            if (tabs[1]) tabs[1].classList.add('is-active');
+            if (tabs[1]) {
+                tabs[1].classList.add('is-active');
+                tabs[1].setAttribute('aria-selected', 'true');
+            }
         }
     }
     window.switchMobileTab = switchMobileTab;

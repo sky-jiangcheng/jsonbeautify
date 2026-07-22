@@ -263,11 +263,11 @@
     <!-- ========== Main Layout ========== -->
     <div class="main-layout">
         <!-- 移动端输入/输出 Tab 栏 -->
-        <div class="mob-tabs mobile-only" id="mob-tabs">
-            <button class="mob-tab is-active" data-tab="input" onclick="switchMobileTab('input')">
+        <div class="mob-tabs mobile-only" id="mob-tabs" role="tablist">
+            <button class="mob-tab is-active" data-tab="input" onclick="switchMobileTab('input')" role="tab" aria-selected="true">
                 <span data-i18n="input">输入</span>
             </button>
-            <button class="mob-tab" data-tab="output" onclick="switchMobileTab('output')">
+            <button class="mob-tab" data-tab="output" onclick="switchMobileTab('output')" role="tab" aria-selected="false">
                 <span data-i18n="output">输出</span>
             </button>
         </div>
