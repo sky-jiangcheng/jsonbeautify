@@ -1243,15 +1243,15 @@
         [data-device="mobile"] .mobile-hide { display: none !important; }
         [data-device="desktop"] .mobile-only { display: none !important; }
         [data-device="mobile"] .desktop-only { display: none !important; }
-        [data-device="mobile"] .mobile-only { display: revert !important; }
-        [data-device="mobile"] header { flex-wrap: wrap; height: auto; padding: 8px 10px; gap: 6px; }
-        [data-device="mobile"] .btn { padding: 4px 7px; font-size: 11px; }
-        [data-device="mobile"] .btn .shortcut { display: none; }
-        [data-device="mobile"] .logo { font-size: 12px; }
-        [data-device="mobile"] .editor-area { flex-direction: column; }
-        [data-device="mobile"] .panel-left { border-right: none; border-bottom: 2px solid var(--border); }
-        [data-device="mobile"] .sidebar { width: 100%; border-left: none; border-top: 1px solid var(--border); max-height: 260px; }
-        [data-device="mobile"] .sidebar.collapsed { max-height: 0; }
+        [data-device="mobile"] {
+            --editor-direction: column;
+            --code-white-space: pre-wrap;
+            --code-word-break: break-all;
+            --toolbar-height: 60px;
+            --header-padding-top: 8px;
+            --header-min-height: 44px;
+            --toolbar-padding-bottom: 6px;
+        }
         [data-device="mobile"] .list-panel { width: 40%; min-width: 120px; }
         [data-device="mobile"] .mobile-select {
             -webkit-appearance: none; appearance: none;
@@ -1267,22 +1267,11 @@
             background-position: right 6px center;
             padding-right: 24px;
         }
-        [data-device="mobile"] .mobile-action-row {
-            display: flex !important;
-            gap: 4px;
-            align-items: center;
-            width: 100%;
-        }
-        [data-device="mobile"] #mobile-lang-theme {
-            display: flex !important;
-            gap: 6px;
-            align-items: center;
-        }
 
 /* ========== 移动端 v9 — 现代原生风 ========== */
         /* --- Base container --- */
         [data-device="mobile"] #mobile-input-actions {
-            display: flex !important;
+            display: flex;
             flex-direction: column;
             position: sticky;
             top: 0;
@@ -1295,9 +1284,9 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 14px;
-            padding-top: calc(8px + env(safe-area-inset-top, 0px));
-            min-height: calc(44px + env(safe-area-inset-top, 0px));
+            padding: var(--header-padding-top) 14px;
+            padding-top: calc(var(--header-padding-top) + env(safe-area-inset-top, 0px));
+            min-height: calc(var(--header-min-height) + env(safe-area-inset-top, 0px));
             border-bottom: 1px solid var(--border);
             background: var(--bg-primary);
         }
@@ -1513,18 +1502,11 @@
 
         /* --- Editor Area (mobile auto-adapt) --- */
         [data-device="mobile"] .editor-area {
-            flex-direction: column !important;
+            flex-direction: var(--editor-direction);
         }
-        /* 竖屏 panel 高度限制（v11 tab 切换时 active 面板会覆盖为 none） */
         [data-device="mobile"] .panel-left {
-            border-right: none !important;
+            border-right: none;
             border-bottom: 1px solid var(--border);
-            min-height: 120px;
-            max-height: 50vh;
-        }
-        [data-device="mobile"] .panel-right {
-            min-height: 80px;
-            max-height: 40vh;
         }
         [data-device="mobile"] .panel-header {
             padding: 6px 12px;
@@ -1542,21 +1524,20 @@
 
         /* --- Sidebar (mobile) --- */
         [data-device="mobile"] .sidebar {
-            width: 100% !important;
-            border-left: none !important;
+            width: 100%;
+            border-left: none;
             border-top: 1px solid var(--border);
             max-height: 220px;
         }
         [data-device="mobile"] .sidebar.collapsed { max-height: 0; padding: 0; overflow: hidden; }
         [data-device="mobile"] .main-layout { flex-direction: column; }
         /* --- Overflow protection (v10) --- */
-        [data-device="mobile"] html,
+        html[data-device="mobile"],
         [data-device="mobile"] body {
-            overflow-x: hidden !important;
+            overflow-x: hidden;
             width: 100%;
             box-sizing: border-box;
         }
-        /* 安全区 padding 加在内容容器上，避免 100vw + padding 溢出导致渲染模糊 */
         [data-device="mobile"] #mobile-input-actions {
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
@@ -1566,10 +1547,7 @@
             box-sizing: border-box;
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
-            /* 顶部留白避刘海 */
-            padding-top: env(safe-area-inset-top, 0px);
-            /* 底部留白避 home indicator + 固定 toolbar */
-            padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: calc(var(--toolbar-height) + env(safe-area-inset-bottom, 0px));
         }
         [data-device="mobile"] .editor-area {
             width: 100%;
@@ -1646,11 +1624,11 @@
         [data-device="mobile"] .editor-area .panel-right.is-active {
             display: flex;
             flex: 1;
-            max-height: none !important;
-            min-height: 0 !important;
+            max-height: none;
+            min-height: 0;
         }
         [data-device="mobile"] .editor-area .panel-left.is-active {
-            border-bottom: none !important;
+            border-bottom: none;
         }
 
         /* 移动端 Tab 栏（输入/输出切换） */
@@ -1682,13 +1660,14 @@
 
         /* 3. 历史侧栏全屏抽屉 */
         [data-device="mobile"] .sidebar {
-            position: fixed !important;
+            position: fixed;
             top: 0;
             right: 0;
             bottom: 0;
-            width: 100% !important;
-            max-width: 100vw !important;
-            max-height: 100vh !important;
+            left: 0;
+            width: 100%;
+            max-width: 100vw;
+            max-height: 100vh;
             height: 100vh;
             z-index: 300;
             background: var(--bg-primary);
@@ -1697,10 +1676,14 @@
             transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
             display: flex;
             flex-direction: column;
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
         [data-device="mobile"] .sidebar.active {
             transform: translateX(0);
-            display: flex !important;
+            display: flex;
         }
         [data-device="mobile"] .sidebar-overlay {
             display: none;
@@ -1740,23 +1723,33 @@
 
         /* ========== 横屏专属适配（v12）==========
            横屏核心策略：双面板并排 + 隐藏 Tab 栏 + 缩减 header/toolbar
-           覆盖 v11 的 display:none 和竖屏 max-height 限制 */
+           覆盖 v11 的 display:none 和竖屏 max-height 限制
+           阈值 500px：区分手机横屏（矮视口）与平板横屏（高视口） */
 
         @media (orientation: landscape) and (max-height: 500px) {
+            [data-device="mobile"] {
+                --editor-direction: row;
+                --code-white-space: pre;
+                --code-word-break: normal;
+                --toolbar-height: 44px;
+                --header-padding-top: 4px;
+                --header-min-height: 36px;
+                --toolbar-padding-bottom: 4px;
+            }
             /* 1. editor-area 改为左右布局 */
             [data-device="mobile"] .editor-area {
-                flex-direction: row !important;
+                flex-direction: row;
             }
 
             /* 2. 覆盖 v11 的 display:none — 横屏下两个面板都显示 */
             [data-device="mobile"] .editor-area .panel-left,
             [data-device="mobile"] .editor-area .panel-right {
                 display: flex !important;
-                flex: 1 !important;
-                width: 50% !important;
-                max-width: 50% !important;
-                max-height: none !important;
-                min-height: 0 !important;
+                flex: 1;
+                width: 50%;
+                max-width: 50%;
+                max-height: none;
+                min-height: 0;
             }
             [data-device="mobile"] .editor-area .panel-left {
                 border-right: 1px solid var(--border) !important;
@@ -1765,7 +1758,7 @@
 
             /* 3. 隐藏 Tab 栏（横屏双面板不需要切换） */
             [data-device="mobile"] .mob-tabs {
-                display: none !important;
+                display: none;
             }
 
             /* 4. 缩减 header 高度，腾出内容空间 */
@@ -1783,10 +1776,10 @@
 
             /* 5. 缩减底部 toolbar 高度 */
             [data-device="mobile"] .mob-toolbar {
-                padding: 4px 6px;
+                padding: var(--toolbar-padding-bottom) 6px;
                 padding-left: calc(6px + env(safe-area-inset-left, 0px));
                 padding-right: calc(6px + env(safe-area-inset-right, 0px));
-                padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+                padding-bottom: calc(var(--toolbar-padding-bottom) + env(safe-area-inset-bottom, 0px));
             }
             [data-device="mobile"] .mob-btn {
                 min-height: 32px;
@@ -1794,30 +1787,25 @@
                 font-size: 12px;
             }
 
-            /* 6. 缩减 main-layout 底部留白（toolbar 更矮了） */
-            [data-device="mobile"] .main-layout {
-                padding-bottom: calc(44px + env(safe-area-inset-bottom, 0px));
-            }
-
-            /* 7. panel-header 更紧凑 */
+            /* 6. panel-header 更紧凑 */
             [data-device="mobile"] .panel-header {
                 padding: 4px 10px;
                 height: 28px;
                 font-size: 10px;
             }
 
-            /* 8. 横屏不需要强制换行（左右分栏宽度足够水平滚动） */
+            /* 7. 横屏不需要强制换行（左右分栏宽度足够水平滚动） */
             [data-device="mobile"] .json-tree {
-                white-space: nowrap;
-                word-break: normal;
+                white-space: var(--code-white-space);
+                word-break: var(--code-word-break);
             }
             [data-device="mobile"] .output-content pre,
             [data-device="mobile"] .output-content code {
-                white-space: pre !important;
-                word-break: normal !important;
+                white-space: var(--code-white-space) !important;
+                word-break: var(--code-word-break) !important;
             }
             [data-device="mobile"] #input {
-                white-space: pre;
-                word-break: normal;
+                white-space: var(--code-white-space);
+                word-break: var(--code-word-break);
             }
         }
