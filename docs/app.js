@@ -666,7 +666,7 @@
         area.innerHTML = '<div class="output-content"><div class="json-tree">' + treeHtml + '</div></div>';
 
         var treeEl = area.querySelector('.json-tree');
-        var lineCount = treeEl ? countVisibleLines(treeEl, true) : content.split('\n').length;
+        var lineCount = treeEl ? countVisibleLines(treeEl, false) : content.split('\n').length;
         renderLineNumbers(lineCount);
 
         if (obj === null) {
@@ -687,15 +687,15 @@
                 <div class="list-panel" id="list-panel">
                     <div class="list-panel-header">
                         <span class="list-title">${i18n.t('listTitle', {count: arr.length})}</span>
-                        <button class="list-panel-toggle" id="list-panel-toggle" onclick="toggleListPanel()" title="${i18n.t('collapseList')}">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                        <button class="list-panel-toggle" id="list-panel-toggle" onclick="toggleListPanel()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleListPanel();}" title="${i18n.t('collapseList')}" aria-label="${i18n.t('collapseList')}">
+                            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                         </button>
                     </div>
                     <div class="list-panel-body" id="list-panel-body"></div>
                 </div>
                 <div class="list-detail" id="list-detail">
-                    <div class="list-expand-tab" id="list-expand-tab" onclick="toggleListPanel()" title="${i18n.t('expandList')}">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    <div class="list-expand-tab" id="list-expand-tab" role="button" tabindex="0" onclick="toggleListPanel()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleListPanel();}" title="${i18n.t('expandList')}" aria-label="${i18n.t('expandList')}">
+                        <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                     </div>
                     <div class="list-detail-linenos" id="list-detail-linenos"></div>
                     <div class="list-detail-content" id="list-detail-content"></div>
@@ -713,10 +713,19 @@
         arr.forEach((item, i) => {
             const div = document.createElement('div');
             div.className = 'list-item';
+            div.setAttribute('role', 'button');
+            div.setAttribute('tabindex', '0');
+            div.setAttribute('aria-label', '查看第 ' + i + ' 项');
             div.innerHTML = `
                 <span class="list-item-index">[${i}]</span>
                 <span class="list-item-preview">${escapeHtml(getItemPreview(item))}</span>`;
             div.addEventListener('click', () => selectListItem(i, arr));
+            div.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    selectListItem(i, arr);
+                }
+            });
             listPanelBody.appendChild(div);
         });
 
@@ -756,11 +765,13 @@
         if (typeof value === 'number') return '<span class="jt-line">' + prefix + '<span class="jt-number">' + value + '</span></span>';
         if (typeof value === 'string') return '<span class="jt-line">' + prefix + '<span class="jt-string">' + JSON.stringify(value) + '</span></span>';
 
+        var toggleAttrs = 'role="button" tabindex="0" aria-label="折叠/展开"';
+
         if (Array.isArray(value)) {
             var count = value.length;
             if (count === 0) return '<span class="jt-line">' + prefix + '<span class="jt-bracket">[]</span></span>';
             var html = '<div class="jt-group">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + ' onclick="toggleJsonNode(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleJsonNode(this);}">&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
             html += '<div class="jt-children">';
             for (var i = 0; i < count; i++) {
                 html += renderJsonNode(String(i), value[i]);
@@ -779,7 +790,7 @@
             var count = keys.length;
             if (count === 0) return '<span class="jt-line">' + prefix + '<span class="jt-bracket">{}</span></span>';
             var html = '<div class="jt-group">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + ' onclick="toggleJsonNode(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleJsonNode(this);}">&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
             html += '<div class="jt-children">';
             for (var k = 0; k < count; k++) {
                 html += renderJsonNode(keys[k], value[keys[k]]);
@@ -811,7 +822,7 @@
         if (!target) target = document.querySelector('.output-linenos');
         var tree = document.querySelector('.json-tree');
         if (!target || !tree) return;
-        var count = countVisibleLines(tree, true);
+        var count = countVisibleLines(tree, false);
         target.innerHTML = '';
         for (var i = 0; i < count; i++) {
             var span = document.createElement('span');
@@ -821,8 +832,16 @@
     }
 
     function countVisibleLines(el, skipHidden) {
-        if (!skipHidden && el.offsetParent === null && el.style.display === 'none') return 0;
-        if (el.classList.contains('jt-line') && (skipHidden || el.offsetParent !== null)) {
+        if (el.classList && el.classList.contains('jt-line')) {
+            if (skipHidden) return 1;
+            // Check ancestor .jt-group for .collapsed class (CSS hides children)
+            var parent = el.parentElement;
+            while (parent && parent !== document.body) {
+                if (parent.classList && parent.classList.contains('jt-group') && parent.classList.contains('collapsed')) {
+                    return 0;
+                }
+                parent = parent.parentElement;
+            }
             return 1;
         }
         var count = 0;
@@ -838,7 +857,7 @@
         if (typeof item === 'boolean') return String(item);
         if (typeof item === 'number') return String(item);
         if (typeof item === 'string') {
-            return item.length > 50 ? '"' + item.substring(0, 50) + '..."' : JSON.stringify(item);
+            return item.length > 50 ? '"' + item.substring(0, 50) + '…"' : JSON.stringify(item);
         }
         if (Array.isArray(item)) {
             return '[...] (' + i18n.t('items', {count: item.length}) + ')';
@@ -983,7 +1002,10 @@
         document.getElementById('save-modal').classList.add('active');
         const input = document.getElementById('save-name-input');
         input.value = '';
-        setTimeout(() => input.focus(), 50);
+        // Only auto-focus on desktop; on mobile it pops the soft keyboard
+        if (document.documentElement.getAttribute('data-device') !== 'mobile') {
+            setTimeout(() => input.focus(), 50);
+        }
     }
 
     function closeSaveModal() {
@@ -1059,15 +1081,16 @@
             const checked = window.selectedIds.includes(item.id) ? 'checked' : '';
             const selected = window.selectedIds.includes(item.id) ? 'selected' : '';
             return `
-                <div class="history-item ${selected}" onclick="loadHistory(${item.id})">
+                <div class="history-item ${selected}" role="button" tabindex="0" aria-label="加载历史：${escapeHtml(item.name)}" onclick="loadHistory(${item.id})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();loadHistory(${item.id});}">
                     <input type="checkbox" class="history-checkbox"
                            onclick="event.stopPropagation();toggleSelect(${item.id})"
-                           ${checked} title="${i18n.t('selectForCompare')}" />
+                           onkeydown="event.stopPropagation()"
+                           ${checked} title="${i18n.t('selectForCompare')}" aria-label="${i18n.t('selectForCompare')}" />
                     <div class="history-info">
                         <div class="history-name">${escapeHtml(item.name)}</div>
                         <div class="history-snippet">${escapeHtml(snippet)}</div>
                     </div>
-                    <button class="history-delete" onclick="event.stopPropagation();deleteHistory(${item.id})" title="${i18n.t('deleteItem')}">&times;</button>
+                    <button class="history-delete" onclick="event.stopPropagation();deleteHistory(${item.id})" onkeydown="event.stopPropagation()" title="${i18n.t('deleteItem')}" aria-label="${i18n.t('deleteItem')}">&times;</button>
                 </div>`;
         }).join('');
 
@@ -1230,18 +1253,20 @@
     function renderJsonNodeWithDiff(key, value, path, diffMap, side, rootVal) {
         var prefix = key !== null ? '<span class="jt-key">' + JSON.stringify(key) + '</span>: ' : '';
         var diffType = diffMap[path] || '';
+        var diffCls = diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '';
+        var toggleAttrs = 'role="button" tabindex="0" aria-label="折叠/展开"';
 
-        if (value === null) return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-null">null</span></span>';
-        if (typeof value === 'boolean') return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-bool">' + value + '</span></span>';
-        if (typeof value === 'number') return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-number">' + value + '</span></span>';
-        if (typeof value === 'string') return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-string">' + JSON.stringify(value) + '</span></span>';
+        if (value === null) return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-null">null</span></span>';
+        if (typeof value === 'boolean') return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-bool">' + value + '</span></span>';
+        if (typeof value === 'number') return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-number">' + value + '</span></span>';
+        if (typeof value === 'string') return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-string">' + JSON.stringify(value) + '</span></span>';
 
         if (Array.isArray(value)) {
             var count = value.length;
-            if (count === 0) return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-bracket">[]</span></span>';
-            var groupCls = diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '';
+            if (count === 0) return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-bracket">[]</span></span>';
+            var groupCls = diffCls;
             var html = '<div class="jt-group' + groupCls + '">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + ' onclick="toggleJsonNode(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleJsonNode(this);}">&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
             html += '<div class="jt-children">';
             for (var i = 0; i < count; i++) {
                 html += renderJsonNodeWithDiff(String(i), value[i], path ? path + '/' + i : String(i), diffMap, side, rootVal);
@@ -1258,10 +1283,10 @@
         if (typeof value === 'object') {
             var keys = Object.keys(value);
             var count = keys.length;
-            if (count === 0) return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-bracket">{}</span></span>';
-            var groupCls = diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '';
+            if (count === 0) return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-bracket">{}</span></span>';
+            var groupCls = diffCls;
             var html = '<div class="jt-group' + groupCls + '">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + ' onclick="toggleJsonNode(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleJsonNode(this);}">&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
             html += '<div class="jt-children">';
             for (var k = 0; k < count; k++) {
                 var keyStr = keys[k];
@@ -1368,10 +1393,16 @@
             if (e.key === 'Escape') {
                 const modal = document.getElementById('save-modal');
                 const compare = document.getElementById('compare-container');
+                const sheet = document.getElementById('mob-sheet');
+                const sidebar = document.getElementById('sidebar');
                 if (modal.classList.contains('active')) {
                     closeSaveModal();
                 } else if (compare.classList.contains('active')) {
                     closeCompare();
+                } else if (sheet && sheet.classList.contains('open')) {
+                    toggleMobileMore();
+                } else if (sidebar && sidebar.classList.contains('active')) {
+                    toggleSidebar();
                 }
             }
         });
@@ -1438,6 +1469,9 @@
         var l = document.getElementById('hljs-light');
         if (d) d.disabled = theme === 'light';
         if (l) l.disabled = theme === 'dark';
+        // Sync <meta name="theme-color"> with active background (PWA status bar / iOS safe area)
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'light' ? '#ffffff' : '#0d1117');
         localStorage.setItem('theme', theme);
     }
 
@@ -1482,26 +1516,7 @@
     });
 
 /* ========== Mobile Handlers ========== */
-    window.handleMobileAction = function(val) {
-        switch(val) {
-            case 'format': formatJSON(); break;
-            case 'minify': minifyJSON(); break;
-            case 'escape': stringifyJSON(); break;
-        }
-    };
-    window.handleMobileLang = function(val) {
-        if (i18n && typeof i18n.setLang === 'function') {
-            i18n.setLang(val);
-        }
-        var label = document.getElementById('mobile-lang-label');
-        if (label) label.textContent = val === 'zh' ? '中文' : 'English';
-    };
     window.toggleMobileMore = function(){var s=document.getElementById("mob-sheet"),o=document.getElementById("mob-sheet-overlay"),b=document.getElementById("mob-more-btn");if(!s)return;var isOpen=s.classList.toggle("open");o&&o.classList.toggle("open",isOpen);b&&b.classList.toggle("active",isOpen);};
-    window.toggleMobileLang = function() {
-        var current = (window.i18n && window.i18n._lang) || 'zh';
-        var next = current === 'zh' ? 'en' : 'zh';
-        handleMobileLang(next);
-    };
     // Initialize mobile UI on load
     document.addEventListener('DOMContentLoaded', function() {
         var themeIconUse = document.getElementById('mobile-theme-icon-use');
@@ -1513,7 +1528,5 @@
         if (langLabel && window.i18n && typeof i18n.setLang === 'function') {
             // Apply initial translations from saved language
             i18n.setLang(i18n._lang);
-            var langLabel2 = document.getElementById('mobile-lang-label2');
-            if (langLabel2) langLabel2.textContent = i18n._lang === 'zh' ? '中文' : 'English';
         }
     });
