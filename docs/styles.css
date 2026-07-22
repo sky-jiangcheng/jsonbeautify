@@ -1927,8 +1927,25 @@
                 transition: none !important;
             }
             [data-device="mobile"] .editor-area .panel-left {
-                border-right: 1px solid var(--border) !important;
+                border-right: none !important;
                 border-bottom: none !important;
+            }
+
+            /* 3. 贯穿整个高度的垂直分隔线 */
+            [data-device="mobile"] .main-layout {
+                position: relative;
+            }
+            [data-device="mobile"] .main-layout::before {
+                content: '';
+                position: absolute;
+                left: 50%;
+                top: 0;
+                bottom: 0;
+                width: 1px;
+                background: var(--border);
+                transform: translateX(-50%);
+                z-index: 10;
+                pointer-events: none;
             }
 
             /* 3. 隐藏 Tab 栏（横屏双面板不需要切换） */
