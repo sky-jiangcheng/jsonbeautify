@@ -1892,6 +1892,17 @@
            阈值 500px：区分手机横屏（矮视口）与平板横屏（高视口） */
 
         @media (orientation: landscape) and (max-height: 500px) {
+            /* 0. 锁定页面滚动，只有内部内容区可滚动 */
+            [data-device="mobile"] html,
+            [data-device="mobile"] body {
+                overflow: hidden !important;
+                touch-action: none;
+            }
+            [data-device="mobile"] .main-layout {
+                overflow: hidden !important;
+                touch-action: none;
+            }
+
             [data-device="mobile"] {
                 --editor-direction: row;
                 --code-white-space: pre;
@@ -1901,17 +1912,15 @@
                 --header-min-height: 36px;
                 --toolbar-padding-bottom: 4px;
             }
-            /* 1. editor-area 改为左右布局，支持水平滚动 */
+            /* 1. editor-area 改为左右布局 */
             [data-device="mobile"] .editor-area {
                 position: static;
                 flex-direction: row;
-                overscroll-behavior: contain;
-                touch-action: pan-x pan-y;
-                overflow-x: auto;
                 overflow: hidden;
+                touch-action: none;
             }
 
-            /* 2. 覆盖竖屏的 absolute 定位 — 横屏下两个面板都显示，限制最小宽度避免挤压 */
+            /* 2. 覆盖竖屏的 absolute 定位 — 横屏下两个面板都显示 */
             [data-device="mobile"] .editor-area .panel-left,
             [data-device="mobile"] .editor-area .panel-right {
                 position: static;
@@ -1921,31 +1930,22 @@
                 max-width: 50%;
                 max-height: none;
                 min-height: 0;
-                touch-action: pan-x pan-y;
                 transform: none !important;
                 opacity: 1 !important;
                 transition: none !important;
+                touch-action: none;
             }
             [data-device="mobile"] .editor-area .panel-left {
-                border-right: none !important;
+                border-right: 1px solid var(--border) !important;
                 border-bottom: none !important;
             }
 
-            /* 3. 贯穿整个高度的垂直分隔线 */
-            [data-device="mobile"] .main-layout {
-                position: relative;
-            }
-            [data-device="mobile"] .main-layout::before {
-                content: '';
-                position: absolute;
-                left: 50%;
-                top: 0;
-                bottom: 0;
-                width: 1px;
-                background: var(--border);
-                transform: translateX(-50%);
-                z-index: 10;
-                pointer-events: none;
+            /* 3. 只允许 textarea 和输出区域内部滚动 */
+            [data-device="mobile"] .editor-area #input,
+            [data-device="mobile"] .editor-area .output-content-area,
+            [data-device="mobile"] .editor-area .output-wrap {
+                touch-action: pan-y;
+                -webkit-overflow-scrolling: touch;
             }
 
             /* 3. 隐藏 Tab 栏（横屏双面板不需要切换） */
