@@ -1515,19 +1515,7 @@
         [data-device="mobile"] .editor-area {
             flex-direction: column !important;
         }
-        @media (orientation: landscape) and (max-height: 500px) {
-            [data-device="mobile"] .editor-area {
-                flex-direction: row !important;
-            }
-            [data-device="mobile"] .panel-left {
-                width: 50% !important;
-                max-width: 50% !important;
-            }
-            [data-device="mobile"] .panel-right {
-                width: 50% !important;
-                max-width: 50% !important;
-            }
-        }
+        /* 竖屏 panel 高度限制（v11 tab 切换时 active 面板会覆盖为 none） */
         [data-device="mobile"] .panel-left {
             border-right: none !important;
             border-bottom: 1px solid var(--border);
@@ -1748,4 +1736,88 @@
         /* 移动端隐藏桌面端的 sidebar-toggle 浮动按钮（用抽屉替代） */
         [data-device="mobile"] #sidebar-open-btn {
             display: none !important;
+        }
+
+        /* ========== 横屏专属适配（v12）==========
+           横屏核心策略：双面板并排 + 隐藏 Tab 栏 + 缩减 header/toolbar
+           覆盖 v11 的 display:none 和竖屏 max-height 限制 */
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            /* 1. editor-area 改为左右布局 */
+            [data-device="mobile"] .editor-area {
+                flex-direction: row !important;
+            }
+
+            /* 2. 覆盖 v11 的 display:none — 横屏下两个面板都显示 */
+            [data-device="mobile"] .editor-area .panel-left,
+            [data-device="mobile"] .editor-area .panel-right {
+                display: flex !important;
+                flex: 1 !important;
+                width: 50% !important;
+                max-width: 50% !important;
+                max-height: none !important;
+                min-height: 0 !important;
+            }
+            [data-device="mobile"] .editor-area .panel-left {
+                border-right: 1px solid var(--border) !important;
+                border-bottom: none !important;
+            }
+
+            /* 3. 隐藏 Tab 栏（横屏双面板不需要切换） */
+            [data-device="mobile"] .mob-tabs {
+                display: none !important;
+            }
+
+            /* 4. 缩减 header 高度，腾出内容空间 */
+            [data-device="mobile"] .mob-header {
+                padding: 4px 14px;
+                padding-top: calc(4px + env(safe-area-inset-top, 0px));
+                min-height: calc(36px + env(safe-area-inset-top, 0px));
+            }
+            [data-device="mobile"] .mob-title {
+                font-size: 13px;
+            }
+            [data-device="mobile"] .mob-icon-btn {
+                padding: 4px 8px;
+            }
+
+            /* 5. 缩减底部 toolbar 高度 */
+            [data-device="mobile"] .mob-toolbar {
+                padding: 4px 6px;
+                padding-left: calc(6px + env(safe-area-inset-left, 0px));
+                padding-right: calc(6px + env(safe-area-inset-right, 0px));
+                padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+            }
+            [data-device="mobile"] .mob-btn {
+                min-height: 32px;
+                padding: 4px 6px;
+                font-size: 12px;
+            }
+
+            /* 6. 缩减 main-layout 底部留白（toolbar 更矮了） */
+            [data-device="mobile"] .main-layout {
+                padding-bottom: calc(44px + env(safe-area-inset-bottom, 0px));
+            }
+
+            /* 7. panel-header 更紧凑 */
+            [data-device="mobile"] .panel-header {
+                padding: 4px 10px;
+                height: 28px;
+                font-size: 10px;
+            }
+
+            /* 8. 横屏不需要强制换行（左右分栏宽度足够水平滚动） */
+            [data-device="mobile"] .json-tree {
+                white-space: nowrap;
+                word-break: normal;
+            }
+            [data-device="mobile"] .output-content pre,
+            [data-device="mobile"] .output-content code {
+                white-space: pre !important;
+                word-break: normal !important;
+            }
+            [data-device="mobile"] #input {
+                white-space: pre;
+                word-break: normal;
+            }
         }
