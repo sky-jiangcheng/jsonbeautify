@@ -185,14 +185,9 @@
             font-family: var(--font-sans);
             font-weight: 500;
             cursor: pointer;
-            transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+            transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
             white-space: nowrap;
             line-height: 1;
-        }
-
-        .btn:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: 2px;
         }
 
         .btn:hover {
@@ -204,6 +199,46 @@
         .btn:active {
             background: var(--bg-elevated);
             transform: scale(0.97);
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        /* ========== Shared Focus & Touch ========== */
+        .list-panel-toggle:focus-visible,
+        .list-expand-tab:focus-visible,
+        .list-item:focus-visible,
+        .sidebar-toggle:focus-visible,
+        .history-item:focus-visible,
+        .history-delete:focus-visible,
+        .jt-toggle:focus-visible,
+        .mob-icon-btn:focus-visible,
+        .mob-btn:focus-visible,
+        .mob-sheet-item:focus-visible,
+        .mob-sheet-close:focus-visible,
+        .mob-tab:focus-visible,
+        #sidebar-open-btn:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .list-panel-toggle,
+        .sidebar-toggle,
+        .history-delete,
+        .jt-toggle,
+        .list-expand-tab {
+            touch-action: manipulation;
+        }
+
+        .btn:active {
+            transform-origin: center;
+        }
+
+        .modal h3,
+        .sidebar-header h2 {
+            text-wrap: balance;
         }
 
         .btn:disabled {
@@ -287,6 +322,11 @@
         }
         .validation-indicator.invalid .dot {
             background: var(--red);
+        }
+
+        /* ========== Numeric Display ========== */
+        #output-status, #input-size {
+            font-variant-numeric: tabular-nums;
         }
 
         /* ========== Main Layout ========== */
@@ -373,9 +413,8 @@
         }
 
         #input:focus-visible {
+            outline: none;
             box-shadow: inset 0 0 0 1px var(--border-focus);
-            outline: 2px solid var(--border-focus);
-            outline-offset: -2px;
         }
 
         #input::placeholder {
@@ -614,11 +653,6 @@
             transition: color var(--transition-fast), background var(--transition-fast);
             flex-shrink: 0;
         }
-
-        .list-panel-toggle:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: 1px;
-        }
         .list-panel-toggle:hover {
             color: var(--text-primary);
             background: var(--bg-hover);
@@ -662,11 +696,6 @@
             transition: background var(--transition-fast), border-left-color var(--transition-fast);
             border-left: 2px solid transparent;
             user-select: none;
-        }
-
-        .list-item:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: -2px;
         }
         .list-item:hover {
             background: var(--bg-hover);
@@ -777,14 +806,7 @@
             color: var(--text-muted);
             font-size: 10px;
             text-align: center;
-            transition: color var(--transition-fast);
-            transform-origin: center;
-        }
-
-        .jt-toggle:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: 1px;
-            border-radius: 2px;
+            transition: transform var(--transition-fast);
         }
         .jt-toggle:hover {
             color: var(--text-primary);
@@ -872,7 +894,7 @@
             flex-shrink: 0;
         }
 
-        .sidebar-header h3 {
+        .sidebar-header h2 {
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
@@ -893,11 +915,6 @@
             font-size: 12px;
             border-radius: 4px;
             transition: color var(--transition-fast), background var(--transition-fast);
-        }
-
-        .sidebar-toggle:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: 1px;
         }
 
         .sidebar-toggle:hover {
@@ -940,11 +957,6 @@
             transition: background var(--transition-fast), border-color var(--transition-fast);
             margin-bottom: 2px;
             border: 1px solid transparent;
-        }
-
-        .history-item:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: -2px;
         }
 
         .history-item:hover {
@@ -1001,14 +1013,8 @@
             font-size: 14px;
             border-radius: 3px;
             opacity: 0;
-            transition: color var(--transition-fast), background var(--transition-fast), opacity var(--transition-fast);
+            transition: opacity var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
             flex-shrink: 0;
-        }
-
-        .history-delete:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: 1px;
-            opacity: 1;
         }
 
         .history-item:hover .history-delete { opacity: 1; }
@@ -1081,10 +1087,9 @@
         }
 
         .modal input[type="text"]:focus-visible {
+            outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--accent-subtle);
-            outline: 2px solid var(--accent);
-            outline-offset: 1px;
         }
 
         .modal-actions {
@@ -1109,10 +1114,10 @@
             inset: 0;
             background: var(--bg-primary);
             z-index: 900;
+            overscroll-behavior: contain;
             display: none;
             flex-direction: column;
             animation: fade-in 0.15s ease;
-            overscroll-behavior: contain;
         }
 
         .compare-container.active { display: flex; }
@@ -1272,11 +1277,6 @@
             transition: background var(--transition), color var(--transition);
         }
 
-        #sidebar-open-btn:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: 1px;
-        }
-
         #sidebar-open-btn:hover {
             background: var(--bg-hover) !important;
             color: var(--text-primary) !important;
@@ -1382,17 +1382,11 @@
             font-size: 13px;
             border-radius: 8px;
             -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
             transition: background 0.15s;
+            touch-action: manipulation;
         }
-
         [data-device="mobile"] .mob-icon-btn:active {
             background: var(--bg-hover, rgba(128,128,128,0.1));
-        }
-
-        [data-device="mobile"] .mob-icon-btn:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: -2px;
         }
         [data-device="mobile"] .mob-lang-text {
             font-weight: 600;
@@ -1410,7 +1404,6 @@
             max-width: 100vw;
             overflow-x: auto;
             overflow-y: hidden;
-            overscroll-behavior-x: contain;
             padding: 6px 6px;
             padding-left: calc(6px + env(safe-area-inset-left, 0px));
             padding-right: calc(6px + env(safe-area-inset-right, 0px));
@@ -1445,16 +1438,12 @@
             -webkit-tap-highlight-color: transparent;
             transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
             touch-action: manipulation;
-            min-height: 40px;
             transform-origin: center;
+            min-height: 40px;
         }
         [data-device="mobile"] .mob-btn:active {
             transform: scale(0.95);
             background: var(--bg-hover, rgba(128,128,128,0.1));
-        }
-        [data-device="mobile"] .mob-btn:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: -2px;
         }
         [data-device="mobile"] .mob-btn svg {
             flex-shrink: 0;
@@ -1470,7 +1459,6 @@
             font-weight: 600;
             padding: 6px;
             box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
-            transform-origin: center;
         }
         [data-device="mobile"] .mob-btn-primary:active {
             background: var(--accent-hover, #2563eb);
@@ -1509,9 +1497,6 @@
             transform: translateY(100%);
             transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
             overscroll-behavior: contain;
-            max-height: 85vh;
-            overflow-y: auto;
-            touch-action: pan-y;
         }
         [data-device="mobile"] .mob-sheet.open {
             display: block;
@@ -1550,17 +1535,13 @@
             font-size: 15px;
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
             transition: background 0.15s;
             width: 100%;
             text-align: left;
+            touch-action: manipulation;
         }
         [data-device="mobile"] .mob-sheet-item:active {
             background: var(--bg-hover, rgba(128,128,128,0.08));
-        }
-        [data-device="mobile"] .mob-sheet-item:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: -2px;
         }
         [data-device="mobile"] .mob-sheet-item svg {
             color: var(--text-secondary);
@@ -1581,10 +1562,6 @@
         }
         [data-device="mobile"] .mob-sheet-close:active {
             background: var(--bg-hover, rgba(128,128,128,0.1));
-        }
-        [data-device="mobile"] .mob-sheet-close:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: -2px;
         }
 
         /* --- Editor Area (mobile auto-adapt) --- */
@@ -1737,17 +1714,13 @@
             text-align: center;
             border-bottom: 2px solid transparent;
             -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
             transition: color 0.15s, border-color 0.15s;
+            touch-action: manipulation;
         }
         [data-device="mobile"] .mob-tab.is-active {
             color: var(--accent);
             border-bottom-color: var(--accent);
             font-weight: 600;
-        }
-        [data-device="mobile"] .mob-tab:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: -2px;
         }
 
         /* 3. 历史侧栏全屏抽屉 */
@@ -1773,7 +1746,6 @@
             padding-top: env(safe-area-inset-top, 0px);
             padding-bottom: env(safe-area-inset-bottom, 0px);
             overscroll-behavior: contain;
-            touch-action: pan-y;
         }
         [data-device="mobile"] .sidebar.active {
             transform: translateX(0);
