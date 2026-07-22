@@ -18,7 +18,7 @@
 
     function showToast(msg, duration, iconId) {
         const t = document.getElementById('toast');
-        const iconSvg = iconId ? `<svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#${iconId}"/></svg>` : '';
+        const iconSvg = iconId ? `<svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#${iconId}"/></svg>` : '';
         t.innerHTML = iconSvg + escapeHtml(msg);
         t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), duration || 2000);
@@ -148,13 +148,6 @@
             valid: '有效',
             invalid: '无效',
             lineCount: '行',
-            mobTitle: 'JSON工具',
-            more: '更多',
-            moreOps: '更多操作',
-            openFile: '打开文件',
-            downloadFile: '下载文件',
-            clearContent: '清空内容',
-            cancelMore: '取消',
         },
         en: {
             title: 'JSON Formatter',
@@ -250,13 +243,6 @@
             valid: 'Valid',
             invalid: 'Invalid',
             lineCount: 'lines',
-            mobTitle: 'JSON Tools',
-            more: 'More',
-            moreOps: 'More Actions',
-            openFile: 'Open File',
-            downloadFile: 'Download File',
-            clearContent: 'Clear Content',
-            cancelMore: 'Cancel',
         }
     };
 
@@ -604,7 +590,7 @@
         const area = document.getElementById('output-content-area');
         area.innerHTML = `
             <div class="output-placeholder" id="output-placeholder">
-                <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-braces"/></svg>
+                <svg aria-hidden="true" class="svg-icon" viewBox="0 0 24 24"><use href="#icon-braces"/></svg>
                 ${i18n.t('outputPlaceholder')}
             </div>`;
         renderLineNumbers(0);
@@ -1068,7 +1054,7 @@
         if (history.length === 0) {
             list.innerHTML = `
                 <div class="history-empty">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-clock"/></svg>
+                    <svg aria-hidden="true" class="svg-icon" viewBox="0 0 24 24"><use href="#icon-clock"/></svg>
                     <div>${i18n.t('noHistory')}</div>
                     <div style="font-size:11px;opacity:0.6">${i18n.t('noHistoryHint')}</div>
                 </div>`;
