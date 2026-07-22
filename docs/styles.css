@@ -76,6 +76,16 @@
         /* ========== Reset & Base ========== */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+        /* ========== Reduced Motion ========== */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
         body {
             font-family: var(--font-sans);
             background: var(--bg-primary);
@@ -175,7 +185,7 @@
             font-family: var(--font-sans);
             font-weight: 500;
             cursor: pointer;
-            transition: all var(--transition-fast);
+            transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
             white-space: nowrap;
             line-height: 1;
         }
@@ -189,6 +199,11 @@
         .btn:active {
             background: var(--bg-elevated);
             transform: scale(0.97);
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
         }
 
         .btn:disabled {
@@ -274,6 +289,11 @@
             background: var(--red);
         }
 
+        /* ========== Numeric Display ========== */
+        #output-status, #input-size {
+            font-variant-numeric: tabular-nums;
+        }
+
         /* ========== Main Layout ========== */
         .main-layout {
             display: flex;
@@ -357,7 +377,8 @@
             transition: box-shadow var(--transition-fast);
         }
 
-        #input:focus {
+        #input:focus-visible {
+            outline: none;
             box-shadow: inset 0 0 0 1px var(--border-focus);
         }
 
@@ -594,7 +615,7 @@
             cursor: pointer;
             font-size: 12px;
             border-radius: 4px;
-            transition: all var(--transition-fast);
+            transition: color var(--transition-fast), background var(--transition-fast);
             flex-shrink: 0;
         }
         .list-panel-toggle:hover {
@@ -637,7 +658,7 @@
             padding: 7px 12px;
             cursor: pointer;
             border-bottom: 1px solid rgba(48, 54, 61, 0.4);
-            transition: all var(--transition-fast);
+            transition: background var(--transition-fast), border-left-color var(--transition-fast);
             border-left: 2px solid transparent;
             user-select: none;
         }
@@ -858,7 +879,7 @@
             cursor: pointer;
             font-size: 12px;
             border-radius: 4px;
-            transition: all var(--transition-fast);
+            transition: color var(--transition-fast), background var(--transition-fast);
         }
 
         .sidebar-toggle:hover {
@@ -898,7 +919,7 @@
             padding: 8px 10px;
             border-radius: var(--radius);
             cursor: pointer;
-            transition: all var(--transition-fast);
+            transition: background var(--transition-fast), border-color var(--transition-fast);
             margin-bottom: 2px;
             border: 1px solid transparent;
         }
@@ -957,7 +978,7 @@
             font-size: 14px;
             border-radius: 3px;
             opacity: 0;
-            transition: all var(--transition-fast);
+            transition: opacity var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
             flex-shrink: 0;
         }
 
@@ -987,6 +1008,7 @@
             align-items: center;
             justify-content: center;
             animation: fade-in 0.15s ease;
+            overscroll-behavior: contain;
         }
 
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
@@ -1029,7 +1051,8 @@
             transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
         }
 
-        .modal input[type="text"]:focus {
+        .modal input[type="text"]:focus-visible {
+            outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--accent-subtle);
         }
@@ -1056,6 +1079,7 @@
             inset: 0;
             background: var(--bg-primary);
             z-index: 900;
+            overscroll-behavior: contain;
             display: none;
             flex-direction: column;
             animation: fade-in 0.15s ease;
@@ -1215,7 +1239,7 @@
 
         /* ========== Sidebar Toggle Buttons ========== */
         #sidebar-open-btn {
-            transition: all var(--transition);
+            transition: background var(--transition), color var(--transition);
         }
 
         #sidebar-open-btn:hover {
@@ -1324,6 +1348,7 @@
             border-radius: 8px;
             -webkit-tap-highlight-color: transparent;
             transition: background 0.15s;
+            touch-action: manipulation;
         }
         [data-device="mobile"] .mob-icon-btn:active {
             background: var(--bg-hover, rgba(128,128,128,0.1));
@@ -1376,8 +1401,9 @@
             cursor: pointer;
             white-space: nowrap;
             -webkit-tap-highlight-color: transparent;
-            transition: all 0.15s ease;
+            transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
             touch-action: manipulation;
+            transform-origin: center;
             min-height: 40px;
         }
         [data-device="mobile"] .mob-btn:active {
@@ -1435,6 +1461,7 @@
             box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
             transform: translateY(100%);
             transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+            overscroll-behavior: contain;
         }
         [data-device="mobile"] .mob-sheet.open {
             display: block;
@@ -1476,6 +1503,7 @@
             transition: background 0.15s;
             width: 100%;
             text-align: left;
+            touch-action: manipulation;
         }
         [data-device="mobile"] .mob-sheet-item:active {
             background: var(--bg-hover, rgba(128,128,128,0.08));
@@ -1495,6 +1523,7 @@
             font-weight: 500;
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
         [data-device="mobile"] .mob-sheet-close:active {
             background: var(--bg-hover, rgba(128,128,128,0.1));
@@ -1651,6 +1680,7 @@
             border-bottom: 2px solid transparent;
             -webkit-tap-highlight-color: transparent;
             transition: color 0.15s, border-color 0.15s;
+            touch-action: manipulation;
         }
         [data-device="mobile"] .mob-tab.is-active {
             color: var(--accent);
@@ -1680,6 +1710,7 @@
             padding-right: env(safe-area-inset-right, 0px);
             padding-top: env(safe-area-inset-top, 0px);
             padding-bottom: env(safe-area-inset-bottom, 0px);
+            overscroll-behavior: contain;
         }
         [data-device="mobile"] .sidebar.active {
             transform: translateX(0);

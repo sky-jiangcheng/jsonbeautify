@@ -47,7 +47,8 @@
         const k = 1024;
         const sizes = ['B', 'KB', 'MB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        const formatter = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 1 });
+        return formatter.format(bytes / Math.pow(k, i)) + ' ' + sizes[i];
     }
 
     /* ==============================================================
@@ -120,6 +121,9 @@
             jsonError: 'JSON 格式错误',
             cleared: '已清空',
             historyCleared: '历史已清空',
+            confirmClear: '确定要清空所有内容吗？',
+            confirmDelete: '确定要删除这条记录吗？',
+            confirmClearAll: '确定要清空所有历史记录吗？',
             loaded: '已加载：{name}',
             jsonOnly: '请拖入 .json 文件',
             needFormatFirst: '请先格式化有效的 JSON',
@@ -222,6 +226,9 @@
             jsonError: 'Invalid JSON format',
             cleared: 'Cleared',
             historyCleared: 'History cleared',
+            confirmClear: 'Are you sure you want to clear all content?',
+            confirmDelete: 'Are you sure you want to delete this record?',
+            confirmClearAll: 'Are you sure you want to clear all history?',
             loaded: 'Loaded: {name}',
             jsonOnly: 'Please drop .json files only',
             needFormatFirst: 'Please format valid JSON first',
@@ -261,7 +268,7 @@
     };
 
     const i18n = {
-        _lang: localStorage.getItem('appLang') || (navigator.language.startsWith('zh') ? 'zh' : 'en'),
+        _lang: localStorage.getItem('appLang') || ((navigator.languages && navigator.languages[0]?.startsWith('zh')) || navigator.language?.startsWith('zh') ? 'zh' : 'en'),
 
         t(key, vars) {
             let s = I18N[this._lang][key] || I18N['en'][key] || key;
@@ -687,16 +694,16 @@
                 <div class="list-panel" id="list-panel">
                     <div class="list-panel-header">
                         <span class="list-title">${i18n.t('listTitle', {count: arr.length})}</span>
-                        <button class="list-panel-toggle" id="list-panel-toggle" onclick="toggleListPanel()" title="${i18n.t('collapseList')}">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                        <button class="list-panel-toggle" id="list-panel-toggle" onclick="toggleListPanel()" title="${i18n.t('collapseList')}" aria-label="${i18n.t('collapseList')}">
+                            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                         </button>
                     </div>
                     <div class="list-panel-body" id="list-panel-body"></div>
                 </div>
                 <div class="list-detail" id="list-detail">
-                    <div class="list-expand-tab" id="list-expand-tab" onclick="toggleListPanel()" title="${i18n.t('expandList')}">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                    </div>
+                    <button class="list-expand-tab" id="list-expand-tab" onclick="toggleListPanel()" title="${i18n.t('expandList')}" aria-label="${i18n.t('expandList')}">
+                        <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
                     <div class="list-detail-linenos" id="list-detail-linenos"></div>
                     <div class="list-detail-content" id="list-detail-content"></div>
                 </div>
@@ -711,13 +718,30 @@
         }
 
         arr.forEach((item, i) => {
-            const div = document.createElement('div');
-            div.className = 'list-item';
-            div.innerHTML = `
+            const btn = document.createElement('button');
+            btn.className = 'list-item';
+            btn.innerHTML = `
                 <span class="list-item-index">[${i}]</span>
                 <span class="list-item-preview">${escapeHtml(getItemPreview(item))}</span>`;
-            div.addEventListener('click', () => selectListItem(i, arr));
-            listPanelBody.appendChild(div);
+            btn.addEventListener('click', () => selectListItem(i, arr));
+            btn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    selectListItem(i, arr);
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const next = Math.min(i + 1, arr.length - 1);
+                    selectListItem(next, arr);
+                    listPanelBody.children[next]?.focus();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const prev = Math.max(i - 1, 0);
+                    selectListItem(prev, arr);
+                    listPanelBody.children[prev]?.focus();
+                }
+            });
+            btn.setAttribute('tabindex', '0');
+            listPanelBody.appendChild(btn);
         });
 
         window.listSelectedIndex = 0;
@@ -760,7 +784,7 @@
             var count = value.length;
             if (count === 0) return '<span class="jt-line">' + prefix + '<span class="jt-bracket">[]</span></span>';
             var html = '<div class="jt-group">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
+            html += '<span class="jt-line">' + prefix + '<button class="jt-toggle" onclick="toggleJsonNode(this)" tabindex="0" aria-label="' + i18n.t('expandList') + '">&#9660;</button><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
             html += '<div class="jt-children">';
             for (var i = 0; i < count; i++) {
                 html += renderJsonNode(String(i), value[i]);
@@ -779,7 +803,7 @@
             var count = keys.length;
             if (count === 0) return '<span class="jt-line">' + prefix + '<span class="jt-bracket">{}</span></span>';
             var html = '<div class="jt-group">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
+            html += '<span class="jt-line">' + prefix + '<button class="jt-toggle" onclick="toggleJsonNode(this)" tabindex="0" aria-label="' + i18n.t('expandList') + '">&#9660;</button><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
             html += '<div class="jt-children">';
             for (var k = 0; k < count; k++) {
                 html += renderJsonNode(keys[k], value[keys[k]]);
@@ -802,9 +826,19 @@
             group.classList.toggle('collapsed');
             var toggle = group.querySelector('.jt-toggle');
             toggle.innerHTML = group.classList.contains('collapsed') ? '&#9654;' : '&#9660;';
+            toggle.setAttribute('aria-expanded', !group.classList.contains('collapsed'));
             updateTreeLineNumbers();
         }
     }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.target.classList.contains('jt-toggle')) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleJsonNode(e.target);
+            }
+        }
+    });
 
     function updateTreeLineNumbers() {
         var target = document.getElementById('list-detail-linenos');
@@ -821,9 +855,10 @@
     }
 
     function countVisibleLines(el, skipHidden) {
-        if (!skipHidden && el.offsetParent === null && el.style.display === 'none') return 0;
-        if (el.classList.contains('jt-line') && (skipHidden || el.offsetParent !== null)) {
-            return 1;
+        var style = window.getComputedStyle(el);
+        if (!skipHidden && (style.display === 'none' || style.visibility === 'hidden')) return 0;
+        if (el.classList.contains('jt-line')) {
+            return (skipHidden || style.display !== 'none') ? 1 : 0;
         }
         var count = 0;
         for (var i = 0; i < el.children.length; i++) {
@@ -838,15 +873,15 @@
         if (typeof item === 'boolean') return String(item);
         if (typeof item === 'number') return String(item);
         if (typeof item === 'string') {
-            return item.length > 50 ? '"' + item.substring(0, 50) + '..."' : JSON.stringify(item);
+            return item.length > 50 ? '"' + item.substring(0, 50) + '…"' : JSON.stringify(item);
         }
         if (Array.isArray(item)) {
-            return '[...] (' + i18n.t('items', {count: item.length}) + ')';
+            return '[…] (' + i18n.t('items', {count: item.length}) + ')';
         }
         if (typeof item === 'object') {
             const keys = Object.keys(item);
             const preview = keys.slice(0, 2).join(', ');
-            return '{' + preview + (keys.length > 2 ? ', ...' : '') + '} (' + i18n.t('keys', {count: keys.length}) + ')';
+            return '{' + preview + (keys.length > 2 ? ', …' : '') + '} (' + i18n.t('keys', {count: keys.length}) + ')';
         }
         return String(item);
     }
@@ -895,7 +930,9 @@
     }
 
     function clearContent() {
-        document.getElementById('input').value = '';
+        var input = document.getElementById('input');
+        if (input.value.trim() && !confirm(i18n.t('confirmClear'))) return;
+        input.value = '';
         window.lastFormattedContent = '';
         window.lastParsedJson = null;
         window.lastDetailContent = '';
@@ -1002,6 +1039,7 @@
     }
 
     function deleteHistory(id) {
+        if (!confirm(i18n.t('confirmDelete'))) return;
         let history = getHistory().filter(item => item.id !== id);
         setHistory(history);
         window.selectedIds = window.selectedIds.filter(i => i !== id);
@@ -1010,6 +1048,7 @@
 
     function clearAllHistory() {
         if (getHistory().length === 0) return;
+        if (!confirm(i18n.t('confirmClearAll'))) return;
         setHistory([]);
         window.selectedIds = [];
         renderHistory();
@@ -1059,7 +1098,7 @@
             const checked = window.selectedIds.includes(item.id) ? 'checked' : '';
             const selected = window.selectedIds.includes(item.id) ? 'selected' : '';
             return `
-                <div class="history-item ${selected}" onclick="loadHistory(${item.id})">
+                <button class="history-item ${selected}" onclick="loadHistory(${item.id})" tabindex="0">
                     <input type="checkbox" class="history-checkbox"
                            onclick="event.stopPropagation();toggleSelect(${item.id})"
                            ${checked} title="${i18n.t('selectForCompare')}" />
@@ -1067,9 +1106,26 @@
                         <div class="history-name">${escapeHtml(item.name)}</div>
                         <div class="history-snippet">${escapeHtml(snippet)}</div>
                     </div>
-                    <button class="history-delete" onclick="event.stopPropagation();deleteHistory(${item.id})" title="${i18n.t('deleteItem')}">&times;</button>
-                </div>`;
+                    <button class="history-delete" onclick="event.stopPropagation();deleteHistory(${item.id})" title="${i18n.t('deleteItem')}" aria-label="${i18n.t('deleteItem')}">&times;</button>
+                </button>`;
         }).join('');
+
+        list.querySelectorAll('.history-item').forEach((btn, i) => {
+            btn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    loadHistory(history[i].id);
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const next = Math.min(i + 1, history.length - 1);
+                    list.children[next]?.focus();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const prev = Math.max(i - 1, 0);
+                    list.children[prev]?.focus();
+                }
+            });
+        });
 
         compareBtn.disabled = window.selectedIds.length !== 2;
     }
@@ -1241,7 +1297,7 @@
             if (count === 0) return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-bracket">[]</span></span>';
             var groupCls = diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '';
             var html = '<div class="jt-group' + groupCls + '">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
+            html += '<span class="jt-line">' + prefix + '<button class="jt-toggle" onclick="toggleJsonNode(this)" tabindex="0" aria-label="' + i18n.t('expandList') + '">&#9660;</button><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
             html += '<div class="jt-children">';
             for (var i = 0; i < count; i++) {
                 html += renderJsonNodeWithDiff(String(i), value[i], path ? path + '/' + i : String(i), diffMap, side, rootVal);
@@ -1261,7 +1317,7 @@
             if (count === 0) return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-bracket">{}</span></span>';
             var groupCls = diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '';
             var html = '<div class="jt-group' + groupCls + '">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" onclick="toggleJsonNode(this)">&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
+            html += '<span class="jt-line">' + prefix + '<button class="jt-toggle" onclick="toggleJsonNode(this)" tabindex="0" aria-label="' + i18n.t('expandList') + '">&#9660;</button><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
             html += '<div class="jt-children">';
             for (var k = 0; k < count; k++) {
                 var keyStr = keys[k];
@@ -1438,6 +1494,10 @@
         var l = document.getElementById('hljs-light');
         if (d) d.disabled = theme === 'light';
         if (l) l.disabled = theme === 'dark';
+        var themeColorMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeColorMeta) {
+            themeColorMeta.setAttribute('content', theme === 'dark' ? '#0d1117' : '#ffffff');
+        }
         localStorage.setItem('theme', theme);
     }
 
