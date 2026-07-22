@@ -132,13 +132,12 @@
 
     <!-- ========== Header & Toolbar ========== -->
     <header class="desktop-only">
-        <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);margin:-1px">JSON Formatter</h1>
         <div class="logo">
             <svg aria-hidden="true" class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#icon-braces"/></svg>
             <span data-i18n="logoText">JSON 格式化工具</span>
         </div>
         <div class="toolbar">
-                <button class="btn" onclick="toggleTheme()" id="theme-btn" data-i18n-title="themeTitle" title="切换暗色/亮色模式" aria-label="切换主题">
+                <button class="btn" onclick="toggleTheme()" id="theme-btn" data-i18n-title="themeTitle" title="切换暗色/亮色模式">
                 <svg aria-hidden="true" class="svg-icon" id="theme-icon"><use href="#icon-sun"/></svg>
             </button>
             <div class="sep"></div>
@@ -190,10 +189,10 @@
             <span class="mob-title" data-i18n="mobTitle">JSON工具</span>
         </div>
         <div class="mob-header-right">
-            <button class="mob-icon-btn" onclick="i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh');var l=document.getElementById('mobile-lang-label');if(l)l.textContent=(i18n._lang==='zh'?'中文':'English')" id="mobile-lang-btn" aria-label="切换语言">
+            <button class="mob-icon-btn" onclick="i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh'); var l=document.getElementById('mobile-lang-label'); if(l) l.textContent=(i18n._lang==='zh'?'中':'EN')" id="mobile-lang-btn" aria-label="Language">
                 <span id="mobile-lang-label" class="mob-lang-text">中</span>
             </button>
-            <button class="mob-icon-btn" onclick="toggleTheme()" id="mobile-theme-btn" aria-label="切换主题">
+            <button class="mob-icon-btn" onclick="toggleTheme()" id="mobile-theme-btn" aria-label="Theme">
                 <svg aria-hidden="true" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                     <use href="#icon-sun" id="mobile-theme-icon-use"/>
                 </svg>
@@ -224,7 +223,7 @@
     </div>
 
     <!-- === More Bottom Sheet (overlay) === -->
-    <div class="mob-sheet-overlay" id="mob-sheet-overlay" onclick="toggleMobileMore()" role="button" tabindex="0" aria-label="关闭更多操作菜单"></div>
+    <div class="mob-sheet-overlay" id="mob-sheet-overlay" onclick="toggleMobileMore()"></div>
     <div class="mob-sheet" id="mob-sheet">
         <div class="mob-sheet-handle"></div>
         <div class="mob-sheet-title" data-i18n="moreOps">更多操作</div>
@@ -278,11 +277,11 @@
                         <svg aria-hidden="true" class="svg-icon-xs" viewBox="0 0 24 24"><use href="#icon-file-text"/></svg>
                         <span data-i18n="input">输入</span>
                     </span>
-                    <span class="validation-indicator" id="validation-indicator" style="display:none" aria-live="polite"></span>
+                    <span class="validation-indicator" id="validation-indicator" aria-live="polite" style="display:none"></span>
                     <span id="input-size" style="font-weight:400;text-transform:none;letter-spacing:0;font-family:var(--font-mono)"></span>
                 </div>
                 <div class="panel-body" id="input-body">
-                    <textarea id="input" name="json-input" data-i18n-placeholder="inputPlaceholder" placeholder="在此粘贴 JSON 文本…" spellcheck="false" aria-label="JSON 输入"></textarea>
+                    <textarea id="input" data-i18n-placeholder="inputPlaceholder" placeholder="在此粘贴 JSON 文本" spellcheck="false" aria-label="JSON 输入"></textarea>
                     <div class="drop-overlay" id="drop-overlay">
                         <svg aria-hidden="true" class="svg-icon" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>
                         <span data-i18n="dropHint">释放以加载文件</span>
@@ -312,13 +311,13 @@
         </div>
 
         <!-- 移动端历史侧栏 overlay -->
-        <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()" role="button" tabindex="0" aria-label="关闭侧栏"></div>
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2>
+                <h3>
                     <svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><use href="#icon-clock"/></svg>
                     <span data-i18n="history">历史记录</span>
-                </h2>
+                </h3>
                 <button class="sidebar-toggle" onclick="toggleSidebar()" data-i18n-title="collapseSidebar" title="收起侧栏" aria-label="收起侧栏">
                     <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
@@ -327,11 +326,11 @@
             <div class="sidebar-footer">
                 <div class="compare-actions">
                     <button class="btn" id="compare-btn" onclick="compareSelected()" disabled>
-                        <svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-diff"/></svg>
+                        <svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-diff"/></svg>
                         <span data-i18n="compare">对比</span>
                     </button>
                     <button class="btn" onclick="clearAllHistory()" data-i18n-title="clearAllTitle" title="清空所有历史">
-                        <svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-trash"/></svg>
+                        <svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-trash"/></svg>
                         <span data-i18n="clear">清空</span>
                     </button>
                 </div>
@@ -353,7 +352,7 @@
             <span id="status-msg" data-i18n="statusReady">就绪</span>
         </div>
         <div class="statusbar-right">
-            <span id="status-shortcuts" class="mobile-hide" data-i18n="statusShortcuts">Ctrl+Enter 格式化&nbsp;&middot;&nbsp;Ctrl+S 保存&nbsp;&middot;&nbsp;Ctrl+D 下载</span>
+            <span id="status-shortcuts" class="mobile-hide" data-i18n="statusShortcuts">Ctrl+Enter 格式化 &middot; Ctrl+S 保存 &middot; Ctrl+D 下载</span>
         </div>
     </div>
 
@@ -361,7 +360,7 @@
     <div class="modal-backdrop" id="save-modal" role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
         <div class="modal">
             <h3 id="save-modal-title" data-i18n="saveModalTitle">保存到历史记录</h3>
-            <input type="text" id="save-name-input" name="save-name" data-i18n-placeholder="saveNamePlaceholder" placeholder="输入记录名称（可选）…" autocomplete="off" aria-label="记录名称">
+            <input type="text" id="save-name-input" data-i18n-placeholder="saveNamePlaceholder" placeholder="输入记录名称（可选）" autocomplete="off" aria-label="记录名称">
             <div class="modal-actions">
                 <button class="btn" onclick="closeSaveModal()" data-i18n="cancel">取消</button>
                 <button class="btn btn-primary" onclick="confirmSave()" data-i18n="save">保存</button>

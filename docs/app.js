@@ -18,7 +18,7 @@
 
     function showToast(msg, duration, iconId) {
         const t = document.getElementById('toast');
-        const iconSvg = iconId ? `<svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#${iconId}"/></svg>` : '';
+        const iconSvg = iconId ? `<svg class="svg-icon-sm" viewBox="0 0 24 24"><use href="#${iconId}"/></svg>` : '';
         t.innerHTML = iconSvg + escapeHtml(msg);
         t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), duration || 2000);
@@ -47,8 +47,7 @@
         const k = 1024;
         const sizes = ['B', 'KB', 'MB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        const formatter = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 1 });
-        return formatter.format(bytes / Math.pow(k, i)) + '\u00a0' + sizes[i];
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
 
     /* ==============================================================
@@ -82,9 +81,9 @@
             moreOps: '更多操作',
             cancelMore: '取消',
             statusReady: '就绪',
-            statusShortcuts: 'Ctrl+Enter 格式化\u00a0\u00b7\u00a0Ctrl+S 保存\u00a0\u00b7\u00a0Ctrl+D 下载',
+            statusShortcuts: 'Ctrl+Enter 格式化 \u00b7 Ctrl+S 保存 \u00b7 Ctrl+D 下载',
             saveModalTitle: '保存到历史记录',
-            saveNamePlaceholder: '输入记录名称（可选）…',
+            saveNamePlaceholder: '输入记录名称（可选）',
             cancel: '取消',
             compareTitle: 'JSON 对比',
             compareLoading: '正在比对\u2026',
@@ -100,7 +99,7 @@
             collapseSidebar: '收起侧栏',
             clearAllTitle: '清空所有历史',
             expandSidebar: '展开侧栏',
-            inputPlaceholder: '在此粘贴 JSON 文本…',
+            inputPlaceholder: '在此粘贴 JSON 文本',
             listTitle: '列表 ({count})',
             collapseList: '收起列表',
             expandList: '展开列表',
@@ -121,9 +120,6 @@
             jsonError: 'JSON 格式错误',
             cleared: '已清空',
             historyCleared: '历史已清空',
-            confirmClear: '确定要清空所有内容吗？',
-            confirmDelete: '确定要删除这条记录吗？',
-            confirmClearAll: '确定要清空所有历史记录吗？',
             loaded: '已加载：{name}',
             jsonOnly: '请拖入 .json 文件',
             needFormatFirst: '请先格式化有效的 JSON',
@@ -152,6 +148,13 @@
             valid: '有效',
             invalid: '无效',
             lineCount: '行',
+            mobTitle: 'JSON工具',
+            more: '更多',
+            moreOps: '更多操作',
+            openFile: '打开文件',
+            downloadFile: '下载文件',
+            clearContent: '清空内容',
+            cancelMore: '取消',
         },
         en: {
             title: 'JSON Formatter',
@@ -180,9 +183,9 @@
             moreOps: 'More Actions',
             cancelMore: 'Cancel',
             statusReady: 'Ready',
-            statusShortcuts: 'Ctrl+Enter Format\u00a0\u00b7\u00a0Ctrl+S Save\u00a0\u00b7\u00a0Ctrl+D Download',
+            statusShortcuts: 'Ctrl+Enter Format \u00b7 Ctrl+S Save \u00b7 Ctrl+D Download',
             saveModalTitle: 'Save to History',
-            saveNamePlaceholder: 'Enter name (optional)…',
+            saveNamePlaceholder: 'Enter name (optional)',
             cancel: 'Cancel',
             compareTitle: 'JSON Compare',
             compareLoading: 'Comparing\u2026',
@@ -198,7 +201,7 @@
             collapseSidebar: 'Collapse sidebar',
             clearAllTitle: 'Clear all history',
             expandSidebar: 'Expand sidebar',
-            inputPlaceholder: 'Paste JSON text here…',
+            inputPlaceholder: 'Paste JSON text here',
             listTitle: 'List ({count})',
             collapseList: 'Collapse list',
             expandList: 'Expand list',
@@ -219,9 +222,6 @@
             jsonError: 'Invalid JSON format',
             cleared: 'Cleared',
             historyCleared: 'History cleared',
-            confirmClear: 'Are you sure you want to clear all content?',
-            confirmDelete: 'Are you sure you want to delete this record?',
-            confirmClearAll: 'Are you sure you want to clear all history?',
             loaded: 'Loaded: {name}',
             jsonOnly: 'Please drop .json files only',
             needFormatFirst: 'Please format valid JSON first',
@@ -250,11 +250,18 @@
             valid: 'Valid',
             invalid: 'Invalid',
             lineCount: 'lines',
+            mobTitle: 'JSON Tools',
+            more: 'More',
+            moreOps: 'More Actions',
+            openFile: 'Open File',
+            downloadFile: 'Download File',
+            clearContent: 'Clear Content',
+            cancelMore: 'Cancel',
         }
     };
 
     const i18n = {
-        _lang: localStorage.getItem('appLang') || ((navigator.languages && navigator.languages[0]?.startsWith('zh')) || navigator.language?.startsWith('zh') ? 'zh' : 'en'),
+        _lang: localStorage.getItem('appLang') || (navigator.language.startsWith('zh') ? 'zh' : 'en'),
 
         t(key, vars) {
             let s = I18N[this._lang][key] || I18N['en'][key] || key;
@@ -597,7 +604,7 @@
         const area = document.getElementById('output-content-area');
         area.innerHTML = `
             <div class="output-placeholder" id="output-placeholder">
-                <svg aria-hidden="true" class="svg-icon" viewBox="0 0 24 24"><use href="#icon-braces"/></svg>
+                <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-braces"/></svg>
                 ${i18n.t('outputPlaceholder')}
             </div>`;
         renderLineNumbers(0);
@@ -659,7 +666,7 @@
         area.innerHTML = '<div class="output-content"><div class="json-tree">' + treeHtml + '</div></div>';
 
         var treeEl = area.querySelector('.json-tree');
-        var lineCount = treeEl ? countVisibleLines(treeEl, true) : content.split('\n').length;
+        var lineCount = treeEl ? countVisibleLines(treeEl, false) : content.split('\n').length;
         renderLineNumbers(lineCount);
 
         if (obj === null) {
@@ -680,16 +687,16 @@
                 <div class="list-panel" id="list-panel">
                     <div class="list-panel-header">
                         <span class="list-title">${i18n.t('listTitle', {count: arr.length})}</span>
-                        <button class="list-panel-toggle" id="list-panel-toggle" onclick="toggleListPanel()" title="${i18n.t('collapseList')}" aria-label="${i18n.t('collapseList')}">
+                        <button class="list-panel-toggle" id="list-panel-toggle" onclick="toggleListPanel()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleListPanel();}" title="${i18n.t('collapseList')}" aria-label="${i18n.t('collapseList')}">
                             <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                         </button>
                     </div>
                     <div class="list-panel-body" id="list-panel-body"></div>
                 </div>
                 <div class="list-detail" id="list-detail">
-                    <button class="list-expand-tab" id="list-expand-tab" onclick="toggleListPanel()" title="${i18n.t('expandList')}" aria-label="${i18n.t('expandList')}">
+                    <div class="list-expand-tab" id="list-expand-tab" role="button" tabindex="0" onclick="toggleListPanel()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleListPanel();}" title="${i18n.t('expandList')}" aria-label="${i18n.t('expandList')}">
                         <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                    </button>
+                    </div>
                     <div class="list-detail-linenos" id="list-detail-linenos"></div>
                     <div class="list-detail-content" id="list-detail-content"></div>
                 </div>
@@ -704,30 +711,22 @@
         }
 
         arr.forEach((item, i) => {
-            const btn = document.createElement('button');
-            btn.className = 'list-item';
-            btn.innerHTML = `
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.setAttribute('role', 'button');
+            div.setAttribute('tabindex', '0');
+            div.setAttribute('aria-label', '查看第 ' + i + ' 项');
+            div.innerHTML = `
                 <span class="list-item-index">[${i}]</span>
                 <span class="list-item-preview">${escapeHtml(getItemPreview(item))}</span>`;
-            btn.addEventListener('click', () => selectListItem(i, arr));
-            btn.addEventListener('keydown', (e) => {
+            div.addEventListener('click', () => selectListItem(i, arr));
+            div.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     selectListItem(i, arr);
-                } else if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const next = Math.min(i + 1, arr.length - 1);
-                    selectListItem(next, arr);
-                    listPanelBody.children[next]?.focus();
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    const prev = Math.max(i - 1, 0);
-                    selectListItem(prev, arr);
-                    listPanelBody.children[prev]?.focus();
                 }
             });
-            btn.setAttribute('tabindex', '0');
-            listPanelBody.appendChild(btn);
+            listPanelBody.appendChild(div);
         });
 
         window.listSelectedIndex = 0;
@@ -766,11 +765,13 @@
         if (typeof value === 'number') return '<span class="jt-line">' + prefix + '<span class="jt-number">' + value + '</span></span>';
         if (typeof value === 'string') return '<span class="jt-line">' + prefix + '<span class="jt-string">' + JSON.stringify(value) + '</span></span>';
 
+        var toggleAttrs = 'role="button" tabindex="0" aria-label="折叠/展开"';
+
         if (Array.isArray(value)) {
             var count = value.length;
             if (count === 0) return '<span class="jt-line">' + prefix + '<span class="jt-bracket">[]</span></span>';
             var html = '<div class="jt-group">';
-            html += '<span class="jt-line">' + prefix + '<button class="jt-toggle" onclick="toggleJsonNode(this)" tabindex="0" aria-label="' + i18n.t('expandList') + '">&#9660;</button><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + ' onclick="toggleJsonNode(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleJsonNode(this);}">&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
             html += '<div class="jt-children">';
             for (var i = 0; i < count; i++) {
                 html += renderJsonNode(String(i), value[i]);
@@ -789,7 +790,7 @@
             var count = keys.length;
             if (count === 0) return '<span class="jt-line">' + prefix + '<span class="jt-bracket">{}</span></span>';
             var html = '<div class="jt-group">';
-            html += '<span class="jt-line">' + prefix + '<button class="jt-toggle" onclick="toggleJsonNode(this)" tabindex="0" aria-label="' + i18n.t('expandList') + '">&#9660;</button><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + ' onclick="toggleJsonNode(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleJsonNode(this);}">&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
             html += '<div class="jt-children">';
             for (var k = 0; k < count; k++) {
                 html += renderJsonNode(keys[k], value[keys[k]]);
@@ -812,26 +813,16 @@
             group.classList.toggle('collapsed');
             var toggle = group.querySelector('.jt-toggle');
             toggle.innerHTML = group.classList.contains('collapsed') ? '&#9654;' : '&#9660;';
-            toggle.setAttribute('aria-expanded', !group.classList.contains('collapsed'));
             updateTreeLineNumbers();
         }
     }
-
-    document.addEventListener('keydown', function(e) {
-        if (e.target.classList.contains('jt-toggle')) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                toggleJsonNode(e.target);
-            }
-        }
-    });
 
     function updateTreeLineNumbers() {
         var target = document.getElementById('list-detail-linenos');
         if (!target) target = document.querySelector('.output-linenos');
         var tree = document.querySelector('.json-tree');
         if (!target || !tree) return;
-        var count = countVisibleLines(tree, true);
+        var count = countVisibleLines(tree, false);
         target.innerHTML = '';
         for (var i = 0; i < count; i++) {
             var span = document.createElement('span');
@@ -841,11 +832,16 @@
     }
 
     function countVisibleLines(el, skipHidden) {
-        if (!skipHidden) {
-            if (el.classList.contains('collapsed')) return 0;
-            if (el.parentElement && el.parentElement.classList.contains('collapsed') && !el.parentElement.classList.contains('jt-children')) return 0;
-        }
-        if (el.classList.contains('jt-line')) {
+        if (el.classList && el.classList.contains('jt-line')) {
+            if (skipHidden) return 1;
+            // Check ancestor .jt-group for .collapsed class (CSS hides children)
+            var parent = el.parentElement;
+            while (parent && parent !== document.body) {
+                if (parent.classList && parent.classList.contains('jt-group') && parent.classList.contains('collapsed')) {
+                    return 0;
+                }
+                parent = parent.parentElement;
+            }
             return 1;
         }
         var count = 0;
@@ -864,12 +860,12 @@
             return item.length > 50 ? '"' + item.substring(0, 50) + '…"' : JSON.stringify(item);
         }
         if (Array.isArray(item)) {
-            return '[…] (' + i18n.t('items', {count: item.length}) + ')';
+            return '[...] (' + i18n.t('items', {count: item.length}) + ')';
         }
         if (typeof item === 'object') {
             const keys = Object.keys(item);
             const preview = keys.slice(0, 2).join(', ');
-            return '{' + preview + (keys.length > 2 ? ', …' : '') + '} (' + i18n.t('keys', {count: keys.length}) + ')';
+            return '{' + preview + (keys.length > 2 ? ', ...' : '') + '} (' + i18n.t('keys', {count: keys.length}) + ')';
         }
         return String(item);
     }
@@ -918,9 +914,7 @@
     }
 
     function clearContent() {
-        var input = document.getElementById('input');
-        if (input.value.trim() && !confirm(i18n.t('confirmClear'))) return;
-        input.value = '';
+        document.getElementById('input').value = '';
         window.lastFormattedContent = '';
         window.lastParsedJson = null;
         window.lastDetailContent = '';
@@ -1008,8 +1002,8 @@
         document.getElementById('save-modal').classList.add('active');
         const input = document.getElementById('save-name-input');
         input.value = '';
-        var isMobile = document.documentElement.getAttribute('data-device') === 'mobile';
-        if (!isMobile) {
+        // Only auto-focus on desktop; on mobile it pops the soft keyboard
+        if (document.documentElement.getAttribute('data-device') !== 'mobile') {
             setTimeout(() => input.focus(), 50);
         }
     }
@@ -1030,7 +1024,6 @@
     }
 
     function deleteHistory(id) {
-        if (!confirm(i18n.t('confirmDelete'))) return;
         let history = getHistory().filter(item => item.id !== id);
         setHistory(history);
         window.selectedIds = window.selectedIds.filter(i => i !== id);
@@ -1039,7 +1032,6 @@
 
     function clearAllHistory() {
         if (getHistory().length === 0) return;
-        if (!confirm(i18n.t('confirmClearAll'))) return;
         setHistory([]);
         window.selectedIds = [];
         renderHistory();
@@ -1076,7 +1068,7 @@
         if (history.length === 0) {
             list.innerHTML = `
                 <div class="history-empty">
-                    <svg aria-hidden="true" class="svg-icon" viewBox="0 0 24 24"><use href="#icon-clock"/></svg>
+                    <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-clock"/></svg>
                     <div>${i18n.t('noHistory')}</div>
                     <div style="font-size:11px;opacity:0.6">${i18n.t('noHistoryHint')}</div>
                 </div>`;
@@ -1089,34 +1081,18 @@
             const checked = window.selectedIds.includes(item.id) ? 'checked' : '';
             const selected = window.selectedIds.includes(item.id) ? 'selected' : '';
             return `
-                <div class="history-item ${selected}" onclick="loadHistory(${item.id})" tabindex="0" role="button" aria-label="加载记录 ${escapeHtml(item.name)}">
+                <div class="history-item ${selected}" role="button" tabindex="0" aria-label="加载历史：${escapeHtml(item.name)}" onclick="loadHistory(${item.id})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();loadHistory(${item.id});}">
                     <input type="checkbox" class="history-checkbox"
                            onclick="event.stopPropagation();toggleSelect(${item.id})"
-                           ${checked} title="${i18n.t('selectForCompare')}" />
+                           onkeydown="event.stopPropagation()"
+                           ${checked} title="${i18n.t('selectForCompare')}" aria-label="${i18n.t('selectForCompare')}" />
                     <div class="history-info">
                         <div class="history-name">${escapeHtml(item.name)}</div>
                         <div class="history-snippet">${escapeHtml(snippet)}</div>
                     </div>
-                    <button class="history-delete" onclick="event.stopPropagation();deleteHistory(${item.id})" title="${i18n.t('deleteItem')}" aria-label="${i18n.t('deleteItem')}">&times;</button>
+                    <button class="history-delete" onclick="event.stopPropagation();deleteHistory(${item.id})" onkeydown="event.stopPropagation()" title="${i18n.t('deleteItem')}" aria-label="${i18n.t('deleteItem')}">&times;</button>
                 </div>`;
         }).join('');
-
-        list.querySelectorAll('.history-item').forEach((btn, i) => {
-            btn.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    loadHistory(history[i].id);
-                } else if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const next = Math.min(i + 1, history.length - 1);
-                    list.children[next]?.focus();
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    const prev = Math.max(i - 1, 0);
-                    list.children[prev]?.focus();
-                }
-            });
-        });
 
         compareBtn.disabled = window.selectedIds.length !== 2;
     }
@@ -1277,18 +1253,20 @@
     function renderJsonNodeWithDiff(key, value, path, diffMap, side, rootVal) {
         var prefix = key !== null ? '<span class="jt-key">' + JSON.stringify(key) + '</span>: ' : '';
         var diffType = diffMap[path] || '';
+        var diffCls = diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '';
+        var toggleAttrs = 'role="button" tabindex="0" aria-label="折叠/展开"';
 
-        if (value === null) return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-null">null</span></span>';
-        if (typeof value === 'boolean') return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-bool">' + value + '</span></span>';
-        if (typeof value === 'number') return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-number">' + value + '</span></span>';
-        if (typeof value === 'string') return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-string">' + JSON.stringify(value) + '</span></span>';
+        if (value === null) return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-null">null</span></span>';
+        if (typeof value === 'boolean') return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-bool">' + value + '</span></span>';
+        if (typeof value === 'number') return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-number">' + value + '</span></span>';
+        if (typeof value === 'string') return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-string">' + JSON.stringify(value) + '</span></span>';
 
         if (Array.isArray(value)) {
             var count = value.length;
-            if (count === 0) return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-bracket">[]</span></span>';
-            var groupCls = diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '';
+            if (count === 0) return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-bracket">[]</span></span>';
+            var groupCls = diffCls;
             var html = '<div class="jt-group' + groupCls + '">';
-            html += '<span class="jt-line">' + prefix + '<button class="jt-toggle" onclick="toggleJsonNode(this)" tabindex="0" aria-label="' + i18n.t('expandList') + '">&#9660;</button><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + ' onclick="toggleJsonNode(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleJsonNode(this);}">&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
             html += '<div class="jt-children">';
             for (var i = 0; i < count; i++) {
                 html += renderJsonNodeWithDiff(String(i), value[i], path ? path + '/' + i : String(i), diffMap, side, rootVal);
@@ -1305,10 +1283,10 @@
         if (typeof value === 'object') {
             var keys = Object.keys(value);
             var count = keys.length;
-            if (count === 0) return '<span class="jt-line' + (diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '') + '">' + prefix + '<span class="jt-bracket">{}</span></span>';
-            var groupCls = diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '';
+            if (count === 0) return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-bracket">{}</span></span>';
+            var groupCls = diffCls;
             var html = '<div class="jt-group' + groupCls + '">';
-            html += '<span class="jt-line">' + prefix + '<button class="jt-toggle" onclick="toggleJsonNode(this)" tabindex="0" aria-label="' + i18n.t('expandList') + '">&#9660;</button><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + ' onclick="toggleJsonNode(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleJsonNode(this);}">&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
             html += '<div class="jt-children">';
             for (var k = 0; k < count; k++) {
                 var keyStr = keys[k];
@@ -1415,24 +1393,17 @@
             if (e.key === 'Escape') {
                 const modal = document.getElementById('save-modal');
                 const compare = document.getElementById('compare-container');
-                const mobSheet = document.getElementById('mob-sheet');
+                const sheet = document.getElementById('mob-sheet');
+                const sidebar = document.getElementById('sidebar');
                 if (modal.classList.contains('active')) {
                     closeSaveModal();
                 } else if (compare.classList.contains('active')) {
                     closeCompare();
-                } else if (mobSheet && mobSheet.classList.contains('open')) {
+                } else if (sheet && sheet.classList.contains('open')) {
                     toggleMobileMore();
+                } else if (sidebar && sidebar.classList.contains('active')) {
+                    toggleSidebar();
                 }
-            }
-
-            // Overlay Enter/Space handling
-            if ((e.key === 'Enter' || e.key === ' ') && e.target.id === 'mob-sheet-overlay') {
-                e.preventDefault();
-                toggleMobileMore();
-            }
-            if ((e.key === 'Enter' || e.key === ' ') && e.target.id === 'sidebar-overlay') {
-                e.preventDefault();
-                toggleSidebar();
             }
         });
 
@@ -1498,10 +1469,9 @@
         var l = document.getElementById('hljs-light');
         if (d) d.disabled = theme === 'light';
         if (l) l.disabled = theme === 'dark';
-        var themeColorMeta = document.querySelector('meta[name="theme-color"]');
-        if (themeColorMeta) {
-            themeColorMeta.setAttribute('content', theme === 'dark' ? '#0d1117' : '#ffffff');
-        }
+        // Sync <meta name="theme-color"> with active background (PWA status bar / iOS safe area)
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'light' ? '#ffffff' : '#0d1117');
         localStorage.setItem('theme', theme);
     }
 
@@ -1546,26 +1516,7 @@
     });
 
 /* ========== Mobile Handlers ========== */
-    window.handleMobileAction = function(val) {
-        switch(val) {
-            case 'format': formatJSON(); break;
-            case 'minify': minifyJSON(); break;
-            case 'escape': stringifyJSON(); break;
-        }
-    };
-    window.handleMobileLang = function(val) {
-        if (i18n && typeof i18n.setLang === 'function') {
-            i18n.setLang(val);
-        }
-        var label = document.getElementById('mobile-lang-label');
-        if (label) label.textContent = val === 'zh' ? '中文' : 'English';
-    };
     window.toggleMobileMore = function(){var s=document.getElementById("mob-sheet"),o=document.getElementById("mob-sheet-overlay"),b=document.getElementById("mob-more-btn");if(!s)return;var isOpen=s.classList.toggle("open");o&&o.classList.toggle("open",isOpen);b&&b.classList.toggle("active",isOpen);};
-    window.toggleMobileLang = function() {
-        var current = (window.i18n && window.i18n._lang) || 'zh';
-        var next = current === 'zh' ? 'en' : 'zh';
-        handleMobileLang(next);
-    };
     // Initialize mobile UI on load
     document.addEventListener('DOMContentLoaded', function() {
         var themeIconUse = document.getElementById('mobile-theme-icon-use');
@@ -1577,7 +1528,5 @@
         if (langLabel && window.i18n && typeof i18n.setLang === 'function') {
             // Apply initial translations from saved language
             i18n.setLang(i18n._lang);
-            var langLabel2 = document.getElementById('mobile-lang-label2');
-            if (langLabel2) langLabel2.textContent = i18n._lang === 'zh' ? '中文' : 'English';
         }
     });
