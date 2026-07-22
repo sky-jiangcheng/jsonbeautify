@@ -827,7 +827,7 @@
 
         /* ========== Drag & Drop Overlay ========== */
         .drop-overlay {
-            display: none;
+            display: flex;
             position: absolute;
             inset: 0;
             background: rgba(88, 166, 255, 0.06);
@@ -841,13 +841,26 @@
             font-weight: 600;
             pointer-events: none;
             gap: 8px;
+            opacity: 0;
+            transform: scale(0.98);
+            transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
         }
 
-        .drop-overlay.active { display: flex; -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+        .drop-overlay.active {
+            opacity: 1;
+            transform: scale(1);
+            -webkit-backdrop-filter: blur(2px);
+            backdrop-filter: blur(2px);
+        }
 
         .drop-overlay .svg-icon {
             width: 24px;
             height: 24px;
+            transition: transform 0.3s cubic-bezier(0.32, 1.2, 0, 1);
+        }
+
+        .drop-overlay.active .svg-icon {
+            transform: translateY(-2px) scale(1.1);
         }
 
         /* ========== Sidebar ========== */
@@ -1246,7 +1259,7 @@
             position: fixed;
             bottom: 24px;
             left: 50%;
-            transform: translateX(-50%) translateY(100px);
+            transform: translateX(-50%) translateY(20px);
             background: var(--bg-elevated);
             color: var(--text-primary);
             border: 1px solid var(--border);
@@ -1255,13 +1268,14 @@
             font-size: 12.5px;
             box-shadow: var(--shadow-lg);
             z-index: 2000;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+            transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s ease;
             pointer-events: none;
             opacity: 0;
             font-weight: 500;
             display: flex;
             align-items: center;
             gap: 6px;
+            will-change: transform, opacity;
         }
 
         .toast.show {
@@ -1284,6 +1298,11 @@
             color: var(--text-muted);
             flex-shrink: 0;
             user-select: none;
+            transition: background 0.3s ease;
+        }
+
+        .statusbar.flash {
+            background: var(--accent-subtle);
         }
 
         .statusbar-left, .statusbar-right {
@@ -1293,6 +1312,15 @@
         }
 
         .statusbar-left { font-family: var(--font-mono); }
+
+        #status-msg {
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+
+        #status-msg.updating {
+            opacity: 0;
+            transform: translateY(-4px);
+        }
 
         /* ========== Sidebar Toggle Buttons ========== */
         #sidebar-open-btn {
@@ -1534,11 +1562,12 @@
             padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
             box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
             transform: translateY(100%);
-            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+            transition: transform 0.4s cubic-bezier(0.32, 1.2, 0, 1);
             overscroll-behavior: contain;
             max-height: 85vh;
             overflow-y: auto;
             touch-action: pan-y;
+            will-change: transform;
         }
         [data-device="mobile"] .mob-sheet.open {
             display: block;
@@ -1729,20 +1758,35 @@
 
         /* 底部留白已在 v10 块统一处理（见上）*/
 
-        /* 2. Tab 切换：默认只显示输入面板，加 .view-output 后只显示输出面板 */
+        /* 2. Tab 切换：滑动过渡效果 */
+        [data-device="mobile"] .editor-area {
+            position: relative;
+            overflow: hidden;
+        }
         [data-device="mobile"] .editor-area .panel-left,
         [data-device="mobile"] .editor-area .panel-right {
-            display: none;
-        }
-        [data-device="mobile"] .editor-area .panel-left.is-active,
-        [data-device="mobile"] .editor-area .panel-right.is-active {
+            position: absolute;
+            inset: 0;
             display: flex;
-            flex: 1;
-            max-height: none;
-            min-height: 0;
+            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.2s ease;
+            will-change: transform, opacity;
         }
-        [data-device="mobile"] .editor-area .panel-left.is-active {
+        [data-device="mobile"] .editor-area .panel-left {
+            transform: translateX(0);
+            opacity: 1;
             border-bottom: none;
+        }
+        [data-device="mobile"] .editor-area .panel-right {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        [data-device="mobile"] .editor-area .panel-left:not(.is-active) {
+            transform: translateX(-30%);
+            opacity: 0;
+        }
+        [data-device="mobile"] .editor-area .panel-right.is-active {
+            transform: translateX(0);
+            opacity: 1;
         }
 
         /* 移动端 Tab 栏（输入/输出切换） */
@@ -1859,15 +1903,18 @@
             }
             /* 1. editor-area 改为左右布局，支持水平滚动 */
             [data-device="mobile"] .editor-area {
+                position: static;
                 flex-direction: row;
                 overscroll-behavior: contain;
                 touch-action: pan-x pan-y;
                 overflow-x: auto;
+                overflow: hidden;
             }
 
-            /* 2. 覆盖 v11 的 display:none — 横屏下两个面板都显示，限制最小宽度避免挤压 */
+            /* 2. 覆盖竖屏的 absolute 定位 — 横屏下两个面板都显示，限制最小宽度避免挤压 */
             [data-device="mobile"] .editor-area .panel-left,
             [data-device="mobile"] .editor-area .panel-right {
+                position: static;
                 display: flex !important;
                 flex: 1 1 50%;
                 min-width: 160px;
@@ -1875,6 +1922,9 @@
                 max-height: none;
                 min-height: 0;
                 touch-action: pan-x pan-y;
+                transform: none !important;
+                opacity: 1 !important;
+                transition: none !important;
             }
             [data-device="mobile"] .editor-area .panel-left {
                 border-right: 1px solid var(--border) !important;

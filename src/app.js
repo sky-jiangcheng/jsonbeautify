@@ -24,8 +24,22 @@
         setTimeout(() => t.classList.remove('show'), duration || 2000);
     }
 
-    function setStatus(msg) {
-        document.getElementById('status-msg').textContent = msg;
+    function setStatus(msg, flash) {
+        const el = document.getElementById('status-msg');
+        const bar = document.querySelector('.statusbar');
+        if (!el) return;
+        if (el.textContent === msg && !flash) return;
+        el.classList.add('updating');
+        setTimeout(() => {
+            el.textContent = msg;
+            el.classList.remove('updating');
+        }, 100);
+        if (flash && bar) {
+            bar.classList.remove('flash');
+            void bar.offsetWidth;
+            bar.classList.add('flash');
+            setTimeout(() => bar.classList.remove('flash'), 800);
+        }
     }
 
     function getHistory() {
@@ -479,7 +493,7 @@
         window.lastFormattedContent = JSON.stringify(jsonObj, null, indent);
         window.lastParsedJson = jsonObj;
         renderOutput(window.lastFormattedContent, 'json', fixed, jsonObj);
-        setStatus(i18n.t('formatSuccess') + (fixed ? fixMsg : ''));
+        setStatus(i18n.t('formatSuccess') + (fixed ? fixMsg : ''), true);
         updateOutputStatus(window.lastFormattedContent);
     }
 
