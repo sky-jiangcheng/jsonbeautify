@@ -1890,15 +1890,22 @@
            阈值 500px：区分手机横屏（矮视口）与平板横屏（高视口） */
 
         @media (orientation: landscape) and (max-height: 500px) {
-            /* 0. 锁定页面滚动，只有内部内容区可滚动 */
-            [data-device="mobile"] html,
-            [data-device="mobile"] body {
+            /* 0. 锁定页面滚动，内容填满视口 */
+            [data-device="mobile"] html {
+                height: 100%;
                 overflow: hidden !important;
-                touch-action: none;
+            }
+            [data-device="mobile"] body {
+                height: 100dvh;
+                overflow: hidden !important;
+                display: flex;
+                flex-direction: column;
             }
             [data-device="mobile"] .main-layout {
+                flex: 1;
                 overflow: hidden !important;
-                touch-action: none;
+                min-height: 0;
+                padding-bottom: 0 !important;
             }
 
             [data-device="mobile"] {
