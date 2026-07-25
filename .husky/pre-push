@@ -1,0 +1,16 @@
+# 推送 v* tag 前，本地校验 tag 版本号是否等于四处文件版本
+# 复用 CI 同一套 check-versions.js，把错误 tag 拦在本地、推不出去
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/tags/v*)
+      tag_ver="${remote_ref#refs/tags/v}"
+      echo "[pre-push] 校验 tag v$tag_ver 与版本文件一致性…"
+      if ! node scripts/check-versions.js tag "$tag_ver"; then
+        echo ""
+        echo "❌ [pre-push] 阻止推送：tag v$tag_ver 与版本文件不一致。"
+        echo "   请先 'npm run bump $tag_ver' 并同步 iOS Info.plist，重打 tag 后再推。"
+        exit 1
+      fi
+      ;;
+  esac
+done
