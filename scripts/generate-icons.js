@@ -36,10 +36,10 @@ const sizes = [
 ];
 
 async function generateIcons() {
-  const svgPath = path.join(__dirname, '../icon.svg');
+  const sourcePath = path.join(__dirname, '../src-tauri/app-icon-source.png');
 
-  if (!fs.existsSync(svgPath)) {
-    console.error('icon.svg not found');
+  if (!fs.existsSync(sourcePath)) {
+    console.error('app-icon-source.png not found');
     process.exit(1);
   }
 
@@ -65,8 +65,8 @@ async function generateIcons() {
       outputPath = path.join(tauriIconsDir, filename);
     }
 
-    await sharp(svgPath)
-      .resize(size, size)
+    await sharp(sourcePath)
+      .resize(size, size, { kernel: sharp.kernel.lanczos3 })
       .png({ compressionLevel: 9 })
       .toFile(outputPath);
 
