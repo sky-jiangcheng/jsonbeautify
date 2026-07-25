@@ -739,19 +739,19 @@ PAT 一旦在对话、日志、截图、commit message 中明文出现，视为�
 
 ---
 
-### 7.11 版本号 4 处对齐：bump-version.js 漏改 iOS Info.plist
+### 7.11 版本号 4 处对齐（已修复）
 
 **症状**：升版本后 CI 构建的 IPA 版本号仍是旧的，可能与 ASC 已有 build 冲突。
 
 **根因**：`scripts/bump-version.js` 只改 3 处（package.json / Cargo.toml / tauri.conf.json），**漏改 `ios/App/App/Info.plist` 的 `CFBundleShortVersionString`**。若 CI 的 `tauri ios init` 未以 Cargo 版本覆盖 plist，上传的 build 版本号就是旧的。
 
-**修复**：升版本时**手动同步第 4 处** `ios/App/App/Info.plist` 的 `CFBundleShortVersionString`（CI `check-versions.js` 只校验 3 处，不覆盖 plist，需人工保证）。版本号对齐表：
+**修复**：`bump-version.js` 和 `check-versions.js` 已纳入第 4 处 `ios/App/App/Info.plist` 的 `CFBundleShortVersionString`，升版本用 `npm run bump` 自动同步全部 4 处，CI `check-versions.js` 也校验全部 4 处。版本号对齐表：
 
 ```
 package.json              → "version"
 src-tauri/tauri.conf.json → "version"
 src-tauri/Cargo.toml      → version
-ios/App/App/Info.plist    → CFBundleShortVersionString   ← bump-version.js 漏改，手动同步
+ios/App/App/Info.plist    → CFBundleShortVersionString
 ```
 
 ---
@@ -801,7 +801,7 @@ body {
 - [ ] Windows 构建仅使用 NSIS
 - [ ] 所有 `innerHTML` 调用点已审计、用户输入已转义
 - [ ] 深色/浅色模式色值已独立定义（非简单反色）
-- [ ] 版本号在 **4** 个位置保持一致（package.json / Cargo.toml / tauri.conf.json / **iOS Info.plist 的 CFBundleShortVersionString**，bump-version.js 漏改第 4 处需手动同步）
+- [ ] 版本号在 **4** 个位置保持一致（package.json / Cargo.toml / tauri.conf.json / **iOS Info.plist 的 CFBundleShortVersionString**，`npm run bump` 自动同步全部 4 处，`check-versions.js` 校验全部 4 处）
 - [ ] Workflow badge 指向的 workflow 在 main 分支有成功运行
 - [ ] 图标预留 12% 边距、多尺寸完整（含 512x512@2x）
 - [ ] macOS App Store 版本与开源版 identifier 已区分

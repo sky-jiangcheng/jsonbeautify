@@ -39,6 +39,11 @@ const updates = [
         pattern: /version\s*=\s*"\d+\.\d+\.\d+"/,
         replacement: `version = "${newVersion}"`,
     },
+    {
+        file: 'ios/App/App/Info.plist',
+        pattern: /(<key>CFBundleShortVersionString<\/key>\s*<string>)\d+\.\d+\.\d+(<\/string>)/,
+        replacement: `$1${newVersion}$2`,
+    },
 ];
 
 let updated = 0;

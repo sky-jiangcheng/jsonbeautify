@@ -5,6 +5,10 @@
 存在 (任意状态), 再上传同版本号的 build 会被 App Store 拒绝
 ("版本已经重复")。此脚本在耗时构建之前快速失败, 给出明确指引。
 
+检查两个维度:
+  1. appStoreVersions (marketing version, 如 1.5.14) — 若已存在则版本重复
+  2. builds (build version, 如 CFBundleVersion) — 若已存在则构建号重复
+
 用法:
   python3 scripts/check-appstore-version.py <IOS|MAC_OS> <vX.Y.Z|版本号>
 
@@ -144,6 +148,7 @@ def main():
     print(f"[DIAG] JWT payload iss={pld.get('iss')[:8]}... exp-iat={pld.get('exp',0)-pld.get('iat',0)}s")
     # ---- 诊断结束 ----
 
+    # 1. 检查 marketing version (appStoreVersions) 是否已存在
     resp = api_get(
         f"/v1/apps/{app_id}/appStoreVersions"
         f"?filter[versionString]={version}&filter[platform]={platform}",
@@ -161,6 +166,38 @@ def main():
         print(f"\n❌ App Store Connect 中已存在 {platform} 版本 {version}, 不可重复上传!")
         print("   请 bump 到一个新的版本号后, 重新打 tag。")
         sys.exit(1)
+
+    # 2. 检查 build version (builds) 是否已存在
+    #    CFBundleVersion (如 "2") 与 marketing version (如 "1.5.14") 不同,
+    #    但 App Store 也按 marketing version 关联 build。这里查 builds 列表,
+    #    若有 processingState=VALID 的 build 且 version 等于本次上传的版本号,
+    #    说明该构建号已被占用, 上传会被拒。
+    print(f"\n--- 检查构建版本 {version} 是否已上传 ---")
+    try:
+        builds_resp = api_get(
+            f"/v1/apps/{app_id}/builds?limit=20",
+            jwt,
+        )
+        builds = builds_resp.get("data", [])
+        dup_builds = [
+            b for b in builds
+            if b.get("attributes", {}).get("version") == version
+        ]
+        if dup_builds:
+            for b in dup_builds:
+                attrs = b.get("attributes", {})
+                print(
+                    f"  已存在构建: version={attrs.get('version')} "
+                    f"processing={attrs.get('processingState')} "
+                    f"uploaded={attrs.get('uploadedDate', '')[:19]}"
+                )
+            print(f"\n❌ 构建版本 {version} 已上传过, 不可重复上传!")
+            print("   请 bump 到一个新的版本号后, 重新打 tag。")
+            sys.exit(1)
+    except SystemExit:
+        raise
+    except Exception as e:
+        print(f"  (构建版本检查跳过: {e})")
 
     print(f"✅ App Store Connect 中不存在 {platform} 版本 {version}, 可以上传。")
     sys.exit(0)

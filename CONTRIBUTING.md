@@ -51,17 +51,17 @@ JSON Beautify Tool — 本地优先的 JSON 格式化工具（Tauri v2 桌面 + 
 
 ## 4. 版本规范
 
-**四处**版本号**必须一致**（CI `check-versions.js` 只校验前 3 处，**第 4 处 iOS plist 需手动同步**，`bump-version.js` 漏改）：
+**四处**版本号**必须一致**（CI `check-versions.js` 校验全部 4 处）：
 
 ```
 package.json              → "version"
 src-tauri/tauri.conf.json → "version"
 src-tauri/Cargo.toml      → version
-ios/App/App/Info.plist    → CFBundleShortVersionString   ← 手动同步（脚本漏改，防 IPA 版本与商店不匹配）
+ios/App/App/Info.plist    → CFBundleShortVersionString
 ```
 
 - 发版打 `vX.Y.Z` tag，tag 版本号必须等于上述文件版本（否则 CI `version-gate` 拒绝）。
-- 升版本用 `npm run bump`（改前 3 处），**再手动改第 4 处 iOS `Info.plist`**，不要手改单处。
+- 升版本用 `npm run bump`（自动同步全部 4 处），不要手改单处。
 - **构建号 ≠ 商店版本号**：`APP_VERSION`（如 1.5.11）是构建号用于匹配 build；商店版本是 marketing version（如 1.0），提交脚本按 marketing version 选版本（详见 §6.7）。
 
 ---
