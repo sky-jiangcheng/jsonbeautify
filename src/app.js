@@ -162,6 +162,19 @@
             valid: '有效',
             invalid: '无效',
             lineCount: '行',
+            settings: '设置',
+            settingsTitle: '界面设置',
+            watermarkLabel: '水印文字',
+            watermarkPlaceholder: '输入水印文字（留空则不显示）',
+            watermarkOpacity: '水印透明度',
+            watermarkEnabled: '启用水印',
+            bgImageLabel: '背景图片',
+            bgImageHint: '支持 JPG/PNG，建议 ≤ 2MB',
+            bgImageUpload: '选择图片',
+            bgImageClear: '清除图片',
+            bgImageOpacity: '背景透明度',
+            settingsSaved: '设置已保存',
+            resetSettings: '恢复默认',
         },
         en: {
             title: 'JSON Formatter',
@@ -257,6 +270,19 @@
             valid: 'Valid',
             invalid: 'Invalid',
             lineCount: 'lines',
+            settings: 'Settings',
+            settingsTitle: 'Interface Settings',
+            watermarkLabel: 'Watermark Text',
+            watermarkPlaceholder: 'Enter watermark text (empty to disable)',
+            watermarkOpacity: 'Watermark Opacity',
+            watermarkEnabled: 'Enable Watermark',
+            bgImageLabel: 'Background Image',
+            bgImageHint: 'JPG/PNG supported, recommended ≤ 2MB',
+            bgImageUpload: 'Choose Image',
+            bgImageClear: 'Clear Image',
+            bgImageOpacity: 'Background Opacity',
+            settingsSaved: 'Settings saved',
+            resetSettings: 'Reset to Default',
         }
     };
 
@@ -1496,6 +1522,210 @@
     })();
 
     /* ==============================================================
+       Background Image & Watermark Settings
+       Default: only the watermark is enabled (prevents screenshot misuse).
+       Background image is opt-in. Settings persist via localStorage.
+    ============================================================== */
+    const SETTINGS_KEY = 'appSettings';
+    const DEFAULT_SETTINGS = {
+        watermarkText: 'JSON Formatter',
+        watermarkOpacity: 0.15,
+        bgImageData: '',        // data URL; empty = no background image
+        bgImageOpacity: 0.25,
+    };
+
+    function getSettings() {
+        try {
+            const raw = localStorage.getItem(SETTINGS_KEY);
+            if (!raw) return { ...DEFAULT_SETTINGS };
+            return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+        } catch (e) {
+            console.warn('Settings corrupted, resetting:', e);
+            try { localStorage.removeItem(SETTINGS_KEY); } catch (_) {}
+            return { ...DEFAULT_SETTINGS };
+        }
+    }
+
+    function saveSettings(obj) {
+        try {
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(obj));
+        } catch (e) {
+            console.warn('Failed to save settings:', e);
+        }
+    }
+
+    let _settings = getSettings();
+    let _watermarkResizeTimer = null;
+
+    function renderWatermark() {
+        const layer = document.getElementById('watermark-layer');
+        if (!layer) return;
+        const text = (_settings.watermarkText || '').trim();
+        if (!text) {
+            layer.classList.remove('active');
+            layer.style.backgroundImage = '';
+            return;
+        }
+        // Canvas-based tiled watermark for crisp rendering across platforms
+        const angle = -22;
+        const rad = (angle * Math.PI) / 180;
+        const fontPx = 14;
+        const fontFamily = getComputedStyle(document.body).fontFamily || 'sans-serif';
+        const tilePadX = 80;
+        const tilePadY = 60;
+
+        const measureCanvas = document.createElement('canvas');
+        const mctx = measureCanvas.getContext('2d');
+        mctx.font = `${fontPx}px ${fontFamily}`;
+        const textWidth = Math.ceil(mctx.measureText(text).width);
+        const tileW = Math.max(textWidth + tilePadX * 2, 120);
+        const tileH = Math.max(fontPx + tilePadY * 2, 80);
+
+        const canvas = document.createElement('canvas');
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = tileW * dpr;
+        canvas.height = tileH * dpr;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        ctx.font = `${fontPx}px ${fontFamily}`;
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.save();
+        ctx.translate(tileW / 2, tileH / 2);
+        ctx.rotate(rad);
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+
+        const dataUrl = canvas.toDataURL('image/png');
+        layer.style.backgroundImage = `url("${dataUrl}")`;
+        layer.style.setProperty('--watermark-opacity', String(_settings.watermarkOpacity));
+        layer.classList.add('active');
+    }
+
+    function applyBackgroundImage() {
+        const layer = document.getElementById('bg-image-layer');
+        if (!layer) return;
+        if (_settings.bgImageData) {
+            layer.style.backgroundImage = `url("${_settings.bgImageData}")`;
+            layer.style.setProperty('--bg-image-opacity', String(_settings.bgImageOpacity));
+            layer.classList.add('has-image');
+        } else {
+            layer.style.backgroundImage = '';
+            layer.classList.remove('has-image');
+        }
+    }
+
+    function applyAllSettings() {
+        renderWatermark();
+        applyBackgroundImage();
+    }
+
+    function syncSettingsForm() {
+        const t = document.getElementById('watermark-text-input');
+        const o = document.getElementById('watermark-opacity-input');
+        const bo = document.getElementById('bg-image-opacity-input');
+        if (t) t.value = _settings.watermarkText;
+        if (o) o.value = _settings.watermarkOpacity;
+        if (bo) bo.value = _settings.bgImageOpacity;
+    }
+
+    function openSettings() {
+        syncSettingsForm();
+        // Close mobile "more" sheet if open (z-index 201 < settings modal 1000)
+        const sheet = document.getElementById('mob-sheet');
+        const overlay = document.getElementById('mob-sheet-overlay');
+        const moreBtn = document.getElementById('mob-more-btn');
+        if (sheet && sheet.classList.contains('open')) {
+            sheet.classList.remove('open');
+            if (overlay) overlay.classList.remove('open');
+            if (moreBtn) moreBtn.classList.remove('active');
+        }
+        const m = document.getElementById('settings-modal');
+        if (m) m.classList.add('active');
+        // Only auto-focus on desktop; on mobile it pops the soft keyboard
+        if (document.documentElement.getAttribute('data-device') !== 'mobile') {
+            const firstInput = document.getElementById('watermark-text-input');
+            if (firstInput) setTimeout(() => firstInput.focus(), 50);
+        }
+    }
+
+    function closeSettings() {
+        const m = document.getElementById('settings-modal');
+        if (m) m.classList.remove('active');
+    }
+
+    function commitSettingsFromForm() {
+        const t = document.getElementById('watermark-text-input');
+        const o = document.getElementById('watermark-opacity-input');
+        const bo = document.getElementById('bg-image-opacity-input');
+        _settings.watermarkText = (t ? t.value : '').slice(0, 40);
+        _settings.watermarkOpacity = clampOpacity(parseFloat(o ? o.value : DEFAULT_SETTINGS.watermarkOpacity), 0.05, 0.6, DEFAULT_SETTINGS.watermarkOpacity);
+        _settings.bgImageOpacity = clampOpacity(parseFloat(bo ? bo.value : DEFAULT_SETTINGS.bgImageOpacity), 0, 1, DEFAULT_SETTINGS.bgImageOpacity);
+        saveSettings(_settings);
+        applyAllSettings();
+    }
+
+    function clampOpacity(v, min, max, fallback) {
+        if (typeof v !== 'number' || isNaN(v)) return fallback;
+        return Math.min(max, Math.max(min, v));
+    }
+
+    function pickBackgroundImage() {
+        const input = document.getElementById('bg-image-file');
+        if (input) input.click();
+    }
+
+    function handleBackgroundImageFile(file) {
+        if (!file) return;
+        const allowed = ['image/png', 'image/jpeg', 'image/jpg'];
+        if (allowed.indexOf(file.type) === -1) {
+            showToast(i18n.t('jsonOnly'), 2500, 'icon-alert-triangle');
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            showToast(i18n.t('bgImageHint'), 3000, 'icon-alert-triangle');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function () {
+            _settings.bgImageData = String(reader.result || '');
+            saveSettings(_settings);
+            applyBackgroundImage();
+            showToast(i18n.t('settingsSaved'), 1500, 'icon-check');
+        };
+        reader.onerror = function () {
+            showToast(i18n.t('jsonError'), 2000, 'icon-alert-triangle');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearBackgroundImage() {
+        _settings.bgImageData = '';
+        saveSettings(_settings);
+        applyBackgroundImage();
+        showToast(i18n.t('cleared'), 1500, 'icon-check');
+    }
+
+    function resetAllSettings() {
+        _settings = { ...DEFAULT_SETTINGS };
+        saveSettings(_settings);
+        syncSettingsForm();
+        applyAllSettings();
+        showToast(i18n.t('settingsSaved'), 1500, 'icon-check');
+    }
+
+    function _initWatermarkResizeHandler() {
+        window.addEventListener('resize', () => {
+            if (_watermarkResizeTimer) clearTimeout(_watermarkResizeTimer);
+            _watermarkResizeTimer = setTimeout(renderWatermark, 200);
+        });
+        window.addEventListener('orientationchange', () => {
+            setTimeout(renderWatermark, 300);
+        });
+    }
+
+    /* ==============================================================
        Expose global functions (for Tauri 2.x strict CSP compatibility)
     ============================================================== */
     function _exposeGlobals() {
@@ -1506,6 +1736,8 @@
             'switchMobileTab', 'compareSelected', 'clearAllHistory',
             'closeSaveModal', 'confirmSave', 'reverseCompare', 'closeCompare',
             'openSaveModal',
+            'openSettings', 'closeSettings', 'pickBackgroundImage',
+            'clearBackgroundImage', 'resetAllSettings',
         ];
         for (const name of globals) {
             if (typeof window[name] === 'undefined' && typeof eval(name) === 'function') {
@@ -1534,6 +1766,11 @@
             '[data-action="reverse-compare"]': reverseCompare,
             '[data-action="close-compare"]': closeCompare,
             '[data-action="open-save-modal"]': openSaveModal,
+            '[data-action="open-settings"]': openSettings,
+            '[data-action="close-settings"]': closeSettings,
+            '[data-action="pick-bg-image"]': pickBackgroundImage,
+            '[data-action="clear-bg-image"]': clearBackgroundImage,
+            '[data-action="reset-settings"]': resetAllSettings,
         };
         for (const [selector, handler] of Object.entries(actions)) {
             document.querySelectorAll(selector).forEach(el => {
@@ -1550,6 +1787,30 @@
             i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh');
             var l = document.getElementById('mobile-lang-label');
             if (l) l.textContent = (i18n._lang === 'zh' ? '中' : 'EN');
+        });
+        // Settings modal: live preview + commit on change
+        const wmText = document.getElementById('watermark-text-input');
+        const wmOpacity = document.getElementById('watermark-opacity-input');
+        const bgOpacity = document.getElementById('bg-image-opacity-input');
+        if (wmText) wmText.addEventListener('input', commitSettingsFromForm);
+        if (wmOpacity) wmOpacity.addEventListener('input', commitSettingsFromForm);
+        if (bgOpacity) bgOpacity.addEventListener('input', commitSettingsFromForm);
+        const bgFile = document.getElementById('bg-image-file');
+        if (bgFile) bgFile.addEventListener('change', (e) => {
+            const f = e.target.files && e.target.files[0];
+            handleBackgroundImageFile(f);
+            e.target.value = '';
+        });
+        // Close settings modal when clicking the backdrop
+        const settingsModal = document.getElementById('settings-modal');
+        if (settingsModal) settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) closeSettings();
+        });
+        // Esc closes settings modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            const m = document.getElementById('settings-modal');
+            if (m && m.classList.contains('active')) closeSettings();
         });
     }
 
@@ -1576,6 +1837,9 @@
         initDragDrop();
         initKeyboard();
         initInputTracker();
+        // Apply persisted watermark + background image (watermark enabled by default)
+        applyAllSettings();
+        _initWatermarkResizeHandler();
         setStatus(i18n.t('statusReady'));
 
         if ('serviceWorker' in navigator) {

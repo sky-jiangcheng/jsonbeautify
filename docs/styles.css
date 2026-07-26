@@ -2019,3 +2019,107 @@
                 word-break: var(--code-word-break);
             }
         }
+
+        /* ========== Background Image Layer ========== */
+        .bg-image-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: cover;
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+        .bg-image-layer.has-image {
+            opacity: var(--bg-image-opacity, 0.25);
+        }
+        /* Ensure app content sits above the background image.
+           Only target elements that don't already have position set. */
+        header, .mobile-only, .main-layout, .statusbar {
+            position: relative;
+            z-index: 1;
+        }
+        /* compare-container (.900), modal-backdrop (.1000), toast (.2000)
+           already use position: fixed and higher z-index — left untouched. */
+
+        /* ========== Watermark Layer ==========
+           Sits above content (z-index 950) but below modal (1000) and toast (2000),
+           so screenshots of the working area always carry the watermark. */
+        .watermark-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 950;
+            pointer-events: none;
+            background-repeat: repeat;
+            opacity: 0;
+            transition: opacity var(--transition);
+            will-change: opacity;
+        }
+        .watermark-layer.active {
+            opacity: var(--watermark-opacity, 0.15);
+        }
+
+        /* ========== Settings Modal ========== */
+        .settings-modal {
+            width: 380px;
+            max-height: calc(100dvh - 48px);
+            overflow-y: auto;
+        }
+        .settings-section {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .settings-section:last-of-type { border-bottom: none; }
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 0;
+        }
+        .settings-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .settings-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .settings-row input[type="text"] {
+            flex: 1;
+            min-width: 0;
+        }
+        .settings-row input[type="range"] {
+            flex: 1;
+            min-width: 0;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+        .bg-image-row {
+            justify-content: flex-start;
+        }
+        .bg-image-row .btn {
+            flex: 0 0 auto;
+        }
+        .settings-modal .modal-actions {
+            justify-content: flex-end;
+            gap: 8px;
+        }
+        [data-device="mobile"] .settings-modal {
+            width: calc(100vw - 32px);
+            max-width: 360px;
+        }
+        /* Range input theming for cross-browser consistency */
+        input[type="range"] {
+            height: 4px;
+            background: var(--bg-input);
+            border-radius: 2px;
+            border: 1px solid var(--border-light);
+        }
