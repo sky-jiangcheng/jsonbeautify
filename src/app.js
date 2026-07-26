@@ -1496,9 +1496,69 @@
     })();
 
     /* ==============================================================
+       Expose global functions (for Tauri 2.x strict CSP compatibility)
+    ============================================================== */
+    function _exposeGlobals() {
+        const globals = [
+            'formatJSON', 'minifyJSON', 'stringifyJSON', 'copyOutput',
+            'downloadJSON', 'uploadFile', 'saveHistory', 'clearContent',
+            'toggleTheme', 'toggleSidebar', 'toggleMobileMore',
+            'switchMobileTab', 'compareSelected', 'clearAllHistory',
+            'closeSaveModal', 'confirmSave', 'reverseCompare', 'closeCompare',
+            'openSaveModal',
+        ];
+        for (const name of globals) {
+            if (typeof window[name] === 'undefined' && typeof eval(name) === 'function') {
+                window[name] = eval(name);
+            }
+        }
+    }
+
+    function _bindEventListeners() {
+        const actions = {
+            '[data-action="format"]': formatJSON,
+            '[data-action="minify"]': minifyJSON,
+            '[data-action="stringify"]': stringifyJSON,
+            '[data-action="copy"]': copyOutput,
+            '[data-action="download"]': downloadJSON,
+            '[data-action="upload"]': uploadFile,
+            '[data-action="save"]': saveHistory,
+            '[data-action="clear"]': clearContent,
+            '[data-action="toggle-theme"]': toggleTheme,
+            '[data-action="toggle-sidebar"]': toggleSidebar,
+            '[data-action="toggle-mobile-more"]': toggleMobileMore,
+            '[data-action="compare"]': compareSelected,
+            '[data-action="clear-history"]': clearAllHistory,
+            '[data-action="close-save-modal"]': closeSaveModal,
+            '[data-action="confirm-save"]': confirmSave,
+            '[data-action="reverse-compare"]': reverseCompare,
+            '[data-action="close-compare"]': closeCompare,
+            '[data-action="open-save-modal"]': openSaveModal,
+        };
+        for (const [selector, handler] of Object.entries(actions)) {
+            document.querySelectorAll(selector).forEach(el => {
+                el.addEventListener('click', handler);
+            });
+        }
+        document.querySelectorAll('[data-tab]').forEach(tab => {
+            tab.addEventListener('click', () => switchMobileTab(tab.dataset.tab));
+        });
+        document.getElementById('lang-btn')?.addEventListener('click', () => {
+            i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh');
+        });
+        document.getElementById('mobile-lang-btn')?.addEventListener('click', () => {
+            i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh');
+            var l = document.getElementById('mobile-lang-label');
+            if (l) l.textContent = (i18n._lang === 'zh' ? '中' : 'EN');
+        });
+    }
+
+    /* ==============================================================
        Init
     ============================================================== */
     window.addEventListener('DOMContentLoaded', () => {
+        _exposeGlobals();
+        _bindEventListeners();
         // 移动端检测兜底：万一 CSS 媒体查询因 viewport 解析问题未触发，
         // 用 JS 强制加 mobile class 触发移动端布局
         const checkMobile = () => {

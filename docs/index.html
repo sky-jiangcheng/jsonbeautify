@@ -138,44 +138,44 @@
             <span data-i18n="logoText">JSON 格式化工具</span>
         </div>
         <div class="toolbar">
-                <button class="btn" onclick="toggleTheme()" id="theme-btn" data-i18n-title="themeTitle" title="切换暗色/亮色模式">
+                <button class="btn" id="theme-btn" data-action="toggle-theme" data-i18n-title="themeTitle" title="切换暗色/亮色模式">
                 <svg aria-hidden="true" class="svg-icon" id="theme-icon"><use href="#icon-sun"/></svg>
             </button>
             <div class="sep"></div>
-            <button class="btn btn-primary" onclick="formatJSON()" data-i18n-title="formatTitle" title="格式化 JSON (Ctrl+Enter)">
+            <button class="btn btn-primary" data-action="format" data-i18n-title="formatTitle" title="格式化 JSON (Ctrl+Enter)">
                 <svg aria-hidden="true" class="svg-icon"><use href="#icon-code"/></svg>
                 <span data-i18n="format">格式化</span> <span class="shortcut">^&#9166;</span>
             </button>
-            <button class="btn" onclick="minifyJSON()" data-i18n-title="minifyTitle" title="压缩 JSON">
+            <button class="btn" data-action="minify" data-i18n-title="minifyTitle" title="压缩 JSON">
                 <span data-i18n="minify">压缩</span>
             </button>
-            <button class="btn" onclick="stringifyJSON()" data-i18n-title="escapeTitle" title="JSON 转义">
+            <button class="btn" data-action="stringify" data-i18n-title="escapeTitle" title="JSON 转义">
                 <span data-i18n="escape">转义</span>
             </button>
             <div class="sep"></div>
-            <button class="btn" onclick="copyOutput()" data-i18n-title="copyTitle" title="复制结果">
+            <button class="btn" data-action="copy" data-i18n-title="copyTitle" title="复制结果">
                 <svg aria-hidden="true" class="svg-icon"><use href="#icon-copy"/></svg>
                 <span data-i18n="copy">复制</span>
             </button>
-            <button class="btn" onclick="downloadJSON()" data-i18n-title="downloadTitle" title="下载 JSON 文件 (Ctrl+D)">
+            <button class="btn" data-action="download" data-i18n-title="downloadTitle" title="下载 JSON 文件 (Ctrl+D)">
                 <svg aria-hidden="true" class="svg-icon"><use href="#icon-download"/></svg>
                 <span data-i18n="download">下载</span> <span class="shortcut">^D</span>
             </button>
-            <button class="btn" onclick="uploadFile()" data-i18n-title="uploadTitle" title="上传 JSON 文件">
+            <button class="btn" data-action="upload" data-i18n-title="uploadTitle" title="上传 JSON 文件">
                 <svg aria-hidden="true" class="svg-icon"><use href="#icon-folder-open"/></svg>
                 <span data-i18n="upload">上传</span>
             </button>
             <div class="sep"></div>
-            <button class="btn" onclick="saveHistory()" data-i18n-title="saveTitle" title="保存到历史 (Ctrl+S)">
+            <button class="btn" data-action="save" data-i18n-title="saveTitle" title="保存到历史 (Ctrl+S)">
                 <svg aria-hidden="true" class="svg-icon"><use href="#icon-save"/></svg>
                 <span data-i18n="save">保存</span> <span class="shortcut">^S</span>
             </button>
-            <button class="btn btn-danger" onclick="clearContent()" data-i18n-title="clearTitle" title="清空">
+            <button class="btn btn-danger" data-action="clear" data-i18n-title="clearTitle" title="清空">
                 <svg aria-hidden="true" class="svg-icon"><use href="#icon-trash"/></svg>
                 <span data-i18n="clear">清空</span>
             </button>
             <div class="sep"></div>
-            <button class="btn btn-lang" id="lang-btn" onclick="i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh')" title="Switch language / 切换语言">EN</button>
+            <button class="btn btn-lang" id="lang-btn" title="Switch language / 切换语言">EN</button>
         </div>
     </header>
     <!-- ========== 移动端控制栏（data-device=mobile 时显示） ========== -->
@@ -190,10 +190,10 @@
             <span class="mob-title" data-i18n="mobTitle">JSON工具</span>
         </div>
         <div class="mob-header-right">
-            <button class="mob-icon-btn" onclick="i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh'); var l=document.getElementById('mobile-lang-label'); if(l) l.textContent=(i18n._lang==='zh'?'中':'EN')" id="mobile-lang-btn" aria-label="Language">
+            <button class="mob-icon-btn" id="mobile-lang-btn" aria-label="Language">
                 <span id="mobile-lang-label" class="mob-lang-text">中</span>
             </button>
-            <button class="mob-icon-btn" onclick="toggleTheme()" id="mobile-theme-btn" aria-label="Theme">
+            <button class="mob-icon-btn" data-action="toggle-theme" id="mobile-theme-btn" aria-label="Theme">
                 <svg aria-hidden="true" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                     <use href="#icon-sun" id="mobile-theme-icon-use"/>
                 </svg>
@@ -204,19 +204,19 @@
     <!-- === Bottom Toolbar === -->
     <div class="mob-toolbar" id="mob-toolbar">
         <div class="mob-toolbar-scroll">
-            <button class="mob-btn mob-btn-primary" onclick="formatJSON()">
+            <button class="mob-btn mob-btn-primary" data-action="format">
                 <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
                 <span data-i18n="format">格式化</span>
             </button>
-            <button class="mob-btn" onclick="minifyJSON()">
+            <button class="mob-btn" data-action="minify">
                 <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
                 <span data-i18n="minify">压缩</span>
             </button>
-            <button class="mob-btn" onclick="copyOutput()">
+            <button class="mob-btn" data-action="copy">
                 <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 <span data-i18n="copy">复制</span>
             </button>
-            <button class="mob-btn mob-more-btn" id="mob-more-btn" onclick="toggleMobileMore()">
+            <button class="mob-btn mob-more-btn" id="mob-more-btn" data-action="toggle-mobile-more">
                 <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                 <span data-i18n="more">更多</span>
             </button>
@@ -224,37 +224,37 @@
     </div>
 
     <!-- === More Bottom Sheet (overlay) === -->
-    <div class="mob-sheet-overlay" id="mob-sheet-overlay" onclick="toggleMobileMore()" role="button" tabindex="0" aria-label="关闭更多操作菜单"></div>
+    <div class="mob-sheet-overlay" id="mob-sheet-overlay" data-action="toggle-mobile-more" role="button" tabindex="0" aria-label="关闭更多操作菜单"></div>
     <div class="mob-sheet" id="mob-sheet">
         <div class="mob-sheet-handle"></div>
         <div class="mob-sheet-title" data-i18n="moreOps">更多操作</div>
         <div class="mob-sheet-items">
-            <button class="mob-sheet-item" onclick="uploadFile()">
+            <button class="mob-sheet-item" data-action="upload">
                 <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
                 <span data-i18n="openFile">打开文件</span>
             </button>
-            <button class="mob-sheet-item" onclick="downloadJSON()">
+            <button class="mob-sheet-item" data-action="download">
                 <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 <span data-i18n="downloadFile">下载文件</span>
             </button>
-            <button class="mob-sheet-item" onclick="toggleSidebar()">
+            <button class="mob-sheet-item" data-action="toggle-sidebar">
                 <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 <span data-i18n="history">历史记录</span>
             </button>
-            <button class="mob-sheet-item" onclick="saveHistory()">
+            <button class="mob-sheet-item" data-action="save">
                 <svg aria-hidden="true" class="svg-icon"><use href="#icon-save"/></svg>
                 <span data-i18n="save">保存</span>
             </button>
-            <button class="mob-sheet-item" onclick="stringifyJSON()">
+            <button class="mob-sheet-item" data-action="stringify">
                 <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 6.1H3M21 12.1H3M17 18.1H3"/><path d="M21 4v16"/></svg>
                 <span data-i18n="escape">转义</span>
             </button>
-            <button class="mob-sheet-item" onclick="clearContent()">
+            <button class="mob-sheet-item" data-action="clear">
                 <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 <span data-i18n="clearContent">清空内容</span>
             </button>
         </div>
-        <button class="mob-sheet-close" onclick="toggleMobileMore()" data-i18n="cancelMore">取消</button>
+        <button class="mob-sheet-close" data-action="toggle-mobile-more" data-i18n="cancelMore">取消</button>
     </div>
 </div>
     <!-- ========== 移动端控制栏结束 ========== -->
@@ -264,10 +264,10 @@
     <div class="main-layout">
         <!-- 移动端输入/输出 Tab 栏 -->
         <div class="mob-tabs mobile-only" id="mob-tabs" role="tablist">
-            <button class="mob-tab is-active" data-tab="input" onclick="switchMobileTab('input')" role="tab" aria-selected="true">
+            <button class="mob-tab is-active" data-tab="input" role="tab" aria-selected="true">
                 <span data-i18n="input">输入</span>
             </button>
-            <button class="mob-tab" data-tab="output" onclick="switchMobileTab('output')" role="tab" aria-selected="false">
+            <button class="mob-tab" data-tab="output" role="tab" aria-selected="false">
                 <span data-i18n="output">输出</span>
             </button>
         </div>
@@ -312,25 +312,25 @@
         </div>
 
         <!-- 移动端历史侧栏 overlay -->
-        <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()" role="button" tabindex="0" aria-label="关闭侧栏"></div>
+        <div class="sidebar-overlay" id="sidebar-overlay" data-action="toggle-sidebar" role="button" tabindex="0" aria-label="关闭侧栏"></div>
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h2>
                     <svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><use href="#icon-clock"/></svg>
                     <span data-i18n="history">历史记录</span>
                 </h2>
-                <button class="sidebar-toggle" onclick="toggleSidebar()" data-i18n-title="collapseSidebar" title="收起侧栏" aria-label="收起侧栏">
+                <button class="sidebar-toggle" data-action="toggle-sidebar" data-i18n-title="collapseSidebar" title="收起侧栏" aria-label="收起侧栏">
                     <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
             </div>
             <div class="history-list" id="history-list"></div>
             <div class="sidebar-footer">
                 <div class="compare-actions">
-                    <button class="btn" id="compare-btn" onclick="compareSelected()" disabled>
+                    <button class="btn" id="compare-btn" data-action="compare" disabled>
                         <svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-diff"/></svg>
                         <span data-i18n="compare">对比</span>
                     </button>
-                    <button class="btn" onclick="clearAllHistory()" data-i18n-title="clearAllTitle" title="清空所有历史">
+                    <button class="btn" data-action="clear-history" data-i18n-title="clearAllTitle" title="清空所有历史">
                         <svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-trash"/></svg>
                         <span data-i18n="clear">清空</span>
                     </button>
@@ -339,7 +339,7 @@
         </div>
     </div>
 
-    <button class="sidebar-toggle" id="sidebar-open-btn" onclick="toggleSidebar()"
+    <button class="sidebar-toggle" id="sidebar-open-btn" data-action="toggle-sidebar"
         style="display:none;position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:100;
                background:var(--bg-elevated);border:1px solid var(--border);border-right:none;
                border-radius:4px 0 0 4px;padding:6px 4px;color:var(--text-muted);font-size:11px;cursor:pointer;"
@@ -363,8 +363,8 @@
             <h3 id="save-modal-title" data-i18n="saveModalTitle">保存到历史记录</h3>
             <input type="text" id="save-name-input" name="save-name" data-i18n-placeholder="saveNamePlaceholder" placeholder="输入记录名称（可选）…" autocomplete="off" aria-label="记录名称">
             <div class="modal-actions">
-                <button class="btn" onclick="closeSaveModal()" data-i18n="cancel">取消</button>
-                <button class="btn btn-primary" onclick="confirmSave()" data-i18n="save">保存</button>
+                <button class="btn" data-action="close-save-modal" data-i18n="cancel">取消</button>
+                <button class="btn btn-primary" data-action="confirm-save" data-i18n="save">保存</button>
             </div>
         </div>
     </div>
@@ -377,11 +377,11 @@
                 <span data-i18n="compareTitle">JSON 对比</span>
             </span>
             <div class="actions">
-                <button class="btn" onclick="reverseCompare()">
+                <button class="btn" data-action="reverse-compare">
                     <svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-swap"/></svg>
                     <span data-i18n="swap">交换</span>
                 </button>
-                <button class="btn btn-danger" onclick="closeCompare()" data-i18n="close">关闭</button>
+                <button class="btn btn-danger" data-action="close-compare" data-i18n="close">关闭</button>
             </div>
         </div>
             <div class="compare-body">
