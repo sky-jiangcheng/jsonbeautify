@@ -287,7 +287,7 @@
     };
 
     const i18n = {
-        _lang: localStorage.getItem('appLang') || (navigator.language.startsWith('zh') ? 'zh' : 'en'),
+        _lang: localStorage.getItem('appLang') || 'en',
 
         t(key, vars) {
             let s = I18N[this._lang][key] || I18N['en'][key] || key;
@@ -1494,7 +1494,7 @@
        Theme
     ============================================================== */
     function getTheme() {
-        return localStorage.getItem('theme') || 'dark';
+        return localStorage.getItem('theme') || 'light';
     }
 
     function applyTheme(theme) {
