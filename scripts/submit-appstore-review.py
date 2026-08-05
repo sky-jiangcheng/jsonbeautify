@@ -301,6 +301,11 @@ def get_submission_version(app_id, jwt, platform, app_store_version, build_versi
         vid = chosen.get("id")
         st = chosen.get("attributes", {}).get("appStoreState", "")
         ver = chosen.get("attributes", {}).get("versionString")
+        # 如果版本已在审核中, 直接返回 (让 main() 的早期退出逻辑生效)
+        if st in ("WAITING_FOR_REVIEW", "IN_REVIEW", "PENDING_DEVELOPER_RELEASE",
+                  "APPROVED", "DEVELOPER_REJECTED", "REJECTED"):
+            print(f"  版本 {ver} (id={vid}, state={st}) 已是提交状态, 跳过")
+            return vid, st
         # 检查是否有残留 submission
         has_submission = False
         try:
@@ -716,10 +721,16 @@ def main():
     associate_build(version_id, build_id, build_version, jwt)
 
     # 4. 提交前诊断 (检查版本状态、构建关联、导出合规性等)
-    preflight_check(version_id, jwt)
+    try:
+        preflight_check(version_id, jwt)
+    except Exception as e:
+        print(f"  ⚠️ 提交前诊断异常 (非致命): {e}")
 
     # 5. 尝试自动处理导出合规性 (缺少加密声明是 403 最常见原因)
-    ensure_export_compliance(version_id, app_id, build_id, jwt)
+    try:
+        ensure_export_compliance(version_id, app_id, build_id, jwt)
+    except Exception as e:
+        print(f"  ⚠️ 加密声明处理异常 (非致命): {e}")
 
     # 6. 提交审核 (如果失败且版本有僵尸 submission, 删除版本后创建新版本重试)
     try:
