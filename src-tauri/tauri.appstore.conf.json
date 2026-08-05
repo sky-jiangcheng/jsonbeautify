@@ -17,7 +17,8 @@
       "entitlements": "./Entitlements.plist",
       "files": {
         "embedded.provisionprofile": "./embedded.provisionprofile"
-      }
+      },
+      "Info.plist": "./Info.plist"
     }
   }
 }
