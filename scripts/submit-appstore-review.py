@@ -721,8 +721,33 @@ def main():
     # 5. 尝试自动处理导出合规性 (缺少加密声明是 403 最常见原因)
     ensure_export_compliance(version_id, app_id, build_id, jwt)
 
-    # 6. 提交审核
-    submit_for_review(version_id, jwt)
+    # 6. 提交审核 (如果失败且版本有僵尸 submission, 删除版本后创建新版本重试)
+    try:
+        submit_for_review(version_id, jwt)
+    except urllib.error.HTTPError as e:
+        is_zombie = (
+            e.code == 403
+            and hasattr(e, "apple_errors")
+            and any("DELETE" in err.get("detail", "") for err in e.apple_errors)
+        )
+        if not is_zombie:
+            raise
+        print("\n⚠️ 版本有僵尸 submission, 删除版本后创建新版本重试...")
+        # 删除卡住的版本
+        try:
+            api_request("DELETE", f"/v1/appStoreVersions/{version_id}", jwt)
+            print(f"  已删除版本 {version_id}")
+            time.sleep(10)
+        except urllib.error.HTTPError as del_e:
+            print(f"  删除版本失败: HTTP {del_e.code}")
+            raise
+        # 创建新版本 (使用 tag 版本号)
+        jwt = jwt_factory()
+        version_id, state = create_version(app_id, jwt, platform, version_string)
+        # 重新关联构建
+        associate_build(version_id, build_id, build_version, jwt)
+        # 提交审核
+        submit_for_review(version_id, jwt)
 
     print("\n✅ 完成! 请到 App Store Connect 查看审核状态")
     print(f"   https://appstoreconnect.apple.com/apps/{app_id}/appstore/{platform.lower()}/versions/submission")
