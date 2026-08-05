@@ -501,35 +501,75 @@ def delete_submission(version_id, jwt, max_retries=3):
 
     处理 Apple API 的时序问题: GET 找到 submission, 但 DELETE 可能返回 404,
     同时 POST 仍报 403 "Allowed operation is: DELETE"。
-    出现此情况时需重新 GET 获取最新 ID 并重试删除。
+    尝试多种删除方式: 按 ID 删除, 通过版本关系端点删除。
     """
     for retry in range(max_retries):
         # 查找残留 submission
+        old_id = None
         try:
             existing = api_request(
                 "GET", f"/v1/appStoreVersions/{version_id}/appStoreVersionSubmission", jwt
             )
             old_id = (existing.get("data") or {}).get("id")
         except urllib.error.HTTPError as e:
-            if e.code == 404:
-                return  # 无残留 submission
-            raise
+            if e.code != 404:
+                print(f"  查询 submission 异常: HTTP {e.code}")
 
         if not old_id:
-            return
+            # GET 返回 404, 但可能 submission 仍存在 (Apple API 不一致)
+            # 尝试直接通过版本关系端点删除
+            if retry == 0:
+                print("  GET 未找到 submission, 尝试通过版本关系端点清理...")
+            try:
+                api_request(
+                    "DELETE",
+                    f"/v1/appStoreVersions/{version_id}/appStoreVersionSubmission",
+                    jwt,
+                )
+                print("  通过版本关系端点删除 submission 成功")
+                time.sleep(5)
+                return
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    # 确实没有 submission
+                    return
+                if e.code == 405:
+                    # Method not allowed, 此端点不支持 DELETE
+                    print("  版本关系端点不支持 DELETE, 尝试其他方式...")
+                else:
+                    print(f"  版本关系端点删除: HTTP {e.code}")
+                # 等待后重试 (submission 可能正在传播)
+                if retry < max_retries - 1:
+                    print(f"  等待 15s 后重试...")
+                    time.sleep(15)
+            continue
 
         print(f"  发现残留 submission {old_id} (第 {retry + 1} 次尝试删除)...")
         try:
             api_request("DELETE", f"/v1/appStoreVersionSubmissions/{old_id}", jwt)
             print("  已删除旧 submission, 版本回到可编辑状态")
-            time.sleep(5)  # 等待状态切换
+            time.sleep(5)
             return
         except urllib.error.HTTPError as e:
             if e.code == 404:
                 # Apple API 时序问题: submission 存在但 DELETE 返回 404
-                # 等待后重新 GET 获取最新 ID 再试
-                print(f"  DELETE 返回 404, 等待 10s 后重新查找...")
-                time.sleep(10)
+                # 尝试通过版本关系端点删除
+                print(f"  DELETE by ID 返回 404, 尝试版本关系端点...")
+                try:
+                    api_request(
+                        "DELETE",
+                        f"/v1/appStoreVersions/{version_id}/appStoreVersionSubmission",
+                        jwt,
+                    )
+                    print("  通过版本关系端点删除成功")
+                    time.sleep(5)
+                    return
+                except urllib.error.HTTPError as e2:
+                    if e2.code != 404 and e2.code != 405:
+                        print(f"  版本关系端点: HTTP {e2.code}")
+                # 等待后重新 GET
+                print(f"  等待 15s 后重试...")
+                time.sleep(15)
                 continue
             raise
 
