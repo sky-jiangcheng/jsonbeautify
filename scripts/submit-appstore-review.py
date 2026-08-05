@@ -450,14 +450,14 @@ def ensure_export_compliance(version_id, app_id, build_id, jwt):
         if e.code != 404:
             print(f"  查询加密声明失败 (HTTP {e.code}), 尝试继续创建...")
 
-    print("  创建加密声明 (不含自定义加密)...")
+    print("  创建加密声明 (JSON 格式化工具, 仅使用平台标准加密)...")
     body = {
         "data": {
             "type": "appEncryptionDeclarations",
             "attributes": {
                 "appDescription": "JSON formatting and validation tool",
                 "availableOnFrenchStore": True,
-                "containsProprietaryCryptography": True,
+                "containsProprietaryCryptography": False,
                 "containsThirdPartyCryptography": False,
             },
             "relationships": {
@@ -471,12 +471,12 @@ def ensure_export_compliance(version_id, app_id, build_id, jwt):
         resp = api_request("POST", "/v1/appEncryptionDeclarations", jwt, body)
         decl_id = resp.get("data", {}).get("id")
         print(f"  已创建加密声明 (id={decl_id})")
-        # 关联到版本 (通过 build relationship, 非 appStoreVersions 直接关系)
+        # 关联到 appStoreVersion (通过版本关系端点, 非 build)
         try:
             patch_body = {
                 "data": {
-                    "type": "builds",
-                    "id": build_id,
+                    "type": "appStoreVersions",
+                    "id": version_id,
                     "relationships": {
                         "appEncryptionDeclaration": {
                             "data": {
@@ -487,8 +487,8 @@ def ensure_export_compliance(version_id, app_id, build_id, jwt):
                     },
                 }
             }
-            api_request("PATCH", f"/v1/builds/{build_id}", jwt, patch_body)
-            print(f"  已关联加密声明到构建")
+            api_request("PATCH", f"/v1/appStoreVersions/{version_id}", jwt, patch_body)
+            print(f"  已关联加密声明到版本")
         except urllib.error.HTTPError as e:
             print(f"  ⚠️ 关联加密声明失败 (非致命): {e}")
     except urllib.error.HTTPError as e:
