@@ -425,15 +425,15 @@ def ensure_export_compliance(version_id, app_id, build_id, jwt):
         if e.code != 404:
             print(f"  查询加密声明失败 (HTTP {e.code}), 尝试继续创建...")
 
-    print("  创建加密声明 (usesEncryption=false)...")
+    print("  创建加密声明 (不含加密)...")
     body = {
         "data": {
             "type": "appEncryptionDeclarations",
             "attributes": {
-                "usesEncryption": False,
-                "exempt": False,
-                "usesThirdPartyFipsValidatedCrypto": False,
-                "usesThirdPartyCrypto": False,
+                "appDescription": "JSON formatting and validation tool",
+                "availableOnFrenchStore": True,
+                "containsProprietaryCryptography": False,
+                "containsThirdPartyCryptography": False,
             },
             "relationships": {
                 "app": {
@@ -468,6 +468,46 @@ def ensure_export_compliance(version_id, app_id, build_id, jwt):
         print("  请到 App Store Connect 手动填写导出合规信息后重试")
 
 
+def delete_submission(version_id, jwt, max_retries=3):
+    """查找并删除残留的 appStoreVersionSubmission。
+
+    处理 Apple API 的时序问题: GET 找到 submission, 但 DELETE 可能返回 404,
+    同时 POST 仍报 403 "Allowed operation is: DELETE"。
+    出现此情况时需重新 GET 获取最新 ID 并重试删除。
+    """
+    for retry in range(max_retries):
+        # 查找残留 submission
+        try:
+            existing = api_request(
+                "GET", f"/v1/appStoreVersions/{version_id}/appStoreVersionSubmission", jwt
+            )
+            old_id = (existing.get("data") or {}).get("id")
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                return  # 无残留 submission
+            raise
+
+        if not old_id:
+            return
+
+        print(f"  发现残留 submission {old_id} (第 {retry + 1} 次尝试删除)...")
+        try:
+            api_request("DELETE", f"/v1/appStoreVersionSubmissions/{old_id}", jwt)
+            print("  已删除旧 submission, 版本回到可编辑状态")
+            time.sleep(5)  # 等待状态切换
+            return
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                # Apple API 时序问题: submission 存在但 DELETE 返回 404
+                # 等待后重新 GET 获取最新 ID 再试
+                print(f"  DELETE 返回 404, 等待 10s 后重新查找...")
+                time.sleep(10)
+                continue
+            raise
+
+    print("  ⚠️ 多次删除残留 submission 失败, 继续尝试提交...")
+
+
 def submit_for_review(version_id, jwt):
     """提交审核
 
@@ -478,25 +518,9 @@ def submit_for_review(version_id, jwt):
     因此先查并删除已存在的 submission, 再创建新的。
     """
     print("\n=== 提交审核 ===")
-    # 1. 查残留 submission (REJECTED 版本可能有)
-    try:
-        existing = api_request(
-            "GET", f"/v1/appStoreVersions/{version_id}/appStoreVersionSubmission", jwt
-        )
-        old_id = (existing.get("data") or {}).get("id")
-    except urllib.error.HTTPError as e:
-        old_id = None
-        if e.code != 404:
-            raise
-    if old_id:
-        print(f"  发现残留 submission {old_id}, 先删除以支持重新提交...")
-        try:
-            api_request("DELETE", f"/v1/appStoreVersionSubmissions/{old_id}", jwt)
-            print("  已删除旧 submission, 版本回到可编辑状态")
-            time.sleep(3)  # 防时序: 删除后短暂等待状态切换
-        except urllib.error.HTTPError as e:
-            if e.code != 404:
-                raise
+    # 1. 删除残留 submission (REJECTED 版本可能有)
+    delete_submission(version_id, jwt)
+
     # 2. 创建新 submission
     body = {
         "data": {
@@ -526,20 +550,25 @@ def submit_for_review(version_id, jwt):
                 print("  版本已在审核中或已提交，跳过")
                 return True
             if e.code == 403 and attempt < 2:
-                # 提取 Apple 错误详情用于诊断
-                detail = ""
+                # 检查是否是 "Allowed operation is: DELETE" 错误
+                is_delete_only = False
                 if hasattr(e, "apple_errors") and e.apple_errors:
-                    detail = "; ".join(
-                        err.get("detail", "") for err in e.apple_errors
-                    )
-                print(
-                    f"  提交被拒 (403), {5 * (attempt + 1)}s 后重试..."
-                )
-                if detail:
-                    print(f"  Apple 错误详情: {detail}")
-                time.sleep(5 * (attempt + 1))
+                    for err in e.apple_errors:
+                        detail = err.get("detail", "")
+                        if "DELETE" in detail:
+                            is_delete_only = True
+                        print(f"  Apple 错误: {err.get('title', '')} - {detail}")
+
+                if is_delete_only:
+                    # 残留 submission 未完全释放, 重新删除后重试
+                    print(f"  检测到残留 submission 阻塞, 重新清理后重试...")
+                    delete_submission(version_id, jwt)
+                    time.sleep(5 * (attempt + 1))
+                else:
+                    print(f"  提交被拒 (403), {5 * (attempt + 1)}s 后重试...")
+                    time.sleep(5 * (attempt + 1))
                 continue
-            # 最终失败时, 输出 Apple 错误详情到 traceback
+            # 最终失败时, 输出 Apple 错误详情
             if hasattr(e, "apple_errors") and e.apple_errors:
                 for err in e.apple_errors:
                     print(f"  ❌ Apple 错误: {err.get('title', '')} - {err.get('detail', '')}")
