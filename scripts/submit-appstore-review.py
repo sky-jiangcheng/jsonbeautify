@@ -76,6 +76,30 @@ def generate_jwt(issuer_id, key_id, key_path, serialization, ec, hashes):
     return f"{signing_input}.{sig_b64}"
 
 
+class AppStoreAPIError(urllib.error.HTTPError):
+    """带 Apple 错误详情的 HTTP 异常，确保 traceback 中可见具体原因"""
+
+    def __init__(self, url, code, msg, hdrs, error_body):
+        super().__init__(url, code, msg, hdrs, None)
+        self.error_body = error_body
+        # 解析 Apple 错误格式, 提取可读信息
+        self.apple_errors = []
+        try:
+            parsed = json.loads(error_body)
+            self.apple_errors = parsed.get("errors", [])
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    def __str__(self):
+        if self.apple_errors:
+            details = "; ".join(
+                f"{e.get('title', '')}: {e.get('detail', '')}"
+                for e in self.apple_errors
+            )
+            return f"HTTP {self.code} {details}"
+        return f"HTTP {self.code}: {self.error_body[:300]}"
+
+
 def api_request(method, path, jwt, body=None):
     """调用 App Store Connect API"""
     url = f"https://api.appstoreconnect.apple.com{path}"
@@ -97,7 +121,7 @@ def api_request(method, path, jwt, body=None):
     except urllib.error.HTTPError as e:
         error_body = e.read().decode()
         print(f"  HTTP {e.code}: {error_body[:500]}")
-        raise
+        raise AppStoreAPIError(e.url, e.code, e.reason, e.headers, error_body) from e
 
 
 def wait_for_build(app_id, jwt_factory, platform, target_version, max_wait_minutes):
@@ -304,6 +328,146 @@ def associate_build(version_id, build_id, build_version, jwt):
     print(f"  已关联构建 {build_version}")
 
 
+def preflight_check(version_id, jwt):
+    """提交前诊断: 检查版本状态、构建关联、导出合规性等,
+    打印诊断信息, 帮助定位 403 的具体原因。"""
+    print("\n=== 提交前诊断 ===")
+    issues = []
+
+    # 1. 检查版本状态和属性
+    try:
+        resp = api_request("GET", f"/v1/appStoreVersions/{version_id}", jwt)
+        attrs = resp.get("data", {}).get("attributes", {})
+        state = attrs.get("appStoreState", "UNKNOWN")
+        print(f"  版本状态: {state}")
+        print(f"  versionString: {attrs.get('versionString')}")
+        print(f"  releaseType: {attrs.get('releaseType')}")
+        uses_idfa = attrs.get("usesIdfa")
+        if uses_idfa is not None:
+            print(f"  usesIdfa: {uses_idfa}")
+        # 可提交状态: PREPARE_FOR_SUBMISSION, REJECTED, DEVELOPER_REJECTED
+        submittable = ("PREPARE_FOR_SUBMISSION", "REJECTED", "DEVELOPER_REJECTED")
+        if state not in submittable:
+            issues.append(f"版本状态 {state} 不可提交 (需 PREPARE_FOR_SUBMISSION/REJECTED/DEVELOPER_REJECTED)")
+    except urllib.error.HTTPError as e:
+        issues.append(f"无法查询版本信息: HTTP {e.code}")
+
+    # 2. 检查构建关联
+    try:
+        build_resp = api_request(
+            "GET", f"/v1/appStoreVersions/{version_id}/build", jwt
+        )
+        build_data = build_resp.get("data")
+        if build_data:
+            print(f"  已关联构建: {build_data.get('id')}")
+        else:
+            issues.append("未关联构建 (需先 associate_build)")
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            issues.append(f"无法查询构建关联: HTTP {e.code}")
+
+    # 3. 检查残留 submission
+    try:
+        sub_resp = api_request(
+            "GET", f"/v1/appStoreVersions/{version_id}/appStoreVersionSubmission", jwt
+        )
+        sub_data = sub_resp.get("data")
+        if sub_data:
+            print(f"  ⚠️ 存在残留 submission: {sub_data.get('id')}")
+            issues.append("存在残留 submission (需先删除)")
+        else:
+            print("  无残留 submission")
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            print("  无残留 submission")
+        else:
+            print(f"  查询 submission 状态: HTTP {e.code}")
+
+    # 4. 检查导出合规性 (export compliance / encryption declaration)
+    try:
+        enc_resp = api_request(
+            "GET", f"/v1/appStoreVersions/{version_id}/appEncryptionDeclaration", jwt
+        )
+        enc_data = enc_resp.get("data")
+        if enc_data:
+            print(f"  已有关密声明: {enc_data.get('id')}")
+        else:
+            print("  ⚠️ 未关联加密声明 (export compliance)")
+            issues.append("缺少加密声明 (export compliance) — 这通常是 403 的原因")
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            print("  ⚠️ 未关联加密声明 (export compliance)")
+            issues.append("缺少加密声明 (export compliance) — 这通常是 403 的原因")
+        else:
+            print(f"  查询加密声明: HTTP {e.code}")
+
+    if issues:
+        print("\n  发现以下潜在问题:")
+        for i, issue in enumerate(issues, 1):
+            print(f"    {i}. {issue}")
+    else:
+        print("  所有检查通过 ✓")
+    return issues
+
+
+def ensure_export_compliance(version_id, app_id, build_id, jwt):
+    """尝试自动处理导出合规性: 为不含加密的 app 创建加密声明并关联到版本。
+    仅当版本缺少加密声明时才执行。"""
+    # 先检查是否已有加密声明
+    try:
+        resp = api_request(
+            "GET", f"/v1/appStoreVersions/{version_id}/appEncryptionDeclaration", jwt
+        )
+        if resp.get("data"):
+            print("  已有关密声明, 跳过")
+            return
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            print(f"  查询加密声明失败 (HTTP {e.code}), 尝试继续创建...")
+
+    print("  创建加密声明 (usesEncryption=false)...")
+    body = {
+        "data": {
+            "type": "appEncryptionDeclarations",
+            "attributes": {
+                "usesEncryption": False,
+                "exempt": False,
+                "usesThirdPartyFipsValidatedCrypto": False,
+                "usesThirdPartyCrypto": False,
+            },
+            "relationships": {
+                "app": {
+                    "data": {"type": "apps", "id": app_id}
+                },
+            },
+        }
+    }
+    try:
+        resp = api_request("POST", "/v1/appEncryptionDeclarations", jwt, body)
+        decl_id = resp.get("data", {}).get("id")
+        print(f"  已创建加密声明 (id={decl_id})")
+        # 关联到版本
+        patch_body = {
+            "data": {
+                "type": "appStoreVersions",
+                "id": version_id,
+                "relationships": {
+                    "appEncryptionDeclaration": {
+                        "data": {
+                            "type": "appEncryptionDeclarations",
+                            "id": decl_id,
+                        }
+                    },
+                },
+            }
+        }
+        api_request("PATCH", f"/v1/appStoreVersions/{version_id}", jwt, patch_body)
+        print(f"  已关联加密声明到版本")
+    except urllib.error.HTTPError as e:
+        print(f"  ⚠️ 创建加密声明失败: {e}")
+        print("  请到 App Store Connect 手动填写导出合规信息后重试")
+
+
 def submit_for_review(version_id, jwt):
     """提交审核
 
@@ -362,12 +526,25 @@ def submit_for_review(version_id, jwt):
                 print("  版本已在审核中或已提交，跳过")
                 return True
             if e.code == 403 and attempt < 2:
+                # 提取 Apple 错误详情用于诊断
+                detail = ""
+                if hasattr(e, "apple_errors") and e.apple_errors:
+                    detail = "; ".join(
+                        err.get("detail", "") for err in e.apple_errors
+                    )
                 print(
-                    f"  提交被拒 (403), {5 * (attempt + 1)}s 后重试 "
-                    f"(残留 submission 可能未完全释放)..."
+                    f"  提交被拒 (403), {5 * (attempt + 1)}s 后重试..."
                 )
+                if detail:
+                    print(f"  Apple 错误详情: {detail}")
                 time.sleep(5 * (attempt + 1))
                 continue
+            # 最终失败时, 输出 Apple 错误详情到 traceback
+            if hasattr(e, "apple_errors") and e.apple_errors:
+                for err in e.apple_errors:
+                    print(f"  ❌ Apple 错误: {err.get('title', '')} - {err.get('detail', '')}")
+                    if err.get("source"):
+                        print(f"     source: {err['source']}")
             raise
     raise last_err
 
@@ -440,7 +617,14 @@ def main():
 
     # 3. 关联构建
     associate_build(version_id, build_id, build_version, jwt)
-    # 4. 提交审核
+
+    # 4. 提交前诊断 (检查版本状态、构建关联、导出合规性等)
+    preflight_check(version_id, jwt)
+
+    # 5. 尝试自动处理导出合规性 (缺少加密声明是 403 最常见原因)
+    ensure_export_compliance(version_id, app_id, build_id, jwt)
+
+    # 6. 提交审核
     submit_for_review(version_id, jwt)
 
     print("\n✅ 完成! 请到 App Store Connect 查看审核状态")
