@@ -471,26 +471,29 @@ def ensure_export_compliance(version_id, app_id, build_id, jwt):
         resp = api_request("POST", "/v1/appEncryptionDeclarations", jwt, body)
         decl_id = resp.get("data", {}).get("id")
         print(f"  已创建加密声明 (id={decl_id})")
-        # 关联到版本
-        patch_body = {
-            "data": {
-                "type": "appStoreVersions",
-                "id": version_id,
-                "relationships": {
-                    "appEncryptionDeclaration": {
-                        "data": {
-                            "type": "appEncryptionDeclarations",
-                            "id": decl_id,
-                        }
+        # 关联到版本 (通过 build relationship, 非 appStoreVersions 直接关系)
+        try:
+            patch_body = {
+                "data": {
+                    "type": "builds",
+                    "id": build_id,
+                    "relationships": {
+                        "appEncryptionDeclaration": {
+                            "data": {
+                                "type": "appEncryptionDeclarations",
+                                "id": decl_id,
+                            }
+                        },
                     },
-                },
+                }
             }
-        }
-        api_request("PATCH", f"/v1/appStoreVersions/{version_id}", jwt, patch_body)
-        print(f"  已关联加密声明到版本")
+            api_request("PATCH", f"/v1/builds/{build_id}", jwt, patch_body)
+            print(f"  已关联加密声明到构建")
+        except urllib.error.HTTPError as e:
+            print(f"  ⚠️ 关联加密声明失败 (非致命): {e}")
     except urllib.error.HTTPError as e:
         print(f"  ⚠️ 创建加密声明失败: {e}")
-        print("  请到 App Store Connect 手动填写导出合规信息后重试")
+        print("  (非致命, 可在 App Store Connect 手动填写)")
 
 
 def delete_submission(version_id, jwt, max_retries=3):
