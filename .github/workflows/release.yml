@@ -381,7 +381,7 @@ jobs:
 
           # 清理版本号前缀 (v1.4.0 -> 1.4.0)
           CLEAN_VERSION="${APP_VERSION#v}"
-          APP_VERSION="$CLEAN_VERSION" APP_STORE_VERSION="$CLEAN_VERSION" python3 scripts/submit-appstore-review.py MAC_OS
+          APP_VERSION="$CLEAN_VERSION" python3 scripts/submit-appstore-review.py MAC_OS
 
   ios:
     if: github.ref_name == 'appstore' || startsWith(github.ref, 'refs/tags/')
@@ -693,4 +693,4 @@ jobs:
 
           # 清理版本号前缀 (v1.4.0 -> 1.4.0)
           CLEAN_VERSION="${APP_VERSION#v}"
-          APP_VERSION="$CLEAN_VERSION" APP_STORE_VERSION="$CLEAN_VERSION" python3 scripts/submit-appstore-review.py IOS
+          APP_VERSION="$CLEAN_VERSION" python3 scripts/submit-appstore-review.py IOS

@@ -218,6 +218,9 @@ def create_version(app_id, jwt, platform, version_string):
         resp = api_request("POST", "/v1/appStoreVersions", jwt, body)
         version_id = resp.get("data", {}).get("id")
         print(f"  已创建版本 (id={version_id})")
+        # 等待 Apple API 传播新版本, 否则立即提交可能 403
+        print("  等待 30s 供 Apple API 传播...")
+        time.sleep(30)
         return version_id, "PREPARE_FOR_SUBMISSION"
     except urllib.error.HTTPError as e:
         if e.code != 409:
@@ -280,6 +283,7 @@ def get_submission_version(app_id, jwt, platform, app_store_version, build_versi
         return create_version(app_id, jwt, platform, app_store_version)
 
     # 2) 自动选择当前可编辑/可提交版本 (排除已上架)
+    #    额外检查: 跳过有残留 submission 的版本 (会导致 403 "only DELETE")
     def vkey(v):
         s = v.get("attributes", {}).get("versionString", "0")
         try:
@@ -290,12 +294,33 @@ def get_submission_version(app_id, jwt, platform, app_store_version, build_versi
     editable = [v for v in versions
                 if v.get("attributes", {}).get("appStoreState") != "READY_FOR_SALE"]
     candidates = editable if editable else versions
-    chosen = sorted(candidates, key=vkey)[-1]
-    vid = chosen.get("id")
-    st = chosen.get("attributes", {}).get("appStoreState", "")
-    ver = chosen.get("attributes", {}).get("versionString")
-    print(f"  自动选择当前版本 {ver} (id={vid}, state={st})")
-    return vid, st
+    # 按 versionString 降序排列, 优先选最新版本
+    candidates = sorted(candidates, key=vkey, reverse=True)
+
+    for chosen in candidates:
+        vid = chosen.get("id")
+        st = chosen.get("attributes", {}).get("appStoreState", "")
+        ver = chosen.get("attributes", {}).get("versionString")
+        # 检查是否有残留 submission
+        has_submission = False
+        try:
+            sub_resp = api_request(
+                "GET", f"/v1/appStoreVersions/{vid}/appStoreVersionSubmission", jwt
+            )
+            if sub_resp.get("data"):
+                has_submission = True
+        except urllib.error.HTTPError as e:
+            if e.code != 404:
+                has_submission = True  # 出错时保守跳过
+        if has_submission:
+            print(f"  跳过版本 {ver} (id={vid}, state={st}): 有残留 submission")
+            continue
+        print(f"  自动选择当前版本 {ver} (id={vid}, state={st})")
+        return vid, st
+
+    # 所有可编辑版本都有残留 submission, 创建新版本
+    print("  所有可编辑版本都有残留 submission, 创建新版本...")
+    return create_version(app_id, jwt, platform, build_version)
 
 
 def associate_build(version_id, build_id, build_version, jwt):
@@ -425,14 +450,14 @@ def ensure_export_compliance(version_id, app_id, build_id, jwt):
         if e.code != 404:
             print(f"  查询加密声明失败 (HTTP {e.code}), 尝试继续创建...")
 
-    print("  创建加密声明 (不含加密)...")
+    print("  创建加密声明 (不含自定义加密)...")
     body = {
         "data": {
             "type": "appEncryptionDeclarations",
             "attributes": {
                 "appDescription": "JSON formatting and validation tool",
                 "availableOnFrenchStore": True,
-                "containsProprietaryCryptography": False,
+                "containsProprietaryCryptography": True,
                 "containsThirdPartyCryptography": False,
             },
             "relationships": {
