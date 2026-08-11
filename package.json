@@ -1,6 +1,6 @@
 {
   "name": "json-formatter",
-  "version": "1.5.25",
+  "version": "1.5.28",
   "description": "JSON 格式化工具 - Tauri 桌面应用",
   "private": true,
   "scripts": {
@@ -9,6 +9,9 @@
     "check:cdn": "node scripts/pre-commit-check.js",
     "build:dist": "node scripts/build.js",
     "bump": "node scripts/bump-version.js",
+    "icons:generate": "node scripts/generate-icons.js",
+    "icons:extra": "node scripts/generate-extra-icons.js",
+    "icons:all": "npm run icons:generate && npm run icons:extra",
     "build": "npm run check:cdn && npm run build:dist && tauri build",
     "build:macos": "npm run check:cdn && tauri build --target universal-apple-darwin",
     "build:appstore": "npm run check:cdn && tauri build --target universal-apple-darwin --config src-tauri/tauri.appstore.conf.json",
