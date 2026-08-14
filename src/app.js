@@ -123,9 +123,11 @@
             loadingFile: '已加载 {name}',
             saved: '已保存：{name}',
             copied: '已复制到剪贴板',
+            copyFailed: '复制失败，请重试',
             nothingToCopy: '没有可复制的内容',
             nothingToDownload: '没有可下载的内容',
             downloaded: '已下载 JSON 文件',
+            downloadFailed: '下载失败，请重试',
             inputEmpty: '输入为空',
             inputEmptyToast: '请先输入 JSON',
             formatSuccess: '格式化成功',
@@ -231,9 +233,11 @@
             loadingFile: 'Loaded {name}',
             saved: 'Saved: {name}',
             copied: 'Copied to clipboard',
+            copyFailed: 'Copy failed, please try again',
             nothingToCopy: 'Nothing to copy',
             nothingToDownload: 'Nothing to download',
             downloaded: 'JSON file downloaded',
+            downloadFailed: 'Download failed, please try again',
             inputEmpty: 'Input is empty',
             inputEmptyToast: 'Please enter JSON first',
             formatSuccess: 'Formatted successfully',
@@ -796,7 +800,7 @@
             for (var i = 0; i < count; i++) {
                 html += renderJsonNode(String(i), value[i]);
                 if (i < count - 1) {
-                    html = html.replace(/<\/span>$/, '<span class="jt-comma">,</span></span>');
+                    html += '<span class="jt-comma">,</span>';
                 }
             }
             html += '</div>';
@@ -815,7 +819,7 @@
             for (var k = 0; k < count; k++) {
                 html += renderJsonNode(keys[k], value[keys[k]]);
                 if (k < count - 1) {
-                    html = html.replace(/<\/span>$/, '<span class="jt-comma">,</span></span>');
+                    html += '<span class="jt-comma">,</span>';
                 }
             }
             html += '</div>';
@@ -899,20 +903,41 @@
     /* ==============================================================
        Copy / Download / Clear
     ============================================================== */
+    function isTauri() {
+        return typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
+    }
+
     function copyOutput() {
         let content = window.lastDetailContent || window.lastFormattedContent;
         if (!content) {
             showToast(i18n.t('nothingToCopy'), 2000, 'icon-alert-triangle');
             return;
         }
+        if (isTauri()) {
+            window.__TAURI__.clipboardManager.writeText(content).then(() => {
+                showToast(i18n.t('copied'), 2000, 'icon-check');
+            }).catch(() => {
+                showToast(i18n.t('copyFailed'), 2000, 'icon-alert-triangle');
+            });
+            return;
+        }
+        const fallbackCopy = () => {
+            const ta = document.createElement('textarea');
+            ta.value = content;
+            document.body.appendChild(ta);
+            ta.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            showToast(ok ? i18n.t('copied') : i18n.t('copyFailed'), 2000, ok ? 'icon-check' : 'icon-alert-triangle');
+        };
         if (!navigator.clipboard) {
-            showToast(i18n.t('nothingToCopy'), 2000, 'icon-alert-triangle');
+            fallbackCopy();
             return;
         }
         navigator.clipboard.writeText(content).then(() => {
             showToast(i18n.t('copied'), 2000, 'icon-check');
         }).catch(() => {
-            showToast(i18n.t('nothingToCopy'), 2000, 'icon-alert-triangle');
+            fallbackCopy();
         });
     }
 
@@ -921,11 +946,27 @@
             showToast(i18n.t('nothingToDownload'), 2000, 'icon-alert-triangle');
             return;
         }
-        const blob = new Blob([window.lastFormattedContent], { type: 'application/json' });
+        const content = window.lastFormattedContent;
+        const fileName = 'formatted_' + Date.now() + '.json';
+        if (isTauri()) {
+            window.__TAURI__.dialog.save({
+                defaultPath: fileName,
+                filters: [{ name: 'JSON', extensions: ['json'] }]
+            }).then(path => {
+                if (!path) return;
+                return window.__TAURI__.fs.writeTextFile(path, content);
+            }).then(() => {
+                showToast(i18n.t('downloaded'), 2000, 'icon-download');
+            }).catch(() => {
+                showToast(i18n.t('downloadFailed'), 2000, 'icon-alert-triangle');
+            });
+            return;
+        }
+        const blob = new Blob([content], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'formatted_' + Date.now() + '.json';
+        a.download = fileName;
         a.click();
         URL.revokeObjectURL(url);
         showToast(i18n.t('downloaded'), 2000, 'icon-download');
@@ -1313,7 +1354,7 @@
             for (var i = 0; i < count; i++) {
                 html += renderJsonNodeWithDiff(String(i), value[i], path ? path + '/' + i : String(i), diffMap, side, rootVal);
                 if (i < count - 1) {
-                    html = html.replace(/<\/span>$/, '<span class="jt-comma">,</span></span>');
+                    html += '<span class="jt-comma">,</span>';
                 }
             }
             html += '</div>';
@@ -1335,7 +1376,7 @@
                 var childPath = path ? path + '/' + keyStr : keyStr;
                 html += renderJsonNodeWithDiff(keyStr, value[keyStr], childPath, diffMap, side, rootVal);
                 if (k < count - 1) {
-                    html = html.replace(/<\/span>$/, '<span class="jt-comma">,</span></span>');
+                    html += '<span class="jt-comma">,</span>';
                 }
             }
             html += '</div>';
@@ -1406,6 +1447,16 @@
                 showToast(i18n.t('loaded', {name: file.name}), 3000, 'icon-file-text');
             };
             reader.readAsText(file);
+        });
+
+        const resetDrag = () => {
+            dragCounter = 0;
+            overlay.classList.remove('active');
+        };
+        document.addEventListener('dragend', resetDrag);
+        document.addEventListener('drop', resetDrag);
+        document.addEventListener('dragleave', (e) => {
+            if (e.relatedTarget === null) resetDrag();
         });
     }
 
@@ -1976,8 +2027,7 @@
             themeIconUse.setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
         }
         var langLabel = document.getElementById('mobile-lang-label');
-        if (langLabel && window.i18n && typeof i18n.setLang === 'function') {
-            i18n.setLang(i18n._lang);
+        if (langLabel && window.i18n) {
             langLabel.textContent = i18n._lang === 'zh' ? '中' : 'EN';
         }
 
