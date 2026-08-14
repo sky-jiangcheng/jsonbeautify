@@ -793,10 +793,12 @@
             var html = '<div class="jt-group">';
             html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
             html += '<div class="jt-children">';
+            var lastItem = '';
             for (var i = 0; i < count; i++) {
-                html += renderJsonNode(String(i), value[i]);
+                lastItem = renderJsonNode(String(i), value[i]);
+                html += lastItem;
                 if (i < count - 1) {
-                    html = html.replace(/<\/span>$/, '<span class="jt-comma">,</span></span>');
+                    lastItem += '<span class="jt-comma">,</span>';
                 }
             }
             html += '</div>';
@@ -812,10 +814,12 @@
             var html = '<div class="jt-group">';
             html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
             html += '<div class="jt-children">';
+            var lastItemObj = '';
             for (var k = 0; k < count; k++) {
-                html += renderJsonNode(keys[k], value[keys[k]]);
+                lastItemObj = renderJsonNode(keys[k], value[keys[k]]);
+                html += lastItemObj;
                 if (k < count - 1) {
-                    html = html.replace(/<\/span>$/, '<span class="jt-comma">,</span></span>');
+                    lastItemObj += '<span class="jt-comma">,</span>';
                 }
             }
             html += '</div>';
@@ -908,13 +912,8 @@
         navigator.clipboard.writeText(content).then(() => {
             showToast(i18n.t('copied'), 2000, 'icon-check');
         }).catch(() => {
-            const ta = document.createElement('textarea');
-            ta.value = content;
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
-            showToast(i18n.t('copied'), 2000, 'icon-check');
+            // Clipboard API unavailable; inform user
+            showToast(i18n.t('nothingToCopy'), 2000, 'icon-alert-triangle');
         });
     }
 
@@ -1312,10 +1311,12 @@
             var html = '<div class="jt-group' + groupCls + '">';
             html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
             html += '<div class="jt-children">';
+            var lastItemArr = '';
             for (var i = 0; i < count; i++) {
-                html += renderJsonNodeWithDiff(String(i), value[i], path ? path + '/' + i : String(i), diffMap, side, rootVal);
+                lastItemArr = renderJsonNodeWithDiff(String(i), value[i], path ? path + '/' + i : String(i), diffMap, side, rootVal);
+                html += lastItemArr;
                 if (i < count - 1) {
-                    html = html.replace(/<\/span>$/, '<span class="jt-comma">,</span></span>');
+                    lastItemArr += '<span class="jt-comma">,</span>';
                 }
             }
             html += '</div>';
@@ -1332,12 +1333,14 @@
             var html = '<div class="jt-group' + groupCls + '">';
             html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
             html += '<div class="jt-children">';
+            var lastItemObjDiff = '';
             for (var k = 0; k < count; k++) {
                 var keyStr = keys[k];
                 var childPath = path ? path + '/' + keyStr : keyStr;
-                html += renderJsonNodeWithDiff(keyStr, value[keyStr], childPath, diffMap, side, rootVal);
+                lastItemObjDiff = renderJsonNodeWithDiff(keyStr, value[keyStr], childPath, diffMap, side, rootVal);
+                html += lastItemObjDiff;
                 if (k < count - 1) {
-                    html = html.replace(/<\/span>$/, '<span class="jt-comma">,</span></span>');
+                    lastItemObjDiff += '<span class="jt-comma">,</span>';
                 }
             }
             html += '</div>';
@@ -1378,7 +1381,17 @@
         inputBody.addEventListener('dragleave', (e) => {
             e.preventDefault();
             dragCounter--;
-            if (dragCounter === 0) overlay.classList.remove('active');
+            if (dragCounter <= 0) {
+                dragCounter = 0;
+                overlay.classList.remove('active');
+            }
+        });
+
+        // Guard against dragleave not firing when dragging out of the window
+        document.addEventListener('dragenter', () => {
+            // Re-entering the page — reset counter if it got stuck
+            dragCounter = 0;
+            overlay.classList.remove('active');
         });
 
         inputBody.addEventListener('dragover', (e) => {
@@ -1662,12 +1675,12 @@
     }
 
     function commitSettingsFromForm() {
-        const t = document.getElementById('watermark-text-input');
-        const o = document.getElementById('watermark-opacity-input');
-        const bo = document.getElementById('bg-image-opacity-input');
-        _settings.watermarkText = (t ? t.value : '').slice(0, 40);
-        _settings.watermarkOpacity = clampOpacity(parseFloat(o ? o.value : DEFAULT_SETTINGS.watermarkOpacity), 0.05, 0.6, DEFAULT_SETTINGS.watermarkOpacity);
-        _settings.bgImageOpacity = clampOpacity(parseFloat(bo ? bo.value : DEFAULT_SETTINGS.bgImageOpacity), 0, 1, DEFAULT_SETTINGS.bgImageOpacity);
+        const wmTextInput = document.getElementById('watermark-text-input');
+        const wmOpacityInput = document.getElementById('watermark-opacity-input');
+        const bgOpacityInput = document.getElementById('bg-image-opacity-input');
+        _settings.watermarkText = (wmTextInput ? wmTextInput.value : '').slice(0, 40);
+        _settings.watermarkOpacity = clampOpacity(parseFloat(wmOpacityInput ? wmOpacityInput.value : DEFAULT_SETTINGS.watermarkOpacity), 0.05, 0.6, DEFAULT_SETTINGS.watermarkOpacity);
+        _settings.bgImageOpacity = clampOpacity(parseFloat(bgOpacityInput ? bgOpacityInput.value : DEFAULT_SETTINGS.bgImageOpacity), 0, 1, DEFAULT_SETTINGS.bgImageOpacity);
         saveSettings(_settings);
         applyAllSettings();
     }
@@ -1889,7 +1902,7 @@
         document.getElementById('mobile-lang-btn')?.addEventListener('click', () => {
             i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh');
             var l = document.getElementById('mobile-lang-label');
-            if (l) l.textContent = (i18n._lang === 'zh' ? '中' : 'EN');
+            if (l) l.textContent = i18n._lang === 'zh' ? '中' : 'EN';
         });
         // Settings modal: live preview + commit on change
         const wmText = document.getElementById('watermark-text-input');
@@ -1947,11 +1960,11 @@
         _bindEventListeners();
 
         // 移动端检测兜底：万一 CSS 媒体查询因 viewport 解析问题未触发，
-        // 用 JS 强制加 mobile class 触发移动端布局
+        // 用 JS 强制同步 data-device 属性
         const checkMobile = () => {
             const isMobile = window.innerWidth <= 900 ||
                              /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-            document.body.classList.toggle('mobile', isMobile);
+            document.documentElement.setAttribute('data-device', isMobile ? 'mobile' : 'desktop');
         };
         checkMobile();
         window.addEventListener('resize', checkMobile);
@@ -1977,6 +1990,7 @@
         var langLabel = document.getElementById('mobile-lang-label');
         if (langLabel && window.i18n && typeof i18n.setLang === 'function') {
             i18n.setLang(i18n._lang);
+            langLabel.textContent = i18n._lang === 'zh' ? '中' : 'EN';
         }
 
         if ('serviceWorker' in navigator) {
