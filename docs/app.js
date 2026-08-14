@@ -1747,6 +1747,29 @@
                 confirmSave();
             }
         });
+
+        // 移动端：点击空白区域（非输入框、非按钮、非可交互元素）时
+        // 滚动回到顶部，取消 iOS 因输入法弹出的视口缩放
+        function _initMobileTapToReset() {
+            if (document.documentElement.getAttribute('data-device') !== 'mobile') return;
+            const interactiveSelectors = [
+                'button', '.btn', '.mob-btn', '.mob-icon-btn', '.mob-tab',
+                '.mob-sheet-item', '.mob-sheet-close', '.mob-sheet-overlay',
+                'a', 'input', 'textarea', 'select', '[data-action]',
+                '[data-jt-toggle]', '[data-list-toggle]', '[data-list-item]',
+                '.panel-icon-btn', '.search-nav-btn', '.search-close-btn'
+            ].join(', ');
+            document.addEventListener('touchstart', (e) => {
+                if (e.target.closest(interactiveSelectors) ||
+                    e.target.closest('.mob-toolbar') ||
+                    e.target.closest('.mob-sheet') ||
+                    e.target.closest('.mob-tabs') ||
+                    e.target.closest('.statusbar')) {
+                    return;
+                }
+                window.scrollTo(0, 0);
+            }, { passive: true });
+        }
     }
 
     /* ==============================================================
@@ -2257,6 +2280,7 @@
         initKeyboard();
         initInputTracker();
         initSearch();
+        _initMobileTapToReset();
         // Apply persisted watermark + background image (watermark enabled by default)
         applyAllSettings();
         _initWatermarkResizeHandler();

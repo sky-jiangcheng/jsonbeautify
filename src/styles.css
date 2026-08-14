@@ -2079,7 +2079,7 @@
                 position: static;
                 flex-direction: row;
                 overflow: hidden;
-                touch-action: none;
+                touch-action: pan-y;
             }
 
             /* 2. 覆盖竖屏的 absolute 定位 — 横屏下两个面板都显示 */
@@ -2095,7 +2095,7 @@
                 transform: none !important;
                 opacity: 1 !important;
                 transition: none !important;
-                touch-action: none;
+                touch-action: auto;
             }
             [data-device="mobile"] .editor-area .panel-left {
                 border-right: 1px solid var(--border) !important;

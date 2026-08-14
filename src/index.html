@@ -29,7 +29,7 @@
   </script>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
     <title>JSON Formatter</title>
     <!-- iOS PWA：以独立应用模式启动，不显示 Safari UI -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -307,7 +307,7 @@
                     <span id="input-size" style="font-weight:400;text-transform:none;letter-spacing:0;font-family:var(--font-mono)"></span>
                 </div>
                 <div class="panel-body" id="input-body">
-                    <textarea id="input" name="json-input" data-i18n-placeholder="inputPlaceholder" placeholder="在此粘贴 JSON 文本…" spellcheck="false" aria-label="JSON 输入"></textarea>
+                    <textarea id="input" name="json-input" data-i18n-placeholder="inputPlaceholder" placeholder="在此粘贴 JSON 文本…" spellcheck="false" inputmode="text" aria-label="JSON 输入"></textarea>
                     <div class="drop-overlay" id="drop-overlay">
                         <svg aria-hidden="true" class="svg-icon" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>
                         <span data-i18n="dropHint">释放以加载文件</span>
