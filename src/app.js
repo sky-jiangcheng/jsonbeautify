@@ -95,7 +95,7 @@
             moreOps: '更多操作',
             cancelMore: '取消',
             statusReady: '就绪',
-            statusShortcuts: 'Ctrl+Enter 格式化 \u00b7 Ctrl+S 保存 \u00b7 Ctrl+D 下载',
+            statusShortcuts: 'Ctrl+Enter 格式化 \u00b7 Ctrl+S 保存 \u00b7 Ctrl+D 下载 \u00b7 Ctrl+F 搜索',
             saveModalTitle: '保存到历史记录',
             saveNamePlaceholder: '输入记录名称（可选）',
             cancel: '取消',
@@ -110,6 +110,11 @@
             uploadTitle: '上传 JSON 文件',
             saveTitle: '保存到历史 (Ctrl+S)',
             clearTitle: '清空',
+            searchTitle: '在输出中搜索 (Ctrl+F)',
+            searchPlaceholder: '搜索…',
+            searchPrev: '上一个 (Shift+Enter)',
+            searchNext: '下一个 (Enter)',
+            searchClose: '关闭搜索',
             collapseSidebar: '收起侧栏',
             clearAllTitle: '清空所有历史',
             expandSidebar: '展开侧栏',
@@ -205,7 +210,7 @@
             moreOps: 'More Actions',
             cancelMore: 'Cancel',
             statusReady: 'Ready',
-            statusShortcuts: 'Ctrl+Enter Format \u00b7 Ctrl+S Save \u00b7 Ctrl+D Download',
+            statusShortcuts: 'Ctrl+Enter Format \u00b7 Ctrl+S Save \u00b7 Ctrl+D Download \u00b7 Ctrl+F Search',
             saveModalTitle: 'Save to History',
             saveNamePlaceholder: 'Enter name (optional)',
             cancel: 'Cancel',
@@ -220,6 +225,11 @@
             uploadTitle: 'Upload JSON file',
             saveTitle: 'Save to history (Ctrl+S)',
             clearTitle: 'Clear',
+            searchTitle: 'Search in output (Ctrl+F)',
+            searchPlaceholder: 'Search…',
+            searchPrev: 'Previous (Shift+Enter)',
+            searchNext: 'Next (Enter)',
+            searchClose: 'Close search',
             collapseSidebar: 'Collapse sidebar',
             clearAllTitle: 'Clear all history',
             expandSidebar: 'Expand sidebar',
@@ -667,15 +677,9 @@
 
         if (type === 'empty') {
             renderEmptyContent();
-            return;
-        }
-
-        if (type === 'text') {
+        } else if (type === 'text') {
             renderTextOutput(content);
-            return;
-        }
-
-        if (type === 'json') {
+        } else if (type === 'json') {
             if (parsedObj && Array.isArray(parsedObj)) {
                 renderListOutput(parsedObj);
             } else {
@@ -685,6 +689,7 @@
                 showNotification('warning', i18n.t('autoBracketNotification'));
             }
         }
+        refreshSearch();
     }
 
     function renderRegularOutput(content) {
@@ -734,6 +739,7 @@
 
         const listPanelBody = document.getElementById('list-panel-body');
         window._listArr = arr;
+        window._listArrStr = [];
 
         if (arr.length === 0) {
             listPanelBody.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:12px;text-align:center">' + i18n.t('emptyArray') + '</div>';
@@ -779,6 +785,7 @@
         detailContent.onscroll = () => {
             detailLinenos.scrollTop = detailContent.scrollTop;
         };
+        refreshSearch();
     }
 
     function renderJsonNode(key, value) {
@@ -898,6 +905,229 @@
         const lines = content.split('\n').length;
         const size = new Blob([content]).size;
         document.getElementById('output-status').textContent = lines + ' ' + i18n.t('lineCount') + ' ' + formatBytes(size);
+    }
+
+    /* ==============================================================
+       Output Search
+       直接在已渲染的 DOM 上高亮文本节点，保留折叠/展开状态与滚动位置。
+    ============================================================== */
+    let _searchDebounce = null;
+
+    function isSearchOpen() {
+        const bar = document.getElementById('output-search-bar');
+        return !!bar && bar.classList.contains('open');
+    }
+
+    function openSearch() {
+        const bar = document.getElementById('output-search-bar');
+        const btn = document.getElementById('output-search-btn');
+        if (!bar) return;
+        bar.classList.add('open');
+        if (btn) btn.classList.add('active');
+        const input = document.getElementById('output-search-input');
+        if (input) setTimeout(() => { input.focus(); input.select(); }, 30);
+    }
+
+    function closeSearch() {
+        const bar = document.getElementById('output-search-bar');
+        const btn = document.getElementById('output-search-btn');
+        if (bar) bar.classList.remove('open');
+        if (btn) btn.classList.remove('active');
+        const input = document.getElementById('output-search-input');
+        if (input) input.value = '';
+        const count = document.getElementById('output-search-count');
+        if (count) { count.textContent = ''; count.classList.remove('no-match'); }
+        window._searchQuery = '';
+        clearSearchHighlights();
+    }
+
+    function toggleSearch() {
+        if (isSearchOpen()) closeSearch();
+        else openSearch();
+    }
+
+    function clearSearchHighlights() {
+        const marks = document.querySelectorAll('#output-content-area mark.jt-match');
+        const parents = new Set();
+        marks.forEach(m => {
+            if (m.parentNode) {
+                parents.add(m.parentNode);
+                m.parentNode.replaceChild(document.createTextNode(m.textContent), m);
+            }
+        });
+        parents.forEach(p => p.normalize());
+        const listView = document.getElementById('list-view');
+        if (listView) {
+            listView.querySelectorAll('.list-item.has-match').forEach(r => r.classList.remove('has-match'));
+        }
+        window._searchMatches = [];
+        window._searchIndex = -1;
+    }
+
+    function getSearchRoots() {
+        const area = document.getElementById('output-content-area');
+        if (!area) return [];
+        const listView = area.querySelector('#list-view');
+        if (listView) {
+            // 列表视图：只搜索当前选中的详情（列表项的命中通过行高亮提示）
+            const detail = document.getElementById('list-detail-content');
+            const tree = detail && detail.querySelector('.json-tree');
+            return tree ? [tree] : [];
+        }
+        const tree = area.querySelector('.json-tree');
+        if (tree) return [tree];
+        const code = area.querySelector('code');
+        return code ? [code] : [];
+    }
+
+    function performSearch(query) {
+        const q = String(query || '');
+        window._searchQuery = q;
+        clearSearchHighlights();
+        const countEl = document.getElementById('output-search-count');
+        if (!q) {
+            if (countEl) { countEl.textContent = ''; countEl.classList.remove('no-match'); }
+            return;
+        }
+        const roots = getSearchRoots();
+        if (!roots.length) {
+            if (countEl) { countEl.textContent = '0'; countEl.classList.add('no-match'); }
+            return;
+        }
+        const lower = q.toLowerCase();
+        const matches = [];
+
+        roots.forEach(root => {
+            const textNodes = [];
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+            while (walker.nextNode()) {
+                const n = walker.currentNode;
+                if (n.nodeValue && n.nodeValue.length) textNodes.push(n);
+            }
+            textNodes.forEach(node => {
+                const text = node.nodeValue;
+                const lowerText = text.toLowerCase();
+                let idx = lowerText.indexOf(lower);
+                if (idx === -1) return;
+                const parts = [];
+                let last = 0;
+                while (idx !== -1) {
+                    if (idx > last) parts.push({ text: text.substring(last, idx), isMatch: false });
+                    parts.push({ text: text.substring(idx, idx + q.length), isMatch: true });
+                    last = idx + q.length;
+                    idx = lowerText.indexOf(lower, last);
+                }
+                if (last < text.length) parts.push({ text: text.substring(last), isMatch: false });
+
+                const frag = document.createDocumentFragment();
+                parts.forEach(p => {
+                    if (p.isMatch) {
+                        const mark = document.createElement('mark');
+                        mark.className = 'jt-match';
+                        mark.textContent = p.text;
+                        frag.appendChild(mark);
+                    } else if (p.text) {
+                        frag.appendChild(document.createTextNode(p.text));
+                    }
+                });
+                node.parentNode.replaceChild(frag, node);
+            });
+        });
+
+        roots.forEach(root => {
+            root.querySelectorAll('mark.jt-match').forEach(m => matches.push(m));
+        });
+        flagListItemMatches(q);
+        window._searchMatches = matches;
+        if (countEl) {
+            countEl.textContent = matches.length ? '0/' + matches.length : '0';
+            countEl.classList.toggle('no-match', matches.length === 0);
+        }
+        if (matches.length) {
+            window._searchIndex = 0;
+            goToMatch(0);
+        } else {
+            window._searchIndex = -1;
+        }
+    }
+
+    function goToMatch(index) {
+        const matches = window._searchMatches;
+        if (!matches || !matches.length) return;
+        const n = matches.length;
+        index = ((index % n) + n) % n;
+        window._searchIndex = index;
+        matches.forEach((m, i) => m.classList.toggle('active', i === index));
+        const target = matches[index];
+        // 展开包含当前匹配的折叠分组，保证匹配可见
+        let el = target.parentElement;
+        while (el && el !== document.body) {
+            if (el.classList && el.classList.contains('jt-group') && el.classList.contains('collapsed')) {
+                el.classList.remove('collapsed');
+                const toggle = el.querySelector('.jt-toggle');
+                if (toggle) toggle.innerHTML = '&#9660;';
+            }
+            el = el.parentElement;
+        }
+        updateTreeLineNumbers();
+        target.scrollIntoView({ block: 'nearest' });
+        const countEl = document.getElementById('output-search-count');
+        if (countEl) countEl.textContent = (index + 1) + '/' + n;
+    }
+
+    function nextMatch() {
+        if (!window._searchMatches.length) return;
+        goToMatch(window._searchIndex + 1);
+    }
+
+    function prevMatch() {
+        if (!window._searchMatches.length) return;
+        goToMatch(window._searchIndex - 1);
+    }
+
+    // 列表视图：按完整内容标记命中项，便于在数组中找到包含关键字的项
+    function flagListItemMatches(query) {
+        const listView = document.getElementById('list-view');
+        if (!listView || !window._listArr) return;
+        const lower = query.toLowerCase();
+        window._listArr.forEach((item, i) => {
+            const row = listView.querySelector('.list-item[data-list-item="' + i + '"]');
+            if (!row) return;
+            if (window._listArrStr[i] === undefined) {
+                window._listArrStr[i] = (typeof item === 'string' ? item : JSON.stringify(item)).toLowerCase();
+            }
+            row.classList.toggle('has-match', window._listArrStr[i].indexOf(lower) !== -1);
+        });
+    }
+
+    function refreshSearch() {
+        if (!isSearchOpen()) return;
+        const input = document.getElementById('output-search-input');
+        performSearch(input ? input.value : '');
+    }
+
+    function initSearch() {
+        const input = document.getElementById('output-search-input');
+        if (!input) return;
+        const prevBtn = document.getElementById('output-search-prev');
+        const nextBtn = document.getElementById('output-search-next');
+        input.addEventListener('input', () => {
+            clearTimeout(_searchDebounce);
+            const val = input.value;
+            _searchDebounce = setTimeout(() => performSearch(val), 120);
+        });
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (e.shiftKey) prevMatch();
+                else nextMatch();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeSearch();
+            }
+        });
+        if (prevBtn) prevBtn.addEventListener('click', prevMatch);
+        if (nextBtn) nextBtn.addEventListener('click', nextMatch);
     }
 
     /* ==============================================================
@@ -1468,6 +1698,12 @@
             const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
             const mod = isMac ? e.metaKey : e.ctrlKey;
 
+            if (mod && e.key === 'f') {
+                e.preventDefault();
+                openSearch();
+                return;
+            }
+
             if (mod && e.key === 'Enter') {
                 e.preventDefault();
                 formatJSON();
@@ -1491,7 +1727,9 @@
                 const compare = document.getElementById('compare-container');
                 const sheet = document.getElementById('mob-sheet');
                 const sidebar = document.getElementById('sidebar');
-                if (modal.classList.contains('active')) {
+                if (isSearchOpen()) {
+                    closeSearch();
+                } else if (modal.classList.contains('active')) {
                     closeSaveModal();
                 } else if (compare.classList.contains('active')) {
                     closeCompare();
@@ -1893,6 +2131,8 @@
             clearBackgroundImage, resetAllSettings,
             loadHistory, toggleSelect, deleteHistory,
             toggleJsonNode, toggleListPanel, selectListItem,
+            openSearch, closeSearch, toggleSearch, performSearch,
+            nextMatch, prevMatch,
         };
         for (const [name, fn] of Object.entries(globals)) {
             if (typeof window[name] === 'undefined' && typeof fn === 'function') {
@@ -1912,6 +2152,7 @@
             '[data-action="save"]': saveHistory,
             '[data-action="clear"]': clearContent,
             '[data-action="toggle-theme"]': toggleTheme,
+            '[data-action="toggle-search"]': toggleSearch,
             '[data-action="toggle-sidebar"]': toggleSidebar,
             '[data-action="toggle-mobile-more"]': toggleMobileMore,
             '[data-action="compare"]': compareSelected,
@@ -2015,6 +2256,7 @@
         initDragDrop();
         initKeyboard();
         initInputTracker();
+        initSearch();
         // Apply persisted watermark + background image (watermark enabled by default)
         applyAllSettings();
         _initWatermarkResizeHandler();
