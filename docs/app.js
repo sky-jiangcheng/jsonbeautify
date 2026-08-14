@@ -793,12 +793,10 @@
             var html = '<div class="jt-group">';
             html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
             html += '<div class="jt-children">';
-            var lastItem = '';
             for (var i = 0; i < count; i++) {
-                lastItem = renderJsonNode(String(i), value[i]);
-                html += lastItem;
+                html += renderJsonNode(String(i), value[i]);
                 if (i < count - 1) {
-                    lastItem += '<span class="jt-comma">,</span>';
+                    html = html.replace(/<\/span>$/, '<span class="jt-comma">,</span></span>');
                 }
             }
             html += '</div>';
@@ -814,12 +812,10 @@
             var html = '<div class="jt-group">';
             html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
             html += '<div class="jt-children">';
-            var lastItemObj = '';
             for (var k = 0; k < count; k++) {
-                lastItemObj = renderJsonNode(keys[k], value[keys[k]]);
-                html += lastItemObj;
+                html += renderJsonNode(keys[k], value[keys[k]]);
                 if (k < count - 1) {
-                    lastItemObj += '<span class="jt-comma">,</span>';
+                    html = html.replace(/<\/span>$/, '<span class="jt-comma">,</span></span>');
                 }
             }
             html += '</div>';
@@ -909,10 +905,13 @@
             showToast(i18n.t('nothingToCopy'), 2000, 'icon-alert-triangle');
             return;
         }
+        if (!navigator.clipboard) {
+            showToast(i18n.t('nothingToCopy'), 2000, 'icon-alert-triangle');
+            return;
+        }
         navigator.clipboard.writeText(content).then(() => {
             showToast(i18n.t('copied'), 2000, 'icon-check');
         }).catch(() => {
-            // Clipboard API unavailable; inform user
             showToast(i18n.t('nothingToCopy'), 2000, 'icon-alert-triangle');
         });
     }
@@ -1311,12 +1310,10 @@
             var html = '<div class="jt-group' + groupCls + '">';
             html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
             html += '<div class="jt-children">';
-            var lastItemArr = '';
             for (var i = 0; i < count; i++) {
-                lastItemArr = renderJsonNodeWithDiff(String(i), value[i], path ? path + '/' + i : String(i), diffMap, side, rootVal);
-                html += lastItemArr;
+                html += renderJsonNodeWithDiff(String(i), value[i], path ? path + '/' + i : String(i), diffMap, side, rootVal);
                 if (i < count - 1) {
-                    lastItemArr += '<span class="jt-comma">,</span>';
+                    html = html.replace(/<\/span>$/, '<span class="jt-comma">,</span></span>');
                 }
             }
             html += '</div>';
@@ -1333,14 +1330,12 @@
             var html = '<div class="jt-group' + groupCls + '">';
             html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
             html += '<div class="jt-children">';
-            var lastItemObjDiff = '';
             for (var k = 0; k < count; k++) {
                 var keyStr = keys[k];
                 var childPath = path ? path + '/' + keyStr : keyStr;
-                lastItemObjDiff = renderJsonNodeWithDiff(keyStr, value[keyStr], childPath, diffMap, side, rootVal);
-                html += lastItemObjDiff;
+                html += renderJsonNodeWithDiff(keyStr, value[keyStr], childPath, diffMap, side, rootVal);
                 if (k < count - 1) {
-                    lastItemObjDiff += '<span class="jt-comma">,</span>';
+                    html = html.replace(/<\/span>$/, '<span class="jt-comma">,</span></span>');
                 }
             }
             html += '</div>';
@@ -1385,13 +1380,6 @@
                 dragCounter = 0;
                 overlay.classList.remove('active');
             }
-        });
-
-        // Guard against dragleave not firing when dragging out of the window
-        document.addEventListener('dragenter', () => {
-            // Re-entering the page — reset counter if it got stuck
-            dragCounter = 0;
-            overlay.classList.remove('active');
         });
 
         inputBody.addEventListener('dragover', (e) => {
