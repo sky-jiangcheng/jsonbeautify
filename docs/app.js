@@ -645,7 +645,7 @@
         if (codeEl) { codeEl.textContent = content; hljs.highlightElement(codeEl); }
         const contentEl = area.querySelector('.output-content');
         if (contentEl) {
-            contentEl.addEventListener('scroll', syncLineNumberScroll, { once: false });
+            contentEl.onscroll = syncLineNumberScroll;
         }
     }
 
@@ -702,7 +702,7 @@
 
         var contentEl = area.querySelector('.output-content');
         if (contentEl) {
-            contentEl.addEventListener('scroll', syncLineNumberScroll, { once: false });
+            contentEl.onscroll = syncLineNumberScroll;
         }
     }
 
@@ -713,14 +713,14 @@
                 <div class="list-panel" id="list-panel">
                     <div class="list-panel-header">
                         <span class="list-title">${i18n.t('listTitle', {count: arr.length})}</span>
-                        <button class="list-panel-toggle" id="list-panel-toggle" onclick="toggleListPanel()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleListPanel();}" title="${i18n.t('collapseList')}" aria-label="${i18n.t('collapseList')}">
+                        <button class="list-panel-toggle" id="list-panel-toggle" data-list-toggle="1" title="${i18n.t('collapseList')}" aria-label="${i18n.t('collapseList')}">
                             <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                         </button>
                     </div>
                     <div class="list-panel-body" id="list-panel-body"></div>
                 </div>
                 <div class="list-detail" id="list-detail">
-                    <div class="list-expand-tab" id="list-expand-tab" role="button" tabindex="0" onclick="toggleListPanel()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleListPanel();}" title="${i18n.t('expandList')}" aria-label="${i18n.t('expandList')}">
+                    <div class="list-expand-tab" id="list-expand-tab" role="button" tabindex="0" data-list-toggle="1" title="${i18n.t('expandList')}" aria-label="${i18n.t('expandList')}">
                         <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                     </div>
                     <div class="list-detail-linenos" id="list-detail-linenos"></div>
@@ -742,16 +742,10 @@
             div.setAttribute('role', 'button');
             div.setAttribute('tabindex', '0');
             div.setAttribute('aria-label', '查看第 ' + i + ' 项');
+            div.setAttribute('data-list-item', i);
             div.innerHTML = `
                 <span class="list-item-index">[${i}]</span>
                 <span class="list-item-preview">${escapeHtml(getItemPreview(item))}</span>`;
-            div.addEventListener('click', () => selectListItem(i, arr));
-            div.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    selectListItem(i, arr);
-                }
-            });
             listPanelBody.appendChild(div);
         });
 
@@ -778,9 +772,9 @@
         detailContent.innerHTML = '<div class="json-tree">' + renderJsonNode(null, arr[index]) + '</div>';
         updateTreeLineNumbers();
 
-        detailContent.addEventListener('scroll', () => {
+        detailContent.onscroll = () => {
             detailLinenos.scrollTop = detailContent.scrollTop;
-        }, { once: false });
+        };
     }
 
     function renderJsonNode(key, value) {
@@ -791,13 +785,13 @@
         if (typeof value === 'number') return '<span class="jt-line">' + prefix + '<span class="jt-number">' + value + '</span></span>';
         if (typeof value === 'string') return '<span class="jt-line">' + prefix + '<span class="jt-string">' + JSON.stringify(value) + '</span></span>';
 
-        var toggleAttrs = 'role="button" tabindex="0" aria-label="折叠/展开"';
+        var toggleAttrs = 'role="button" tabindex="0" aria-label="折叠/展开" data-jt-toggle="1"';
 
         if (Array.isArray(value)) {
             var count = value.length;
             if (count === 0) return '<span class="jt-line">' + prefix + '<span class="jt-bracket">[]</span></span>';
             var html = '<div class="jt-group">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + ' onclick="toggleJsonNode(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleJsonNode(this);}">&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
             html += '<div class="jt-children">';
             for (var i = 0; i < count; i++) {
                 html += renderJsonNode(String(i), value[i]);
@@ -816,7 +810,7 @@
             var count = keys.length;
             if (count === 0) return '<span class="jt-line">' + prefix + '<span class="jt-bracket">{}</span></span>';
             var html = '<div class="jt-group">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + ' onclick="toggleJsonNode(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleJsonNode(this);}">&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
             html += '<div class="jt-children">';
             for (var k = 0; k < count; k++) {
                 html += renderJsonNode(keys[k], value[keys[k]]);
@@ -1070,6 +1064,10 @@
         if (!item) return;
         document.getElementById('input').value = item.content;
         formatJSON();
+        // Auto-close sidebar on mobile so user can see the loaded result
+        if (document.documentElement.getAttribute('data-device') === 'mobile') {
+            toggleSidebar();
+        }
         showToast(i18n.t('loaded', {name: item.name}), 2000, 'icon-file-text');
     }
 
@@ -1102,6 +1100,7 @@
             return;
         }
 
+        // Use data attributes instead of inline onclick for CSP compliance
         list.innerHTML = history.map(item => {
             const snippet = item.content.replace(/\s+/g, '').slice(0, 50);
             const checked = window.selectedIds.includes(item.id) ? 'checked' : '';
@@ -1109,17 +1108,15 @@
             return `
                 <div class="history-item ${selected}">
                     <input type="checkbox" class="history-checkbox"
-                           onclick="event.stopPropagation();toggleSelect(${item.id})"
-                           onkeydown="event.stopPropagation()"
+                           data-select-id="${item.id}"
                            ${checked} title="${i18n.t('selectForCompare')}" aria-label="${i18n.t('selectForCompare')}" />
                     <button type="button" class="history-info"
-                            onclick="loadHistory(${item.id})"
-                            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();loadHistory(${item.id});}"
+                            data-load-id="${item.id}"
                             aria-label="加载历史：${escapeHtml(item.name)}">
                         <div class="history-name">${escapeHtml(item.name)}</div>
                         <div class="history-snippet">${escapeHtml(snippet)}</div>
                     </button>
-                    <button type="button" class="history-delete" onclick="event.stopPropagation();deleteHistory(${item.id})" onkeydown="event.stopPropagation()" title="${i18n.t('deleteItem')}" aria-label="${i18n.t('deleteItem')}">&times;</button>
+                    <button type="button" class="history-delete" data-delete-id="${item.id}" title="${i18n.t('deleteItem')}" aria-label="${i18n.t('deleteItem')}">&times;</button>
                 </div>`;
         }).join('');
 
@@ -1133,6 +1130,15 @@
         const isMobile = document.documentElement.getAttribute('data-device') === 'mobile';
 
         if (isMobile) {
+            // Close mobile "more" sheet if open (avoid layering issues)
+            const sheet = document.getElementById('mob-sheet');
+            const sheetOverlay = document.getElementById('mob-sheet-overlay');
+            const moreBtn = document.getElementById('mob-more-btn');
+            if (sheet && sheet.classList.contains('open')) {
+                sheet.classList.remove('open');
+                if (sheetOverlay) sheetOverlay.classList.remove('open');
+                if (moreBtn) moreBtn.classList.remove('active');
+            }
             // 移动端：全屏抽屉 + overlay
             const isActive = sidebar.classList.toggle('active');
             if (overlay) overlay.classList.toggle('active', isActive);
@@ -1292,7 +1298,7 @@
         var prefix = key !== null ? '<span class="jt-key">' + JSON.stringify(key) + '</span>: ' : '';
         var diffType = diffMap[path] || '';
         var diffCls = diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '';
-        var toggleAttrs = 'role="button" tabindex="0" aria-label="折叠/展开"';
+        var toggleAttrs = 'role="button" tabindex="0" aria-label="折叠/展开" data-jt-toggle="1"';
 
         if (value === null) return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-null">null</span></span>';
         if (typeof value === 'boolean') return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-bool">' + value + '</span></span>';
@@ -1304,7 +1310,7 @@
             if (count === 0) return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-bracket">[]</span></span>';
             var groupCls = diffCls;
             var html = '<div class="jt-group' + groupCls + '">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + ' onclick="toggleJsonNode(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleJsonNode(this);}">&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
             html += '<div class="jt-children">';
             for (var i = 0; i < count; i++) {
                 html += renderJsonNodeWithDiff(String(i), value[i], path ? path + '/' + i : String(i), diffMap, side, rootVal);
@@ -1324,7 +1330,7 @@
             if (count === 0) return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-bracket">{}</span></span>';
             var groupCls = diffCls;
             var html = '<div class="jt-group' + groupCls + '">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + ' onclick="toggleJsonNode(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleJsonNode(this);}">&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
+            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
             html += '<div class="jt-children">';
             for (var k = 0; k < count; k++) {
                 var keyStr = keys[k];
@@ -1726,22 +1732,119 @@
     }
 
     /* ==============================================================
-       Expose global functions (for Tauri 2.x strict CSP compatibility)
+       Event delegation for dynamically generated content
+       (CSP-safe: no inline onclick handlers needed)
+    ============================================================== */
+    function _bindDynamicEventDelegation() {
+        // History list: click to load, checkbox to select for compare, delete button
+        const historyList = document.getElementById('history-list');
+        if (historyList) {
+            historyList.addEventListener('click', (e) => {
+                // Delete button
+                const delBtn = e.target.closest('[data-delete-id]');
+                if (delBtn) {
+                    e.stopPropagation();
+                    deleteHistory(Number(delBtn.dataset.deleteId));
+                    return;
+                }
+                // Checkbox
+                const checkbox = e.target.closest('[data-select-id]');
+                if (checkbox) {
+                    e.stopPropagation();
+                    toggleSelect(Number(checkbox.dataset.selectId));
+                    return;
+                }
+                // History item info button (load)
+                const infoBtn = e.target.closest('[data-load-id]');
+                if (infoBtn) {
+                    loadHistory(Number(infoBtn.dataset.loadId));
+                    return;
+                }
+            });
+            // Keyboard support for history info button
+            historyList.addEventListener('keydown', (e) => {
+                const infoBtn = e.target.closest('[data-load-id]');
+                if (infoBtn && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    loadHistory(Number(infoBtn.dataset.loadId));
+                    return;
+                }
+                const checkbox = e.target.closest('[data-select-id]');
+                if (checkbox && (e.key === ' ')) {
+                    e.preventDefault();
+                    toggleSelect(Number(checkbox.dataset.selectId));
+                    return;
+                }
+            });
+        }
+
+        // JSON tree toggle (fold/unfold) — works for both regular and compare views
+        document.addEventListener('click', (e) => {
+            const toggle = e.target.closest('[data-jt-toggle]');
+            if (toggle) {
+                toggleJsonNode(toggle);
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            const toggle = e.target.closest('[data-jt-toggle]');
+            if (toggle) {
+                e.preventDefault();
+                toggleJsonNode(toggle);
+            }
+        });
+
+        // List view: panel toggle and item selection
+        document.addEventListener('click', (e) => {
+            const listToggle = e.target.closest('[data-list-toggle]');
+            if (listToggle) {
+                toggleListPanel();
+                return;
+            }
+            const listItem = e.target.closest('[data-list-item]');
+            if (listItem && window._listArr) {
+                selectListItem(Number(listItem.dataset.listItem), window._listArr);
+                return;
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            const listToggle = e.target.closest('[data-list-toggle]');
+            if (listToggle) {
+                e.preventDefault();
+                toggleListPanel();
+                return;
+            }
+            const listItem = e.target.closest('[data-list-item]');
+            if (listItem && window._listArr) {
+                e.preventDefault();
+                selectListItem(Number(listItem.dataset.listItem), window._listArr);
+                return;
+            }
+        });
+    }
+
+    /* ==============================================================
+       Expose global functions (CSP-safe: no eval)
+       All functions are now bound via event delegation (data-action / data-* attributes),
+       so window exposure is only kept for backward compatibility / debugging.
     ============================================================== */
     function _exposeGlobals() {
-        const globals = [
-            'formatJSON', 'minifyJSON', 'stringifyJSON', 'copyOutput',
-            'downloadJSON', 'uploadFile', 'saveHistory', 'clearContent',
-            'toggleTheme', 'toggleSidebar', 'toggleMobileMore',
-            'switchMobileTab', 'compareSelected', 'clearAllHistory',
-            'closeSaveModal', 'confirmSave', 'reverseCompare', 'closeCompare',
-            'openSaveModal',
-            'openSettings', 'closeSettings', 'pickBackgroundImage',
-            'clearBackgroundImage', 'resetAllSettings',
-        ];
-        for (const name of globals) {
-            if (typeof window[name] === 'undefined' && typeof eval(name) === 'function') {
-                window[name] = eval(name);
+        const globals = {
+            formatJSON, minifyJSON, stringifyJSON, copyOutput,
+            downloadJSON, uploadFile, saveHistory, clearContent,
+            toggleTheme, toggleSidebar, toggleMobileMore,
+            switchMobileTab, compareSelected, clearAllHistory,
+            closeSaveModal, confirmSave, reverseCompare, closeCompare,
+            openSaveModal,
+            openSettings, closeSettings, pickBackgroundImage,
+            clearBackgroundImage, resetAllSettings,
+            loadHistory, toggleSelect, deleteHistory,
+            toggleJsonNode, toggleListPanel, selectListItem,
+        };
+        for (const [name, fn] of Object.entries(globals)) {
+            if (typeof window[name] === 'undefined' && typeof fn === 'function') {
+                window[name] = fn;
             }
         }
     }
@@ -1806,6 +1909,15 @@
         if (settingsModal) settingsModal.addEventListener('click', (e) => {
             if (e.target === settingsModal) closeSettings();
         });
+        // Close save modal when clicking the backdrop
+        const saveModal = document.getElementById('save-modal');
+        if (saveModal) saveModal.addEventListener('click', (e) => {
+            if (e.target === saveModal) closeSaveModal();
+        });
+
+        // --- Event delegation for dynamically generated content (CSP-safe) ---
+        _bindDynamicEventDelegation();
+
         // Esc closes settings modal
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return;
@@ -1815,11 +1927,25 @@
     }
 
     /* ==============================================================
+       Mobile More Sheet
+    ============================================================== */
+    function toggleMobileMore() {
+        var s = document.getElementById('mob-sheet');
+        var o = document.getElementById('mob-sheet-overlay');
+        var b = document.getElementById('mob-more-btn');
+        if (!s) return;
+        var isOpen = s.classList.toggle('open');
+        if (o) o.classList.toggle('open', isOpen);
+        if (b) b.classList.toggle('active', isOpen);
+    }
+
+    /* ==============================================================
        Init
     ============================================================== */
     window.addEventListener('DOMContentLoaded', () => {
         _exposeGlobals();
         _bindEventListeners();
+
         // 移动端检测兜底：万一 CSS 媒体查询因 viewport 解析问题未触发，
         // 用 JS 强制加 mobile class 触发移动端布局
         const checkMobile = () => {
@@ -1842,19 +1968,7 @@
         _initWatermarkResizeHandler();
         setStatus(i18n.t('statusReady'));
 
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(err => {
-                    console.warn('SW registration failed:', err);
-                });
-            });
-        }
-    });
-
-/* ========== Mobile Handlers ========== */
-    window.toggleMobileMore = function(){var s=document.getElementById("mob-sheet"),o=document.getElementById("mob-sheet-overlay"),b=document.getElementById("mob-more-btn");if(!s)return;var isOpen=s.classList.toggle("open");o&&o.classList.toggle("open",isOpen);b&&b.classList.toggle("active",isOpen);};
-    // Initialize mobile UI on load
-    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize mobile theme icon + language label
         var themeIconUse = document.getElementById('mobile-theme-icon-use');
         if (themeIconUse) {
             var theme = document.documentElement.getAttribute('data-theme') || 'dark';
@@ -1862,7 +1976,14 @@
         }
         var langLabel = document.getElementById('mobile-lang-label');
         if (langLabel && window.i18n && typeof i18n.setLang === 'function') {
-            // Apply initial translations from saved language
             i18n.setLang(i18n._lang);
+        }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => {
+                    console.warn('SW registration failed:', err);
+                });
+            });
         }
     });
