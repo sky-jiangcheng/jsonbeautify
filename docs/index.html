@@ -69,6 +69,20 @@
             <polyline points="16 18 22 12 16 6"/>
             <polyline points="8 6 2 12 8 18"/>
         </symbol>
+        <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </symbol>
+        <symbol id="icon-chevron-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"/>
+        </symbol>
+        <symbol id="icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+        </symbol>
+        <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+        </symbol>
         <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
@@ -306,10 +320,34 @@
                         <svg aria-hidden="true" class="svg-icon-xs" viewBox="0 0 24 24"><use href="#icon-code"/></svg>
                         <span data-i18n="output">输出</span>
                     </span>
-                    <span id="output-status" style="font-weight:400;text-transform:none;letter-spacing:0;font-family:var(--font-mono)"></span>
+                    <div class="panel-header-right">
+                        <span id="output-status" style="font-weight:400;text-transform:none;letter-spacing:0;font-family:var(--font-mono)"></span>
+                        <button type="button" class="panel-icon-btn" id="output-search-btn" data-action="toggle-search"
+                                data-i18n-title="searchTitle" title="在输出中搜索 (Ctrl+F)" aria-label="在输出中搜索">
+                            <svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-search"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="panel-body">
                     <div class="output-wrap" id="output-wrap">
+                        <div class="output-search-bar" id="output-search-bar" role="search" aria-label="搜索输出内容">
+                            <svg aria-hidden="true" class="search-icon" viewBox="0 0 24 24"><use href="#icon-search"/></svg>
+                            <input type="text" id="output-search-input" name="output-search" autocomplete="off"
+                                   spellcheck="false" data-i18n-placeholder="searchPlaceholder" placeholder="搜索…" aria-label="搜索输出内容">
+                            <span class="search-count" id="output-search-count" aria-live="polite"></span>
+                            <button type="button" class="search-nav-btn" id="output-search-prev"
+                                    data-i18n-title="searchPrev" title="上一个 (Shift+Enter)" aria-label="上一个">
+                                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><use href="#icon-chevron-up"/></svg>
+                            </button>
+                            <button type="button" class="search-nav-btn" id="output-search-next"
+                                    data-i18n-title="searchNext" title="下一个 (Enter)" aria-label="下一个">
+                                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+                            </button>
+                            <button type="button" class="search-close-btn" id="output-search-close" data-action="toggle-search"
+                                    data-i18n-title="searchClose" title="关闭搜索" aria-label="关闭搜索">
+                                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><use href="#icon-x"/></svg>
+                            </button>
+                        </div>
                         <div class="output-notifications" id="output-notifications" aria-live="polite"></div>
                         <div class="output-content-area" id="output-content-area">
                             <div class="output-placeholder" id="output-placeholder">
