@@ -90,6 +90,7 @@ async function main() {
     const abs = path.join(ROOT, relPath);
     await fs.promises.mkdir(path.dirname(abs), { recursive: true });
     await sharp(SOURCE)
+      .ensureAlpha()
       .resize(size, size, { kernel: sharp.kernel.lanczos3 })
       .png({ compressionLevel: 9 })
       .toFile(abs);
@@ -119,6 +120,7 @@ async function main() {
       const size = Math.round(dim.w);
       const abs = path.join(iosAssetsDir, f);
       await sharp(SOURCE)
+        .ensureAlpha()
         .resize(size, size, { kernel: sharp.kernel.lanczos3 })
         .png({ compressionLevel: 9 })
         .toFile(abs);
