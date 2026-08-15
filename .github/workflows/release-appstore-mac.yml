@@ -1,0 +1,268 @@
+# ============================================================
+# macOS App Store 发布 (Tauri)
+# 构建 universal macOS .app, 签名打包为 .pkg, 上传到 App Store Connect
+# 触发条件: appstore 分支推送 或 v* tag 推送
+# ============================================================
+name: Release macOS App Store
+
+on:
+  push:
+    branches:
+      - appstore
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  version-gate:
+    uses: ./.github/workflows/_version-gate.yml
+
+  macos-appstore:
+    if: github.ref_name == 'appstore' || startsWith(github.ref, 'refs/tags/')
+    needs: [version-gate]
+    runs-on: macos-latest
+    environment:
+      name: appstore
+    env:
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      PROVISIONING_PROFILE: ${{ secrets.PROVISIONING_PROFILE }}
+      APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+      APPLE_INSTALLER_CERTIFICATE: ${{ secrets.APPLE_INSTALLER_CERTIFICATE }}
+    steps:
+      - uses: actions/checkout@v5
+
+      # ---- App Store 版本重复快速拦截 (在耗时构建之前失败) ----
+      - name: Write App Store Connect API key
+        if: env.APP_STORE_CONNECT_API_KEY != ''
+        env:
+          APP_STORE_CONNECT_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          APP_STORE_CONNECT_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID_MAC }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode > ~/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
+          echo "APP_STORE_CONNECT_KEY_PATH=$HOME/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8" >> $GITHUB_ENV
+
+      - name: Fail fast if macOS App Store version already exists
+        if: env.APP_STORE_CONNECT_API_KEY != ''
+        env:
+          APP_STORE_CONNECT_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          APP_STORE_CONNECT_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID_MAC }}
+          APP_VERSION: ${{ github.ref_name }}
+        run: python3 scripts/check-appstore-version.py MAC_OS "${GITHUB_REF_NAME#v}"
+
+      - name: Install Rust targets
+        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - run: npm ci
+
+      - name: Build dist/
+        run: node scripts/build.js
+
+      - name: Check for CDN references
+        run: npm run check:cdn
+
+      - name: Generate macOS icons
+        run: npx tauri icon src-tauri/app-icon-source.png
+
+      - name: Auto-increment build number (CFBundleVersion)
+        run: |
+          # Tauri macOS 的 CFBundleVersion 在 tauri.conf.json 中
+          # 由 tauri-action 在构建时写入, 这里先读取当前值
+          CURRENT=$(node -p "require('./src-tauri/tauri.conf.json').version" 2>/dev/null || echo "0")
+          echo "Current Tauri version: $CURRENT"
+          # Tauri 用 version 字段同时充当 version + build number,
+          # 这里不需要额外 bump, 因为 tauri-action 会自动处理
+
+      - name: Import Apple certificate
+        if: env.APPLE_CERTIFICATE != ''
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+        run: |
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings build.keychain
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+          security list-keychains -d user -s build.keychain
+          security default-keychain -s build.keychain
+          echo "=== Build keychain identities ==="
+          security find-identity -v -p codesigning build.keychain
+          SIGNING_ID=$(security find-identity -v -p codesigning build.keychain | grep -o '"[^"]*"' | head -1 | tr -d '"')
+          echo "Detected signing identity: $SIGNING_ID"
+          echo "APPLE_SIGNING_IDENTITY=$SIGNING_ID" >> $GITHUB_ENV
+          echo "=== Certificate full details ==="
+          CERT_PEM=$(security find-certificate -a -p build.keychain)
+          if [ -n "$CERT_PEM" ]; then
+            echo "$CERT_PEM" | openssl x509 -noout -text 2>/dev/null | head -30
+          else
+            echo "(no cert found in build.keychain)"
+          fi
+
+      - name: Install provisioning profile
+        if: env.PROVISIONING_PROFILE != ''
+        env:
+          PROVISIONING_PROFILE: ${{ secrets.PROVISIONING_PROFILE }}
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/appstore.provisionprofile
+          echo "$PROVISIONING_PROFILE" | base64 --decode > src-tauri/embedded.provisionprofile
+
+      - uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "${{ github.ref_name }} (App Store)"
+          releaseDraft: false
+          prerelease: false
+          args: --target universal-apple-darwin --config src-tauri/tauri.appstore.conf.json
+
+      - name: Import Apple Installer certificate
+        if: env.APPLE_INSTALLER_CERTIFICATE != ''
+        env:
+          APPLE_INSTALLER_CERTIFICATE: ${{ secrets.APPLE_INSTALLER_CERTIFICATE }}
+          APPLE_INSTALLER_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_INSTALLER_CERTIFICATE_PASSWORD }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+        run: |
+          INSTALLER_PWD="${APPLE_INSTALLER_CERTIFICATE_PASSWORD:-$APPLE_CERTIFICATE_PASSWORD}"
+          echo "$APPLE_INSTALLER_CERTIFICATE" | base64 --decode > installer-cert.p12
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+          security import installer-cert.p12 -k build.keychain -P "$INSTALLER_PWD" -T /usr/bin/productbuild -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+
+          echo "=== All valid identities in build.keychain ==="
+          security find-identity -v build.keychain
+
+          INSTALLER_ID=$(security find-identity -v build.keychain | grep -i "Installer" | grep -o '"[^"]*"' | head -1 | tr -d '"')
+          if [ -z "$INSTALLER_ID" ]; then
+            INSTALLER_ID=$(security find-certificate -a -p build.keychain | openssl x509 -noout -subject 2>/dev/null | grep -i installer | sed -n 's/.*CN = //p' | tr -d '"' | head -1)
+          fi
+          echo "Detected installer identity: [$INSTALLER_ID]"
+          if [ -z "$INSTALLER_ID" ]; then
+            echo "ERROR: No installer identity found. Available identities:"
+            security find-identity -v
+            exit 1
+          fi
+          echo "APPLE_INSTALLER_IDENTITY=$INSTALLER_ID" >> $GITHUB_ENV
+
+      - name: Build and sign PKG
+        if: env.APPLE_INSTALLER_CERTIFICATE != ''
+        env:
+          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+        run: |
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+          echo "=== Identities before productbuild ==="
+          security find-identity -v build.keychain
+
+          APP=$(find src-tauri/target -name "*.app" -type d -path "*universal-apple-darwin*" | head -1)
+          if [ -z "$APP" ]; then
+            echo "ERROR: No .app bundle found"
+            exit 1
+          fi
+          echo "App bundle: $APP"
+          echo "Installer identity: $APPLE_INSTALLER_IDENTITY"
+
+          PKG_DIR="src-tauri/target/universal-apple-darwin/release/bundle/pkg"
+          mkdir -p "$PKG_DIR"
+          PKG="$PKG_DIR/JSON-Formatter.pkg"
+
+          export PRODUCTBUILD_IDENTITY_CHECK=1
+          (
+            productbuild \
+              --component "$APP" /Applications \
+              --sign "$APPLE_INSTALLER_IDENTITY" \
+              "$PKG" < /dev/null
+          ) &
+          PB_PID=$!
+          (
+            sleep 300
+            if kill -0 $PB_PID 2>/dev/null; then
+              echo "::error::productbuild timed out after 300s (likely keychain ACL prompt). Killing."
+              kill -TERM $PB_PID 2>/dev/null
+              sleep 2
+              kill -KILL $PB_PID 2>/dev/null
+            fi
+          ) &
+          WD_PID=$!
+          wait $PB_PID
+          PB_EXIT=$?
+          kill $WD_PID 2>/dev/null || true
+          if [ $PB_EXIT -ne 0 ]; then
+            echo "::error::productbuild exited with $PB_EXIT"
+            exit $PB_EXIT
+          fi
+
+          echo "=== Generated PKG ==="
+          ls -lh "$PKG"
+          echo "PKG_PATH=$PKG" >> $GITHUB_ENV
+
+      - name: Save PKG as artifact
+        if: env.PKG_PATH != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-appstore-pkg-${{ github.ref_name }}
+          path: ${{ env.PKG_PATH }}
+          retention-days: 90
+
+      - name: Upload PKG to App Store Connect
+        if: env.APP_STORE_CONNECT_API_KEY != '' && env.APPLE_INSTALLER_CERTIFICATE != ''
+        env:
+          APP_STORE_CONNECT_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode > ~/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
+
+          PKG="${PKG_PATH}"
+          if [ -z "$PKG" ] || [ ! -f "$PKG" ]; then
+            PKG=$(find src-tauri/target -name "*.pkg" -type f -path "*universal-apple-darwin*" | head -1)
+          fi
+          if [ -z "$PKG" ]; then
+            echo "ERROR: No PKG found"
+            exit 1
+          fi
+          echo "Uploading PKG: $PKG"
+
+          xcrun altool --upload-app \
+            -f "$PKG" \
+            --type mac \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER" \
+            --verbose
+
+          echo "✓ PKG uploaded to App Store Connect"
+
+      - name: Submit for review
+        if: env.APP_STORE_CONNECT_API_KEY != '' && env.APPLE_INSTALLER_CERTIFICATE != ''
+        env:
+          APP_STORE_CONNECT_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          APP_STORE_CONNECT_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID_MAC }}
+          APP_VERSION: ${{ github.ref_name }}
+          MAX_WAIT_MINUTES: "25"
+        run: |
+          mkdir -p ~/private_keys
+          KEY_PATH="$HOME/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
+          echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode > "$KEY_PATH"
+          export APP_STORE_CONNECT_KEY_PATH="$KEY_PATH"
+
+          CLEAN_VERSION="${APP_VERSION#v}"
+          APP_VERSION="$CLEAN_VERSION" python3 scripts/submit-appstore-review.py MAC_OS

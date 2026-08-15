@@ -1,0 +1,42 @@
+# ============================================================
+# 可复用版本门禁工作流
+# 所有发布工作流都通过 `needs` 依赖此作业。
+# 功能:
+#   - 三处版本号 (package.json / tauri.conf.json / Cargo.toml) 必须一致
+#   - 打 v* tag 时, tag 版本号必须等于文件当前版本
+#     否则会静默上传错误/重复的版本到 App Store
+# ============================================================
+name: Version Gate
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: "当前文件版本 (来自 package.json)"
+        value: ${{ jobs.version-gate.outputs.current-version }}
+
+permissions:
+  contents: read
+
+jobs:
+  version-gate:
+    runs-on: ubuntu-latest
+    outputs:
+      current-version: ${{ steps.read-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Verify version consistency (3 files)
+        run: node scripts/check-versions.js check
+
+      - name: Verify tag version matches files
+        if: startsWith(github.ref, 'refs/tags/')
+        run: node scripts/check-versions.js tag "${GITHUB_REF_NAME#v}"
+
+      - name: Read current version
+        id: read-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT

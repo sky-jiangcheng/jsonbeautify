@@ -44,6 +44,11 @@ const updates = [
         pattern: /(<key>CFBundleShortVersionString<\/key>\s*<string>)\d+\.\d+\.\d+(<\/string>)/,
         replacement: `$1${newVersion}$2`,
     },
+    {
+        file: 'ios/App/App.xcodeproj/project.pbxproj',
+        pattern: /(MARKETING_VERSION\s*=\s*)[^;]+;/g,
+        replacement: `$1${newVersion};`,
+    },
 ];
 
 let updated = 0;
