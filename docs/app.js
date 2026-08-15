@@ -1,2307 +1,461 @@
-    /* ==============================================================
-       State
-    ============================================================== */
-    window.selectedIds = [];
-    window.compareOrder = [0, 1];
-    window.lastFormattedContent = '';
-    window.lastOutputLineCount = 0;
-    window.lastParsedJson = null;
-    window.listSelectedIndex = 0;
-    window.lastDetailContent = '';
+/**
+ * src/app.js — Thin orchestrator
+ *
+ * Loads modules in order: router → store → actions → render → here.
+ * Binds events, wires up the i18n system, and exposes backward-compat globals.
+ */
 
-    /* ==============================================================
-       Utilities
-    ============================================================== */
-    function escapeHtml(str) {
-        return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+(function () {
+  'use strict';
+
+  /* ==============================================================
+     i18n (kept here since it drives DOM text content directly)
+  ============================================================== */
+  var I18N = {
+    zh: {
+      title: 'JSON 格式化工具', logoText: 'JSON 格式化工具', mobTitle: 'JSON工具',
+      more: '更多', format: '格式化', minify: '压缩', escape: '转义',
+      copy: '复制', download: '下载', downloadFile: '下载文件',
+      upload: '上传', save: '保存', openFile: '打开文件',
+      clear: '清空', clearContent: '清空', input: '输入', output: '输出',
+      dropHint: '释放以加载文件',
+      outputPlaceholder: '格式化后的 JSON 将显示在这里',
+      history: '历史记录', compare: '对比', swap: '交换', close: '关闭',
+      moreOps: '更多操作', cancelMore: '取消',
+      statusReady: '就绪',
+      statusShortcuts: 'Ctrl+Enter 格式化 · Ctrl+S 保存 · Ctrl+D 下载 · Ctrl+F 搜索',
+      saveModalTitle: '保存到历史记录', saveNamePlaceholder: '输入记录名称（可选）',
+      cancel: '取消',
+      compareTitle: 'JSON 对比', compareLoading: '正在比对…',
+      themeTitle: '切换暗色/亮色模式',
+      formatTitle: '格式化 JSON (Ctrl+Enter)', minifyTitle: '压缩 JSON',
+      escapeTitle: 'JSON 转义', copyTitle: '复制结果',
+      downloadTitle: '下载 JSON 文件 (Ctrl+D)', uploadTitle: '上传 JSON 文件',
+      saveTitle: '保存到历史 (Ctrl+S)', clearTitle: '清空',
+      searchTitle: '在输出中搜索 (Ctrl+F)',
+      searchPlaceholder: '搜索…', searchPrev: '上一个 (Shift+Enter)',
+      searchNext: '下一个 (Enter)', searchClose: '关闭搜索',
+      collapseSidebar: '收起侧栏', clearAllTitle: '清空所有历史',
+      expandSidebar: '展开侧栏',
+      inputPlaceholder: '在此粘贴 JSON 文本',
+      listTitle: '列表 ({count})', collapseList: '收起列表', expandList: '展开列表',
+      emptyArray: '空数组',
+      items: '{count} 项', keys: '{count} 键',
+      loadingFile: '已加载 {name}', saved: '已保存：{name}',
+      copied: '已复制到剪贴板', copyFailed: '复制失败，请重试',
+      nothingToCopy: '没有可复制的内容',
+      nothingToDownload: '没有可下载的内容',
+      downloaded: '已下载 JSON 文件', downloadFailed: '下载失败，请重试',
+      inputEmpty: '输入为空', inputEmptyToast: '请先输入 JSON',
+      formatSuccess: '格式化成功', minifySuccess: '压缩成功',
+      escapeSuccess: 'JSON 转义成功',
+      jsonError: 'JSON 格式错误', cleared: '已清空', historyCleared: '历史已清空',
+      loaded: '已加载：{name}', jsonOnly: '请拖入 .json 文件',
+      needFormatFirst: '请先格式化有效的 JSON',
+      unnamed: '未命名', noHistory: '暂无历史记录', noHistoryHint: '格式化后保存即可',
+      selectForCompare: '选中用于对比', deleteItem: '删除',
+      autoQuoteId: '（已自动为标识符添加引号）',
+      autoBracket: '（已自动补全括号）',
+      autoBracketNotification: '原始 JSON 缺失部分括号，已自动补全',
+      unquotedIdHint: 'JSON 中的键名和字符串值必须用双引号包裹',
+      jsonIncomplete: 'JSON 不完整，可能缺少闭合的括号、逗号或值',
+      jsonSyntaxError: 'JSON 语法错误：{msg}',
+      stringMisplaced: 'JSON 字符串位置不当，检查是否缺少逗号或括号',
+      numberError: '数字格式错误或位置不当',
+      unquotedIdDetected: '检测到未加引号的标识符 "{id}"',
+      errorTitle: 'JSON 格式错误', nearLine: '第 {line} 行附近',
+      jsonRules: 'JSON 语法规则：',
+      ruleKeys: '键名和字符串值必须用双引号（"）包裹',
+      ruleComma: '对象和数组的最后一个元素后不能有逗号',
+      ruleBool: '布尔值只能为 true 或 false（小写）',
+      ruleNull: 'null 必须为小写',
+      ruleBracket: '括号和花括号必须成对出现',
+      valid: '有效', invalid: '无效', lineCount: '行',
+      settings: '设置', settingsTitle: '界面设置',
+      watermarkLabel: '水印文字', watermarkPlaceholder: '输入水印文字（留空则不显示）',
+      watermarkOpacity: '水印透明度', watermarkEnabled: '启用水印',
+      bgImageLabel: '背景图片', bgImageHint: '支持 JPG/PNG，建议 ≤ 2MB',
+      bgImageUpload: '选择图片', bgImageClear: '清除图片',
+      bgImageOpacity: '背景透明度', settingsSaved: '设置已保存', resetSettings: '恢复默认',
+    },
+    en: {
+      title: 'JSON Formatter', logoText: 'JSON Formatter', mobTitle: 'JSON Tool',
+      more: 'More', format: 'Format', minify: 'Minify', escape: 'Escape',
+      copy: 'Copy', download: 'Download', downloadFile: 'Download',
+      upload: 'Upload', save: 'Save', openFile: 'Open File',
+      clear: 'Clear', clearContent: 'Clear', input: 'Input', output: 'Output',
+      dropHint: 'Drop to load file',
+      outputPlaceholder: 'Formatted JSON will appear here',
+      history: 'History', compare: 'Compare', swap: 'Swap', close: 'Close',
+      moreOps: 'More Actions', cancelMore: 'Cancel',
+      statusReady: 'Ready',
+      statusShortcuts: 'Ctrl+Enter Format · Ctrl+S Save · Ctrl+D Download · Ctrl+F Search',
+      saveModalTitle: 'Save to History', saveNamePlaceholder: 'Enter name (optional)',
+      cancel: 'Cancel',
+      compareTitle: 'JSON Compare', compareLoading: 'Comparing…',
+      themeTitle: 'Toggle dark/light mode',
+      formatTitle: 'Format JSON (Ctrl+Enter)', minifyTitle: 'Minify JSON',
+      escapeTitle: 'Escape JSON', copyTitle: 'Copy result',
+      downloadTitle: 'Download JSON file (Ctrl+D)', uploadTitle: 'Upload JSON file',
+      saveTitle: 'Save to history (Ctrl+S)', clearTitle: 'Clear',
+      searchTitle: 'Search in output (Ctrl+F)',
+      searchPlaceholder: 'Search…', searchPrev: 'Previous (Shift+Enter)',
+      searchNext: 'Next (Enter)', searchClose: 'Close search',
+      collapseSidebar: 'Collapse sidebar', clearAllTitle: 'Clear all history',
+      expandSidebar: 'Expand sidebar',
+      inputPlaceholder: 'Paste JSON text here',
+      listTitle: 'List ({count})', collapseList: 'Collapse list', expandList: 'Expand list',
+      emptyArray: 'Empty array',
+      items: '{count} items', keys: '{count} keys',
+      loadingFile: 'Loaded {name}', saved: 'Saved: {name}',
+      copied: 'Copied to clipboard', copyFailed: 'Copy failed, please try again',
+      nothingToCopy: 'Nothing to copy',
+      nothingToDownload: 'Nothing to download',
+      downloaded: 'JSON file downloaded', downloadFailed: 'Download failed, please try again',
+      inputEmpty: 'Input is empty', inputEmptyToast: 'Please enter JSON first',
+      formatSuccess: 'Formatted successfully', minifySuccess: 'Minified successfully',
+      escapeSuccess: 'JSON escaped successfully',
+      jsonError: 'Invalid JSON format', cleared: 'Cleared', historyCleared: 'History cleared',
+      loaded: 'Loaded: {name}', jsonOnly: 'Please drop .json files only',
+      needFormatFirst: 'Please format valid JSON first',
+      unnamed: 'Untitled', noHistory: 'No history yet', noHistoryHint: 'Format and save to see history',
+      selectForCompare: 'Select to compare', deleteItem: 'Delete',
+      autoQuoteId: ' (auto-quoted identifier)',
+      autoBracket: ' (auto-closed brackets)',
+      autoBracketNotification: 'Some brackets were missing and have been auto-closed',
+      unquotedIdHint: 'JSON keys and string values must be wrapped in double quotes',
+      jsonIncomplete: 'JSON is incomplete, possibly missing closing brackets, commas, or values',
+      jsonSyntaxError: 'JSON syntax error: {msg}',
+      stringMisplaced: 'JSON string in wrong position, check for missing commas or brackets',
+      numberError: 'Number format error or misplaced number',
+      unquotedIdDetected: 'Detected unquoted identifier "{id}"',
+      errorTitle: 'Invalid JSON', nearLine: 'Near line {line}',
+      jsonRules: 'JSON syntax rules:',
+      ruleKeys: 'Keys and string values must be wrapped in double quotes (")',
+      ruleComma: 'No trailing comma after the last element in objects/arrays',
+      ruleBool: 'Boolean values must be true or false (lowercase)',
+      ruleNull: 'null must be lowercase',
+      ruleBracket: 'Brackets and braces must be paired',
+      valid: 'Valid', invalid: 'Invalid', lineCount: 'lines',
+      settings: 'Settings', settingsTitle: 'Interface Settings',
+      watermarkLabel: 'Watermark Text', watermarkPlaceholder: 'Enter watermark text (empty to disable)',
+      watermarkOpacity: 'Watermark Opacity', watermarkEnabled: 'Enable Watermark',
+      bgImageLabel: 'Background Image', bgImageHint: 'JPG/PNG supported, recommended ≤ 2MB',
+      bgImageUpload: 'Choose Image', bgImageClear: 'Clear Image',
+      bgImageOpacity: 'Background Opacity', settingsSaved: 'Settings saved', resetSettings: 'Reset to Default',
     }
+  };
 
-    function showToast(msg, duration, iconId) {
-        const t = document.getElementById('toast');
-        const iconSvg = iconId ? `<svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#${iconId}"/></svg>` : '';
-        t.innerHTML = iconSvg + escapeHtml(msg);
-        t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), duration || 2000);
-    }
-
-    function setStatus(msg, flash) {
-        const el = document.getElementById('status-msg');
-        const bar = document.querySelector('.statusbar');
-        if (!el) return;
-        if (el.textContent === msg && !flash) return;
-        el.classList.add('updating');
-        setTimeout(() => {
-            el.textContent = msg;
-            el.classList.remove('updating');
-        }, 100);
-        if (flash && bar) {
-            bar.classList.remove('flash');
-            void bar.offsetWidth;
-            bar.classList.add('flash');
-            setTimeout(() => bar.classList.remove('flash'), 800);
-        }
-    }
-
-    function getHistory() {
-        try {
-            return JSON.parse(localStorage.getItem('jsonHistory') || '[]');
-        } catch (e) {
-            console.warn('History corrupted, resetting:', e);
-            try { localStorage.removeItem('jsonHistory'); } catch (_) {}
-            return [];
-        }
-    }
-
-    function setHistory(arr) {
-        localStorage.setItem('jsonHistory', JSON.stringify(arr));
-    }
-
-    function formatBytes(bytes) {
-        if (bytes === 0) return '0 B';
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-    }
-
-    /* ==============================================================
-       Internationalization (i18n)
-    ============================================================== */
-    const I18N = {
-        zh: {
-            title: 'JSON 格式化工具',
-            logoText: 'JSON 格式化工具',
-            mobTitle: 'JSON工具',
-            more: '更多',
-            format: '格式化',
-            minify: '压缩',
-            escape: '转义',
-            copy: '复制',
-            download: '下载',
-            downloadFile: '下载文件',
-            upload: '上传',
-            save: '保存',
-            openFile: '打开文件',
-            clear: '清空',
-            clearContent: '清空',
-            input: '输入',
-            output: '输出',
-            dropHint: '释放以加载文件',
-            outputPlaceholder: '格式化后的 JSON 将显示在这里',
-            history: '历史记录',
-            compare: '对比',
-            swap: '交换',
-            close: '关闭',
-            moreOps: '更多操作',
-            cancelMore: '取消',
-            statusReady: '就绪',
-            statusShortcuts: 'Ctrl+Enter 格式化 \u00b7 Ctrl+S 保存 \u00b7 Ctrl+D 下载 \u00b7 Ctrl+F 搜索',
-            saveModalTitle: '保存到历史记录',
-            saveNamePlaceholder: '输入记录名称（可选）',
-            cancel: '取消',
-            compareTitle: 'JSON 对比',
-            compareLoading: '正在比对\u2026',
-            themeTitle: '切换暗色/亮色模式',
-            formatTitle: '格式化 JSON (Ctrl+Enter)',
-            minifyTitle: '压缩 JSON',
-            escapeTitle: 'JSON 转义',
-            copyTitle: '复制结果',
-            downloadTitle: '下载 JSON 文件 (Ctrl+D)',
-            uploadTitle: '上传 JSON 文件',
-            saveTitle: '保存到历史 (Ctrl+S)',
-            clearTitle: '清空',
-            searchTitle: '在输出中搜索 (Ctrl+F)',
-            searchPlaceholder: '搜索…',
-            searchPrev: '上一个 (Shift+Enter)',
-            searchNext: '下一个 (Enter)',
-            searchClose: '关闭搜索',
-            collapseSidebar: '收起侧栏',
-            clearAllTitle: '清空所有历史',
-            expandSidebar: '展开侧栏',
-            inputPlaceholder: '在此粘贴 JSON 文本',
-            listTitle: '列表 ({count})',
-            collapseList: '收起列表',
-            expandList: '展开列表',
-            emptyArray: '空数组',
-            items: '{count} 项',
-            keys: '{count} 键',
-            loadingFile: '已加载 {name}',
-            saved: '已保存：{name}',
-            copied: '已复制到剪贴板',
-            copyFailed: '复制失败，请重试',
-            nothingToCopy: '没有可复制的内容',
-            nothingToDownload: '没有可下载的内容',
-            downloaded: '已下载 JSON 文件',
-            downloadFailed: '下载失败，请重试',
-            inputEmpty: '输入为空',
-            inputEmptyToast: '请先输入 JSON',
-            formatSuccess: '格式化成功',
-            minifySuccess: '压缩成功',
-            escapeSuccess: 'JSON 转义成功',
-            jsonError: 'JSON 格式错误',
-            cleared: '已清空',
-            historyCleared: '历史已清空',
-            loaded: '已加载：{name}',
-            jsonOnly: '请拖入 .json 文件',
-            needFormatFirst: '请先格式化有效的 JSON',
-            unnamed: '未命名',
-            noHistory: '暂无历史记录',
-            noHistoryHint: '格式化后保存即可',
-            selectForCompare: '选中用于对比',
-            deleteItem: '删除',
-            autoQuoteId: '（已自动为标识符添加引号）',
-            autoBracket: '（已自动补全括号）',
-            autoBracketNotification: '原始 JSON 缺失部分括号，已自动补全',
-            unquotedIdHint: 'JSON 中的键名和字符串值必须用双引号包裹',
-            jsonIncomplete: 'JSON 不完整，可能缺少闭合的括号、逗号或值',
-            jsonSyntaxError: 'JSON 语法错误：{msg}',
-            stringMisplaced: 'JSON 字符串位置不当，检查是否缺少逗号或括号',
-            numberError: '数字格式错误或位置不当',
-            unquotedIdDetected: '检测到未加引号的标识符 "{id}"',
-            errorTitle: 'JSON 格式错误',
-            nearLine: '第 {line} 行附近',
-            jsonRules: 'JSON 语法规则：',
-            ruleKeys: '键名和字符串值必须用双引号（"）包裹',
-            ruleComma: '对象和数组的最后一个元素后不能有逗号',
-            ruleBool: '布尔值只能为 true 或 false（小写）',
-            ruleNull: 'null 必须为小写',
-            ruleBracket: '括号和花括号必须成对出现',
-            valid: '有效',
-            invalid: '无效',
-            lineCount: '行',
-            settings: '设置',
-            settingsTitle: '界面设置',
-            watermarkLabel: '水印文字',
-            watermarkPlaceholder: '输入水印文字（留空则不显示）',
-            watermarkOpacity: '水印透明度',
-            watermarkEnabled: '启用水印',
-            bgImageLabel: '背景图片',
-            bgImageHint: '支持 JPG/PNG，建议 ≤ 2MB',
-            bgImageUpload: '选择图片',
-            bgImageClear: '清除图片',
-            bgImageOpacity: '背景透明度',
-            settingsSaved: '设置已保存',
-            resetSettings: '恢复默认',
-        },
-        en: {
-            title: 'JSON Formatter',
-            logoText: 'JSON Formatter',
-            mobTitle: 'JSON Tool',
-            more: 'More',
-            format: 'Format',
-            minify: 'Minify',
-            escape: 'Escape',
-            copy: 'Copy',
-            download: 'Download',
-            downloadFile: 'Download',
-            upload: 'Upload',
-            save: 'Save',
-            openFile: 'Open File',
-            clear: 'Clear',
-            clearContent: 'Clear',
-            input: 'Input',
-            output: 'Output',
-            dropHint: 'Drop to load file',
-            outputPlaceholder: 'Formatted JSON will appear here',
-            history: 'History',
-            compare: 'Compare',
-            swap: 'Swap',
-            close: 'Close',
-            moreOps: 'More Actions',
-            cancelMore: 'Cancel',
-            statusReady: 'Ready',
-            statusShortcuts: 'Ctrl+Enter Format \u00b7 Ctrl+S Save \u00b7 Ctrl+D Download \u00b7 Ctrl+F Search',
-            saveModalTitle: 'Save to History',
-            saveNamePlaceholder: 'Enter name (optional)',
-            cancel: 'Cancel',
-            compareTitle: 'JSON Compare',
-            compareLoading: 'Comparing\u2026',
-            themeTitle: 'Toggle dark/light mode',
-            formatTitle: 'Format JSON (Ctrl+Enter)',
-            minifyTitle: 'Minify JSON',
-            escapeTitle: 'Escape JSON',
-            copyTitle: 'Copy result',
-            downloadTitle: 'Download JSON file (Ctrl+D)',
-            uploadTitle: 'Upload JSON file',
-            saveTitle: 'Save to history (Ctrl+S)',
-            clearTitle: 'Clear',
-            searchTitle: 'Search in output (Ctrl+F)',
-            searchPlaceholder: 'Search…',
-            searchPrev: 'Previous (Shift+Enter)',
-            searchNext: 'Next (Enter)',
-            searchClose: 'Close search',
-            collapseSidebar: 'Collapse sidebar',
-            clearAllTitle: 'Clear all history',
-            expandSidebar: 'Expand sidebar',
-            inputPlaceholder: 'Paste JSON text here',
-            listTitle: 'List ({count})',
-            collapseList: 'Collapse list',
-            expandList: 'Expand list',
-            emptyArray: 'Empty array',
-            items: '{count} items',
-            keys: '{count} keys',
-            loadingFile: 'Loaded {name}',
-            saved: 'Saved: {name}',
-            copied: 'Copied to clipboard',
-            copyFailed: 'Copy failed, please try again',
-            nothingToCopy: 'Nothing to copy',
-            nothingToDownload: 'Nothing to download',
-            downloaded: 'JSON file downloaded',
-            downloadFailed: 'Download failed, please try again',
-            inputEmpty: 'Input is empty',
-            inputEmptyToast: 'Please enter JSON first',
-            formatSuccess: 'Formatted successfully',
-            minifySuccess: 'Minified successfully',
-            escapeSuccess: 'JSON escaped successfully',
-            jsonError: 'Invalid JSON format',
-            cleared: 'Cleared',
-            historyCleared: 'History cleared',
-            loaded: 'Loaded: {name}',
-            jsonOnly: 'Please drop .json files only',
-            needFormatFirst: 'Please format valid JSON first',
-            unnamed: 'Untitled',
-            noHistory: 'No history yet',
-            noHistoryHint: 'Format and save to see history',
-            selectForCompare: 'Select to compare',
-            deleteItem: 'Delete',
-            autoQuoteId: ' (auto-quoted identifier)',
-            autoBracket: ' (auto-closed brackets)',
-            autoBracketNotification: 'Some brackets were missing and have been auto-closed',
-            unquotedIdHint: 'JSON keys and string values must be wrapped in double quotes',
-            jsonIncomplete: 'JSON is incomplete, possibly missing closing brackets, commas, or values',
-            jsonSyntaxError: 'JSON syntax error: {msg}',
-            stringMisplaced: 'JSON string in wrong position, check for missing commas or brackets',
-            numberError: 'Number format error or misplaced number',
-            unquotedIdDetected: 'Detected unquoted identifier "{id}"',
-            errorTitle: 'Invalid JSON',
-            nearLine: 'Near line {line}',
-            jsonRules: 'JSON syntax rules:',
-            ruleKeys: 'Keys and string values must be wrapped in double quotes (")',
-            ruleComma: 'No trailing comma after the last element in objects/arrays',
-            ruleBool: 'Boolean values must be true or false (lowercase)',
-            ruleNull: 'null must be lowercase',
-            ruleBracket: 'Brackets and braces must be paired',
-            valid: 'Valid',
-            invalid: 'Invalid',
-            lineCount: 'lines',
-            settings: 'Settings',
-            settingsTitle: 'Interface Settings',
-            watermarkLabel: 'Watermark Text',
-            watermarkPlaceholder: 'Enter watermark text (empty to disable)',
-            watermarkOpacity: 'Watermark Opacity',
-            watermarkEnabled: 'Enable Watermark',
-            bgImageLabel: 'Background Image',
-            bgImageHint: 'JPG/PNG supported, recommended ≤ 2MB',
-            bgImageUpload: 'Choose Image',
-            bgImageClear: 'Clear Image',
-            bgImageOpacity: 'Background Opacity',
-            settingsSaved: 'Settings saved',
-            resetSettings: 'Reset to Default',
-        }
-    };
-
-    const i18n = {
-        _lang: localStorage.getItem('appLang') || 'en',
-
-        t(key, vars) {
-            let s = I18N[this._lang][key] || I18N['en'][key] || key;
-            if (vars) {
-                Object.entries(vars).forEach(([k, v]) => {
-                    s = s.replace(new RegExp('\\{' + k + '\\}', 'g'), v);
-                });
-            }
-            return s;
-        },
-
-        setLang(lang) {
-            this._lang = lang;
-            localStorage.setItem('appLang', lang);
-            applyAllTranslations();
-        },
-
-        get lang() { return this._lang; }
-    };
-
-    function applyAllTranslations() {
-        // Document title
-        document.title = i18n.t('title');
-        document.documentElement.lang = i18n._lang;
-        // Text content
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (key) el.textContent = i18n.t(key);
+  var i18n = {
+    _lang: (window.__store && window.__store.getStateForKey('lang')) || localStorage.getItem('appLang') || 'en',
+    t: function (key, vars) {
+      var s = I18N[this._lang][key] || I18N['en'][key] || key;
+      if (vars) {
+        Object.entries(vars).forEach(function (entry) {
+          s = s.replace(new RegExp('\\{' + entry[0] + '\\}', 'g'), entry[1]);
         });
-        // Title attributes
-        document.querySelectorAll('[data-i18n-title]').forEach(el => {
-            const key = el.getAttribute('data-i18n-title');
-            if (key) el.setAttribute('title', i18n.t(key));
-        });
-        // Placeholder attributes
-        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-            const key = el.getAttribute('data-i18n-placeholder');
-            if (key) el.setAttribute('placeholder', i18n.t(key).replace(/\\n/g, '\n'));
-        });
-        // HTML content
-        document.querySelectorAll('[data-i18n-html]').forEach(el => {
-            const key = el.getAttribute('data-i18n-html');
-            if (key) el.innerHTML = i18n.t(key);
-        });
-        // Update language switcher button text
-        const langBtn = document.getElementById('lang-btn');
-        if (langBtn) langBtn.textContent = i18n._lang === 'zh' ? 'EN' : '\u4e2d';
-        // Re-render dynamic content
-        rerenderDynamicContent();
-    }
-
-    function rerenderDynamicContent() {
-        // Refresh output panel if it has content
-        if (window._lastRenderContent) {
-            renderOutput(window._lastRenderContent, window._lastRenderType, window._lastRenderFixed, window._lastRenderParsedObj);
-        }
-        // Refresh history list
-        renderHistory();
-        // Update status bar
-        const sm = document.getElementById('status-msg');
-        if (sm && (sm.textContent === I18N.zh.statusReady || sm.textContent === I18N.en.statusReady)) {
-            setStatus(i18n.t('statusReady'));
-        }
-        // Refresh compare open state
-        const cc = document.getElementById('compare-container');
-        if (cc && cc.classList.contains('active')) {
-            renderHistory();
-            if (window.selectedIds.length === 2) compareSelected();
-        }
-        // Refresh validation indicator
-        const vi = document.getElementById('validation-indicator');
-        if (vi && vi.style.display !== 'none') {
-            vi.textContent = i18n.t(vi.classList.contains('valid') ? 'valid' : 'invalid');
-        }
-    }
-
-    /* ==============================================================
-       Output Line Numbers
-    ============================================================== */
-    function renderLineNumbers(lineCount) {
-        const area = document.getElementById('output-content-area');
-        let linenos = area.querySelector('.output-linenos');
-        if (lineCount > 0) {
-            if (!linenos) {
-                linenos = document.createElement('div');
-                linenos.className = 'output-linenos';
-                area.insertBefore(linenos, area.firstChild);
-            }
-            linenos.innerHTML = Array.from({length: lineCount}, (_, i) => `<span>${i + 1}</span>`).join('');
-            window.lastOutputLineCount = lineCount;
-        } else if (linenos) {
-            linenos.remove();
-            window.lastOutputLineCount = 0;
-        }
-    }
-
-    function syncLineNumberScroll() {
-        const area = document.getElementById('output-content-area');
-        const content = area.querySelector('.output-content');
-        const linenos = area.querySelector('.output-linenos');
-        if (content && linenos) {
-            linenos.scrollTop = content.scrollTop;
-        }
-    }
-
-    /* ==============================================================
-       Core: Format / Minify / Fix
-    ============================================================== */
-    function getFriendlyJsonError(error, input) {
-        var msg = error.message || String(error);
-        var raw = msg;
-        var posMatch = msg.match(/position\s+(\d+)/i);
-        var pos = posMatch ? parseInt(posMatch[1]) : -1;
-
-        var context = '';
-        if (pos >= 0 && input) {
-            var start = Math.max(0, pos - 30);
-            var end = Math.min(input.length, pos + 30);
-            var snippet = input.substring(start, end);
-            var marker = '';
-            for (var i = 0; i < Math.min(30, pos - start); i++) marker += ' ';
-            marker += '^';
-            context = '\n\n' + snippet + '\n' + marker;
-        }
-
-        if (msg.indexOf('Unexpected identifier') >= 0 || msg.indexOf('Unexpected token') >= 0) {
-            var idMatch = msg.match(/["']([^"']+)["']/);
-            var id = idMatch ? idMatch[1] : '';
-            if (id && /^[a-zA-Z_$]/.test(id)) {
-                return i18n.t('unquotedIdDetected', {id: id}) + '\n' + i18n.t('unquotedIdHint') + context;
-            }
-            return i18n.t('jsonSyntaxError', {msg: msg}) + context;
-        }
-
-        if (msg.indexOf('Unexpected end of JSON') >= 0) {
-            return i18n.t('jsonIncomplete') + context;
-        }
-
-        if (msg.indexOf('Expected') >= 0 && msg.indexOf('got') >= 0) {
-            return i18n.t('jsonSyntaxError', {msg: msg}) + context;
-        }
-
-        if (msg.indexOf('Unexpected string') >= 0) {
-            return i18n.t('stringMisplaced') + context;
-        }
-
-        if (msg.indexOf('Unexpected number') >= 0) {
-            return i18n.t('numberError') + context;
-        }
-
-        return i18n.t('jsonSyntaxError', {msg: msg}) + context;
-    }
-
-    function tryFixUnquotedKeys(input) {
-        var result = input.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
-        return result;
-    }
-
-    function tryFixJson(str) {
-        let s = str.trim();
-        let lc = 0, rc = 0, ls = 0, rs = 0;
-        let inString = false, escape = false;
-        for (let i = 0; i < s.length; i++) {
-            const ch = s[i];
-            if (escape) { escape = false; continue; }
-            if (inString) {
-                if (ch === '\\') { escape = true; continue; }
-                if (ch === '"') inString = false;
-                continue;
-            }
-            if (ch === '"') { inString = true; continue; }
-            if (ch === '{') lc++;
-            else if (ch === '}') rc++;
-            else if (ch === '[') ls++;
-            else if (ch === ']') rs++;
-        }
-        let fixed = s, ok = false;
-        while (lc > rc) { fixed += '}'; rc++; ok = true; }
-        while (ls > rs) { fixed += ']'; rs++; ok = true; }
-        return { success: ok, json: fixed };
-    }
-
-    function getIndent() { return 2; }
-
-    function formatJSON() {
-        const input = document.getElementById('input');
-        const value = input.value.trim();
-        clearNotifications();
-        if (!value) {
-            renderOutput('', 'empty');
-            setStatus(i18n.t('inputEmpty'));
-            return;
-        }
-
-        let jsonObj = null;
-        let fixed = false;
-        try {
-            jsonObj = JSON.parse(value);
-        } catch (error) {
-            var fixMsg = '';
-            var v = value;
-            var uq = tryFixUnquotedKeys(v);
-            if (uq !== v) {
-                try {
-                    jsonObj = JSON.parse(uq);
-                    fixed = true;
-                    fixMsg = i18n.t('autoQuoteId');
-                } catch (e2) {}
-            }
-            if (!jsonObj) {
-                const fixResult = tryFixJson(v);
-                if (fixResult.success) {
-                    try {
-                        jsonObj = JSON.parse(fixResult.json);
-                        fixed = true;
-                        fixMsg = fixMsg || i18n.t('autoBracket');
-                    } catch (e2) {
-                        showError(error, value);
-                        return;
-                    }
-                } else {
-                    showError(error, value);
-                    return;
-                }
-            }
-        }
-
-        const indent = getIndent();
-        window.lastFormattedContent = JSON.stringify(jsonObj, null, indent);
-        window.lastParsedJson = jsonObj;
-        renderOutput(window.lastFormattedContent, 'json', fixed, jsonObj);
-        setStatus(i18n.t('formatSuccess') + (fixed ? fixMsg : ''), true);
-        updateOutputStatus(window.lastFormattedContent);
-    }
-
-    function minifyJSON() {
-        const input = document.getElementById('input');
-        const value = input.value.trim();
-        clearNotifications();
-        if (!value) {
-            showToast(i18n.t('inputEmptyToast'), 2000, 'icon-alert-triangle');
-            return;
-        }
-
-        let jsonObj = null;
-        let fixed = false;
-        try {
-            jsonObj = JSON.parse(value);
-        } catch (error) {
-            var v = value;
-            var uq = tryFixUnquotedKeys(v);
-            if (uq !== v) {
-                try { jsonObj = JSON.parse(uq); fixed = true; } catch (e2) {}
-            }
-            if (!jsonObj) {
-                const fixResult = tryFixJson(v);
-                if (fixResult.success) {
-                    try { jsonObj = JSON.parse(fixResult.json); fixed = true; } catch (e2) {
-                        showError(error, value);
-                        return;
-                    }
-                } else {
-                    showError(error, value);
-                    return;
-                }
-            }
-        }
-
-        window.lastFormattedContent = JSON.stringify(jsonObj);
-        window.lastParsedJson = jsonObj;
-        renderOutput(window.lastFormattedContent, 'text', fixed, jsonObj);
-        setStatus(i18n.t('minifySuccess') + (fixed ? i18n.t('autoBracket') : ''));
-        updateOutputStatus(window.lastFormattedContent);
-    }
-
-    /* ==============================================================
-       Output Rendering
-    ============================================================== */
-    function clearNotifications() {
-        document.getElementById('output-notifications').innerHTML = '';
-    }
-
-    function showNotification(type, message) {
-        clearNotifications();
-        const container = document.getElementById('output-notifications');
-        const div = document.createElement('div');
-        div.className = 'output-notification ' + type;
-        div.textContent = message;
-        container.appendChild(div);
-}
-
-    function renderErrorOutput(error, input) {
-        var msg = getFriendlyJsonError(error, input);
-        var posMatch = error.message.match(/position\s+(\d+)/i);
-        var pos = posMatch ? parseInt(posMatch[1]) : -1;
-
-        var snippetHtml = '';
-        if (pos >= 0 && input) {
-            var start = Math.max(0, pos - 60);
-            var end = Math.min(input.length, pos + 60);
-            var before = escapeHtml(input.substring(start, pos));
-            var at = escapeHtml(input.charAt(pos) || '');
-            var after = escapeHtml(input.substring(pos + 1, end));
-            if (start > 0) snippetHtml += '…';
-            snippetHtml += before + '<span class="error-marker">' + at + '</span>' + after;
-            if (end < input.length) snippetHtml += '…';
-        }
-
-        var area = document.getElementById('output-content-area');
-        var lineCount = input ? input.substring(0, pos).split('\n').length : 0;
-
-        var hints = [
-            i18n.t('ruleKeys'),
-            i18n.t('ruleComma'),
-            i18n.t('ruleBool'),
-            i18n.t('ruleNull'),
-            i18n.t('ruleBracket')
-        ];
-
-        area.innerHTML = '<div class="error-display">' +
-            '<div class="error-title">' + i18n.t('errorTitle') + '</div>' +
-            '<div class="error-msg">' + escapeHtml(msg.split('\n')[0]) + '</div>' +
-            (snippetHtml ? '<div class="error-snippet">' + snippetHtml + '</div>' : '') +
-            (lineCount ? '<div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono)">' + i18n.t('nearLine', {line: lineCount}) + '</div>' : '') +
-            '<div class="error-hint">' + i18n.t('jsonRules') + hints.join('; ') + '</div>' +
-            '</div>';
-        renderLineNumbers(0);
-    }
-
-    function showError(error, input) {
-        renderErrorOutput(error, input);
-        setStatus(i18n.t('jsonError'));
-        // 移动端：出错时也自动切换到输出 Tab，方便看错误信息
-        if (document.documentElement.getAttribute('data-device') === 'mobile') {
-            switchMobileTab('output');
-        }
-    }
-
-    function renderEmptyContent() {
-        const area = document.getElementById('output-content-area');
-        area.innerHTML = `
-            <div class="output-placeholder" id="output-placeholder">
-                <svg aria-hidden="true" class="svg-icon" viewBox="0 0 24 24"><use href="#icon-braces"/></svg>
-                ${i18n.t('outputPlaceholder')}
-            </div>`;
-        renderLineNumbers(0);
-    }
-
-    function renderTextOutput(content) {
-        const area = document.getElementById('output-content-area');
-        area.innerHTML = '<div class="output-content"><pre><code class="language-json hljs"></code></pre></div>';
-        const lineCount = content.split('\n').length;
-        renderLineNumbers(lineCount);
-        const codeEl = area.querySelector('code');
-        if (codeEl) { codeEl.textContent = content; hljs.highlightElement(codeEl); }
-        const contentEl = area.querySelector('.output-content');
-        if (contentEl) {
-            contentEl.onscroll = syncLineNumberScroll;
-        }
-    }
-
-    function renderOutput(content, type, fixed, parsedObj) {
-        // Store for re-render on language change
-        window._lastRenderContent = content;
-        window._lastRenderType = type;
-        window._lastRenderFixed = fixed || false;
-        window._lastRenderParsedObj = parsedObj || null;
-
-        // 移动端：有输出内容时自动切换到输出 Tab
-        if (type !== 'empty' && document.documentElement.getAttribute('data-device') === 'mobile') {
-            switchMobileTab('output');
-        }
-
-        if (type === 'empty') {
-            renderEmptyContent();
-        } else if (type === 'text') {
-            renderTextOutput(content);
-        } else if (type === 'json') {
-            if (parsedObj && Array.isArray(parsedObj)) {
-                renderListOutput(parsedObj);
-            } else {
-                renderRegularOutput(content);
-            }
-            if (fixed) {
-                showNotification('warning', i18n.t('autoBracketNotification'));
-            }
-        }
-        refreshSearch();
-    }
-
-    function renderRegularOutput(content) {
-        const area = document.getElementById('output-content-area');
-        var obj;
-        try { obj = JSON.parse(content); } catch (e) { obj = null; }
-
-        var treeHtml = obj !== null ? renderJsonNode(null, obj) : '<pre><code class="language-json hljs">' + escapeHtml(content) + '</code></pre>';
-        area.innerHTML = '<div class="output-content"><div class="json-tree">' + treeHtml + '</div></div>';
-
-        var treeEl = area.querySelector('.json-tree');
-        var lineCount = treeEl ? countVisibleLines(treeEl, false) : content.split('\n').length;
-        renderLineNumbers(lineCount);
-
-        if (obj === null) {
-            var codeEl = area.querySelector('code');
-            if (codeEl) { codeEl.textContent = content; hljs.highlightElement(codeEl); }
-        }
-
-        var contentEl = area.querySelector('.output-content');
-        if (contentEl) {
-            contentEl.onscroll = syncLineNumberScroll;
-        }
-    }
-
-    function renderListOutput(arr) {
-        const area = document.getElementById('output-content-area');
-        area.innerHTML = `
-            <div class="list-view" id="list-view">
-                <div class="list-panel" id="list-panel">
-                    <div class="list-panel-header">
-                        <span class="list-title">${i18n.t('listTitle', {count: arr.length})}</span>
-                        <button class="list-panel-toggle" id="list-panel-toggle" data-list-toggle="1" title="${i18n.t('collapseList')}" aria-label="${i18n.t('collapseList')}">
-                            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-                        </button>
-                    </div>
-                    <div class="list-panel-body" id="list-panel-body"></div>
-                </div>
-                <div class="list-detail" id="list-detail">
-                    <div class="list-expand-tab" id="list-expand-tab" role="button" tabindex="0" data-list-toggle="1" title="${i18n.t('expandList')}" aria-label="${i18n.t('expandList')}">
-                        <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                    </div>
-                    <div class="list-detail-linenos" id="list-detail-linenos"></div>
-                    <div class="list-detail-content" id="list-detail-content"></div>
-                </div>
-            </div>`;
-
-        const listPanelBody = document.getElementById('list-panel-body');
-        window._listArr = arr;
-        window._listArrStr = [];
-
-        if (arr.length === 0) {
-            listPanelBody.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:12px;text-align:center">' + i18n.t('emptyArray') + '</div>';
-            return;
-        }
-
-        arr.forEach((item, i) => {
-            const div = document.createElement('div');
-            div.className = 'list-item';
-            div.setAttribute('role', 'button');
-            div.setAttribute('tabindex', '0');
-            div.setAttribute('aria-label', '查看第 ' + i + ' 项');
-            div.setAttribute('data-list-item', i);
-            div.innerHTML = `
-                <span class="list-item-index">[${i}]</span>
-                <span class="list-item-preview">${escapeHtml(getItemPreview(item))}</span>`;
-            listPanelBody.appendChild(div);
-        });
-
-        window.listSelectedIndex = 0;
-        selectListItem(0, arr);
-    }
-
-    function toggleListPanel() {
-        const panel = document.getElementById('list-panel');
-        const view = document.getElementById('list-view');
-        panel.classList.toggle('collapsed');
-        view.classList.toggle('list-collapsed');
-    }
-
-    function selectListItem(index, arr) {
-        window.listSelectedIndex = index;
-        window.lastDetailContent = JSON.stringify(arr[index], null, getIndent());
-        const items = document.querySelectorAll('.list-item');
-        items.forEach((el, i) => el.classList.toggle('active', i === index));
-
-        const detailContent = document.getElementById('list-detail-content');
-        const detailLinenos = document.getElementById('list-detail-linenos');
-
-        detailContent.innerHTML = '<div class="json-tree">' + renderJsonNode(null, arr[index]) + '</div>';
-        updateTreeLineNumbers();
-
-        detailContent.onscroll = () => {
-            detailLinenos.scrollTop = detailContent.scrollTop;
-        };
-        refreshSearch();
-    }
-
-    function renderJsonNode(key, value) {
-        var prefix = key !== null ? '<span class="jt-key">' + JSON.stringify(key) + '</span>: ' : '';
-
-        if (value === null) return '<span class="jt-line">' + prefix + '<span class="jt-null">null</span></span>';
-        if (typeof value === 'boolean') return '<span class="jt-line">' + prefix + '<span class="jt-bool">' + value + '</span></span>';
-        if (typeof value === 'number') return '<span class="jt-line">' + prefix + '<span class="jt-number">' + value + '</span></span>';
-        if (typeof value === 'string') return '<span class="jt-line">' + prefix + '<span class="jt-string">' + JSON.stringify(value) + '</span></span>';
-
-        var toggleAttrs = 'role="button" tabindex="0" aria-label="折叠/展开" data-jt-toggle="1"';
-
-        if (Array.isArray(value)) {
-            var count = value.length;
-            if (count === 0) return '<span class="jt-line">' + prefix + '<span class="jt-bracket">[]</span></span>';
-            var html = '<div class="jt-group">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
-            html += '<div class="jt-children">';
-            for (var i = 0; i < count; i++) {
-                html += renderJsonNode(String(i), value[i]);
-                if (i < count - 1) {
-                    html += '<span class="jt-comma">,</span>';
-                }
-            }
-            html += '</div>';
-            html += '<span class="jt-line jt-closing"><span class="jt-bracket">]</span></span>';
-            html += '</div>';
-            return html;
-        }
-
-        if (typeof value === 'object') {
-            var keys = Object.keys(value);
-            var count = keys.length;
-            if (count === 0) return '<span class="jt-line">' + prefix + '<span class="jt-bracket">{}</span></span>';
-            var html = '<div class="jt-group">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
-            html += '<div class="jt-children">';
-            for (var k = 0; k < count; k++) {
-                html += renderJsonNode(keys[k], value[keys[k]]);
-                if (k < count - 1) {
-                    html += '<span class="jt-comma">,</span>';
-                }
-            }
-            html += '</div>';
-            html += '<span class="jt-line jt-closing"><span class="jt-bracket">}</span></span>';
-            html += '</div>';
-            return html;
-        }
-
-        return '';
-    }
-
-    function toggleJsonNode(el) {
-        var group = el.closest('.jt-group');
-        if (group) {
-            group.classList.toggle('collapsed');
-            var toggle = group.querySelector('.jt-toggle');
-            toggle.innerHTML = group.classList.contains('collapsed') ? '&#9654;' : '&#9660;';
-            updateTreeLineNumbers();
-        }
-    }
-
-    function updateTreeLineNumbers() {
-        var target = document.getElementById('list-detail-linenos');
-        if (!target) target = document.querySelector('.output-linenos');
-        var tree = document.querySelector('.json-tree');
-        if (!target || !tree) return;
-        var count = countVisibleLines(tree, false);
-        target.innerHTML = '';
-        for (var i = 0; i < count; i++) {
-            var span = document.createElement('span');
-            span.textContent = i + 1;
-            target.appendChild(span);
-        }
-    }
-
-    function countVisibleLines(el, skipHidden) {
-        if (el.classList && el.classList.contains('jt-line')) {
-            if (skipHidden) return 1;
-            // Check ancestor .jt-group for .collapsed class (CSS hides children)
-            var parent = el.parentElement;
-            while (parent && parent !== document.body) {
-                if (parent.classList && parent.classList.contains('jt-group') && parent.classList.contains('collapsed')) {
-                    return 0;
-                }
-                parent = parent.parentElement;
-            }
-            return 1;
-        }
-        var count = 0;
-        for (var i = 0; i < el.children.length; i++) {
-            count += countVisibleLines(el.children[i], false);
-        }
-        return count;
-    }
-
-    function getItemPreview(item) {
-        if (item === null) return 'null';
-        if (item === undefined) return 'undefined';
-        if (typeof item === 'boolean') return String(item);
-        if (typeof item === 'number') return String(item);
-        if (typeof item === 'string') {
-            return item.length > 50 ? '"' + item.substring(0, 50) + '…"' : JSON.stringify(item);
-        }
-        if (Array.isArray(item)) {
-            return '[...] (' + i18n.t('items', {count: item.length}) + ')';
-        }
-        if (typeof item === 'object') {
-            const keys = Object.keys(item);
-            const preview = keys.slice(0, 2).join(', ');
-            return '{' + preview + (keys.length > 2 ? ', ...' : '') + '} (' + i18n.t('keys', {count: keys.length}) + ')';
-        }
-        return String(item);
-    }
-
-    function updateOutputStatus(content) {
-        const lines = content.split('\n').length;
-        const size = new Blob([content]).size;
-        document.getElementById('output-status').textContent = lines + ' ' + i18n.t('lineCount') + ' ' + formatBytes(size);
-    }
-
-    /* ==============================================================
-       Output Search
-       直接在已渲染的 DOM 上高亮文本节点，保留折叠/展开状态与滚动位置。
-    ============================================================== */
-    let _searchDebounce = null;
-
-    function isSearchOpen() {
-        const bar = document.getElementById('output-search-bar');
-        return !!bar && bar.classList.contains('open');
-    }
-
-    function openSearch() {
-        const bar = document.getElementById('output-search-bar');
-        const btn = document.getElementById('output-search-btn');
-        if (!bar) return;
-        bar.classList.add('open');
-        if (btn) btn.classList.add('active');
-        const input = document.getElementById('output-search-input');
-        if (input) setTimeout(() => { input.focus(); input.select(); }, 30);
-    }
-
-    function closeSearch() {
-        const bar = document.getElementById('output-search-bar');
-        const btn = document.getElementById('output-search-btn');
-        if (bar) bar.classList.remove('open');
-        if (btn) btn.classList.remove('active');
-        const input = document.getElementById('output-search-input');
-        if (input) input.value = '';
-        const count = document.getElementById('output-search-count');
-        if (count) { count.textContent = ''; count.classList.remove('no-match'); }
-        window._searchQuery = '';
-        clearSearchHighlights();
-    }
-
-    function toggleSearch() {
-        if (isSearchOpen()) closeSearch();
-        else openSearch();
-    }
-
-    function clearSearchHighlights() {
-        const marks = document.querySelectorAll('#output-content-area mark.jt-match');
-        const parents = new Set();
-        marks.forEach(m => {
-            if (m.parentNode) {
-                parents.add(m.parentNode);
-                m.parentNode.replaceChild(document.createTextNode(m.textContent), m);
-            }
-        });
-        parents.forEach(p => p.normalize());
-        const listView = document.getElementById('list-view');
-        if (listView) {
-            listView.querySelectorAll('.list-item.has-match').forEach(r => r.classList.remove('has-match'));
-        }
-        window._searchMatches = [];
-        window._searchIndex = -1;
-    }
-
-    function getSearchRoots() {
-        const area = document.getElementById('output-content-area');
-        if (!area) return [];
-        const listView = area.querySelector('#list-view');
-        if (listView) {
-            // 列表视图：只搜索当前选中的详情（列表项的命中通过行高亮提示）
-            const detail = document.getElementById('list-detail-content');
-            const tree = detail && detail.querySelector('.json-tree');
-            return tree ? [tree] : [];
-        }
-        const tree = area.querySelector('.json-tree');
-        if (tree) return [tree];
-        const code = area.querySelector('code');
-        return code ? [code] : [];
-    }
-
-    function performSearch(query) {
-        const q = String(query || '');
-        window._searchQuery = q;
-        clearSearchHighlights();
-        const countEl = document.getElementById('output-search-count');
-        if (!q) {
-            if (countEl) { countEl.textContent = ''; countEl.classList.remove('no-match'); }
-            return;
-        }
-        const roots = getSearchRoots();
-        if (!roots.length) {
-            if (countEl) { countEl.textContent = '0'; countEl.classList.add('no-match'); }
-            return;
-        }
-        const lower = q.toLowerCase();
-        const matches = [];
-
-        roots.forEach(root => {
-            const textNodes = [];
-            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-            while (walker.nextNode()) {
-                const n = walker.currentNode;
-                if (n.nodeValue && n.nodeValue.length) textNodes.push(n);
-            }
-            textNodes.forEach(node => {
-                const text = node.nodeValue;
-                const lowerText = text.toLowerCase();
-                let idx = lowerText.indexOf(lower);
-                if (idx === -1) return;
-                const parts = [];
-                let last = 0;
-                while (idx !== -1) {
-                    if (idx > last) parts.push({ text: text.substring(last, idx), isMatch: false });
-                    parts.push({ text: text.substring(idx, idx + q.length), isMatch: true });
-                    last = idx + q.length;
-                    idx = lowerText.indexOf(lower, last);
-                }
-                if (last < text.length) parts.push({ text: text.substring(last), isMatch: false });
-
-                const frag = document.createDocumentFragment();
-                parts.forEach(p => {
-                    if (p.isMatch) {
-                        const mark = document.createElement('mark');
-                        mark.className = 'jt-match';
-                        mark.textContent = p.text;
-                        frag.appendChild(mark);
-                    } else if (p.text) {
-                        frag.appendChild(document.createTextNode(p.text));
-                    }
-                });
-                node.parentNode.replaceChild(frag, node);
-            });
-        });
-
-        roots.forEach(root => {
-            root.querySelectorAll('mark.jt-match').forEach(m => matches.push(m));
-        });
-        flagListItemMatches(q);
-        window._searchMatches = matches;
-        if (countEl) {
-            countEl.textContent = matches.length ? '0/' + matches.length : '0';
-            countEl.classList.toggle('no-match', matches.length === 0);
-        }
-        if (matches.length) {
-            window._searchIndex = 0;
-            goToMatch(0);
-        } else {
-            window._searchIndex = -1;
-        }
-    }
-
-    function goToMatch(index) {
-        const matches = window._searchMatches;
-        if (!matches || !matches.length) return;
-        const n = matches.length;
-        index = ((index % n) + n) % n;
-        window._searchIndex = index;
-        matches.forEach((m, i) => m.classList.toggle('active', i === index));
-        const target = matches[index];
-        // 展开包含当前匹配的折叠分组，保证匹配可见
-        let el = target.parentElement;
-        while (el && el !== document.body) {
-            if (el.classList && el.classList.contains('jt-group') && el.classList.contains('collapsed')) {
-                el.classList.remove('collapsed');
-                const toggle = el.querySelector('.jt-toggle');
-                if (toggle) toggle.innerHTML = '&#9660;';
-            }
-            el = el.parentElement;
-        }
-        updateTreeLineNumbers();
-        target.scrollIntoView({ block: 'nearest' });
-        const countEl = document.getElementById('output-search-count');
-        if (countEl) countEl.textContent = (index + 1) + '/' + n;
-    }
-
-    function nextMatch() {
-        if (!window._searchMatches.length) return;
-        goToMatch(window._searchIndex + 1);
-    }
-
-    function prevMatch() {
-        if (!window._searchMatches.length) return;
-        goToMatch(window._searchIndex - 1);
-    }
-
-    // 列表视图：按完整内容标记命中项，便于在数组中找到包含关键字的项
-    function flagListItemMatches(query) {
-        const listView = document.getElementById('list-view');
-        if (!listView || !window._listArr) return;
-        const lower = query.toLowerCase();
-        window._listArr.forEach((item, i) => {
-            const row = listView.querySelector('.list-item[data-list-item="' + i + '"]');
-            if (!row) return;
-            if (window._listArrStr[i] === undefined) {
-                window._listArrStr[i] = (typeof item === 'string' ? item : JSON.stringify(item)).toLowerCase();
-            }
-            row.classList.toggle('has-match', window._listArrStr[i].indexOf(lower) !== -1);
-        });
-    }
-
-    function refreshSearch() {
-        if (!isSearchOpen()) return;
-        const input = document.getElementById('output-search-input');
-        performSearch(input ? input.value : '');
-    }
-
-    function initSearch() {
-        const input = document.getElementById('output-search-input');
-        if (!input) return;
-        const prevBtn = document.getElementById('output-search-prev');
-        const nextBtn = document.getElementById('output-search-next');
-        input.addEventListener('input', () => {
-            clearTimeout(_searchDebounce);
-            const val = input.value;
-            _searchDebounce = setTimeout(() => performSearch(val), 120);
-        });
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (e.shiftKey) prevMatch();
-                else nextMatch();
-            } else if (e.key === 'Escape') {
-                e.preventDefault();
-                closeSearch();
-            }
-        });
-        if (prevBtn) prevBtn.addEventListener('click', prevMatch);
-        if (nextBtn) nextBtn.addEventListener('click', nextMatch);
-    }
-
-    /* ==============================================================
-       Copy / Download / Clear
-    ============================================================== */
-    function isTauri() {
-        return typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
-    }
-
-    function copyOutput() {
-        let content = window.lastDetailContent || window.lastFormattedContent;
-        if (!content) {
-            showToast(i18n.t('nothingToCopy'), 2000, 'icon-alert-triangle');
-            return;
-        }
-        if (isTauri()) {
-            window.__TAURI__.clipboardManager.writeText(content).then(() => {
-                showToast(i18n.t('copied'), 2000, 'icon-check');
-            }).catch(() => {
-                showToast(i18n.t('copyFailed'), 2000, 'icon-alert-triangle');
-            });
-            return;
-        }
-        const fallbackCopy = () => {
-            const ta = document.createElement('textarea');
-            ta.value = content;
-            document.body.appendChild(ta);
-            ta.select();
-            const ok = document.execCommand('copy');
-            document.body.removeChild(ta);
-            showToast(ok ? i18n.t('copied') : i18n.t('copyFailed'), 2000, ok ? 'icon-check' : 'icon-alert-triangle');
-        };
-        if (!navigator.clipboard) {
-            fallbackCopy();
-            return;
-        }
-        navigator.clipboard.writeText(content).then(() => {
-            showToast(i18n.t('copied'), 2000, 'icon-check');
-        }).catch(() => {
-            fallbackCopy();
-        });
-    }
-
-    function downloadJSON() {
-        if (!window.lastFormattedContent) {
-            showToast(i18n.t('nothingToDownload'), 2000, 'icon-alert-triangle');
-            return;
-        }
-        const content = window.lastFormattedContent;
-        const fileName = 'formatted_' + Date.now() + '.json';
-        if (isTauri()) {
-            window.__TAURI__.dialog.save({
-                defaultPath: fileName,
-                filters: [{ name: 'JSON', extensions: ['json'] }]
-            }).then(path => {
-                if (!path) return;
-                return window.__TAURI__.fs.writeTextFile(path, content);
-            }).then(() => {
-                showToast(i18n.t('downloaded'), 2000, 'icon-download');
-            }).catch(() => {
-                showToast(i18n.t('downloadFailed'), 2000, 'icon-alert-triangle');
-            });
-            return;
-        }
-        const blob = new Blob([content], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast(i18n.t('downloaded'), 2000, 'icon-download');
-    }
-
-    function clearContent() {
-        document.getElementById('input').value = '';
-        window.lastFormattedContent = '';
-        window.lastParsedJson = null;
-        window.lastDetailContent = '';
-        clearNotifications();
-        renderOutput('', 'empty');
-        document.getElementById('input-size').textContent = '';
-        document.getElementById('output-status').textContent = '';
-        setStatus(i18n.t('cleared'));
-    }
-
-    /* ==============================================================
-       Upload / Stringify / Unstringify
-    ============================================================== */
-    function uploadFile() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json,.txt,application/json,text/plain';
-        input.onchange = () => {
-            const file = input.files && input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => {
-                document.getElementById('input').value = String(reader.result);
-                document.getElementById('input').dispatchEvent(new Event('input'));
-                showToast(i18n.t('loaded', {name: file.name}), 2000, 'icon-folder-open');
-            };
-            reader.readAsText(file);
-        };
-        input.click();
-    }
-
-    function stringifyJSON() {
-        const input = document.getElementById('input');
-        const value = input.value.trim();
-        clearNotifications();
-        if (!value) {
-            showToast(i18n.t('inputEmptyToast'), 2000, 'icon-alert-triangle');
-            return;
-        }
-
-        let jsonObj = null;
-        let fixed = false;
-        try {
-            jsonObj = JSON.parse(value);
-        } catch (error) {
-            var v = value;
-            var uq = tryFixUnquotedKeys(v);
-            if (uq !== v) {
-                try { jsonObj = JSON.parse(uq); fixed = true; } catch (e2) {}
-            }
-            if (!jsonObj) {
-                const fixResult = tryFixJson(v);
-                if (fixResult.success) {
-                    try { jsonObj = JSON.parse(fixResult.json); fixed = true; } catch (e2) {
-                        showError(error, value);
-                        return;
-                    }
-                } else {
-                    showError(error, value);
-                    return;
-                }
-            }
-        }
-
-        const result = JSON.stringify(JSON.stringify(jsonObj));
-        window.lastFormattedContent = result;
-        window.lastParsedJson = jsonObj;
-        renderOutput(result, 'text', false, result);
-        setStatus(i18n.t('escapeSuccess') + (fixed ? i18n.t('autoBracket') : ''));
-        updateOutputStatus(result);
-    }
-
-    /* ==============================================================
-       History
-    ============================================================== */
-    function saveHistory() {
-        if (!window.lastFormattedContent) {
-            showToast(i18n.t('needFormatFirst'), 2000, 'icon-alert-triangle');
-            return;
-        }
-        openSaveModal();
-    }
-
-    function openSaveModal() {
-        document.getElementById('save-modal').classList.add('active');
-        const input = document.getElementById('save-name-input');
-        input.value = '';
-        // Only auto-focus on desktop; on mobile it pops the soft keyboard
-        if (document.documentElement.getAttribute('data-device') !== 'mobile') {
-            setTimeout(() => input.focus(), 50);
-        }
-    }
-
-    function closeSaveModal() {
-        document.getElementById('save-modal').classList.remove('active');
-    }
-
-    function confirmSave() {
-        let name = document.getElementById('save-name-input').value.trim() || i18n.t('unnamed');
-        const id = Date.now();
-        const history = getHistory();
-        history.unshift({ id, name, content: window.lastFormattedContent });
-        setHistory(history);
-        closeSaveModal();
-        renderHistory();
-        showToast(i18n.t('saved', {name: name}), 2000, 'icon-save');
-    }
-
-    function deleteHistory(id) {
-        let history = getHistory().filter(item => item.id !== id);
-        setHistory(history);
-        window.selectedIds = window.selectedIds.filter(i => i !== id);
-        renderHistory();
-    }
-
-    function clearAllHistory() {
-        if (getHistory().length === 0) return;
-        setHistory([]);
-        window.selectedIds = [];
-        renderHistory();
-        showToast(i18n.t('historyCleared'), 2000, 'icon-trash');
-    }
-
-    function loadHistory(id) {
-        const history = getHistory();
-        const item = history.find(h => h.id === id);
-        if (!item) return;
-        document.getElementById('input').value = item.content;
-        formatJSON();
-        // Auto-close sidebar on mobile so user can see the loaded result
-        if (document.documentElement.getAttribute('data-device') === 'mobile') {
-            toggleSidebar();
-        }
-        showToast(i18n.t('loaded', {name: item.name}), 2000, 'icon-file-text');
-    }
-
-    function toggleSelect(id) {
-        if (window.selectedIds.includes(id)) {
-            window.selectedIds = window.selectedIds.filter(i => i !== id);
-        } else {
-            if (window.selectedIds.length < 2) {
-                window.selectedIds.push(id);
-            } else {
-                window.selectedIds = [window.selectedIds[1], id];
-            }
-        }
-        renderHistory();
-    }
-
-    function renderHistory() {
-        const history = getHistory();
-        const list = document.getElementById('history-list');
-        const compareBtn = document.getElementById('compare-btn');
-
-        if (history.length === 0) {
-            list.innerHTML = `
-                <div class="history-empty">
-                    <svg aria-hidden="true" class="svg-icon" viewBox="0 0 24 24"><use href="#icon-clock"/></svg>
-                    <div>${i18n.t('noHistory')}</div>
-                    <div style="font-size:11px;opacity:0.6">${i18n.t('noHistoryHint')}</div>
-                </div>`;
-            compareBtn.disabled = true;
-            return;
-        }
-
-        // Use data attributes instead of inline onclick for CSP compliance
-        list.innerHTML = history.map(item => {
-            const snippet = item.content.replace(/\s+/g, '').slice(0, 50);
-            const checked = window.selectedIds.includes(item.id) ? 'checked' : '';
-            const selected = window.selectedIds.includes(item.id) ? 'selected' : '';
-            return `
-                <div class="history-item ${selected}">
-                    <input type="checkbox" class="history-checkbox"
-                           data-select-id="${item.id}"
-                           ${checked} title="${i18n.t('selectForCompare')}" aria-label="${i18n.t('selectForCompare')}" />
-                    <button type="button" class="history-info"
-                            data-load-id="${item.id}"
-                            aria-label="加载历史：${escapeHtml(item.name)}">
-                        <div class="history-name">${escapeHtml(item.name)}</div>
-                        <div class="history-snippet">${escapeHtml(snippet)}</div>
-                    </button>
-                    <button type="button" class="history-delete" data-delete-id="${item.id}" title="${i18n.t('deleteItem')}" aria-label="${i18n.t('deleteItem')}">&times;</button>
-                </div>`;
-        }).join('');
-
-        compareBtn.disabled = window.selectedIds.length !== 2;
-    }
-
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const openBtn = document.getElementById('sidebar-open-btn');
-        const overlay = document.getElementById('sidebar-overlay');
-        const isMobile = document.documentElement.getAttribute('data-device') === 'mobile';
-
-        if (isMobile) {
-            // Close mobile "more" sheet if open (avoid layering issues)
-            const sheet = document.getElementById('mob-sheet');
-            const sheetOverlay = document.getElementById('mob-sheet-overlay');
-            const moreBtn = document.getElementById('mob-more-btn');
-            if (sheet && sheet.classList.contains('open')) {
-                sheet.classList.remove('open');
-                if (sheetOverlay) sheetOverlay.classList.remove('open');
-                if (moreBtn) moreBtn.classList.remove('active');
-            }
-            // 移动端：全屏抽屉 + overlay
-            const isActive = sidebar.classList.toggle('active');
-            if (overlay) overlay.classList.toggle('active', isActive);
-        } else {
-            // 桌面端：折叠/展开
-            sidebar.classList.toggle('collapsed');
-            sidebar.classList.toggle('active');
-            if (openBtn) openBtn.style.display = sidebar.classList.contains('collapsed') ? 'block' : 'none';
-        }
-    }
-
-    /* ==============================================================
-       移动端 Tab 切换（输入/输出）
-    ============================================================== */
-    function switchMobileTab(tab) {
-        const inputPanel = document.getElementById('input-panel');
-        const outputPanel = document.getElementById('output-panel');
-        const tabs = document.querySelectorAll('.mob-tab');
-        if (!inputPanel || !outputPanel) return;
-
-        tabs.forEach(t => {
-            t.classList.remove('is-active');
-            t.setAttribute('aria-selected', 'false');
-        });
-        inputPanel.classList.remove('is-active');
-        outputPanel.classList.remove('is-active');
-
-        if (tab === 'input') {
-            inputPanel.classList.add('is-active');
-            if (tabs[0]) {
-                tabs[0].classList.add('is-active');
-                tabs[0].setAttribute('aria-selected', 'true');
-            }
-        } else {
-            outputPanel.classList.add('is-active');
-            if (tabs[1]) {
-                tabs[1].classList.add('is-active');
-                tabs[1].setAttribute('aria-selected', 'true');
-            }
-        }
-    }
-    window.switchMobileTab = switchMobileTab;
-
-    /* ==============================================================
-       Compare View
-    ============================================================== */
-    function compareSelected() {
-        if (window.selectedIds.length !== 2) return;
-        const history = getHistory();
-        const items = [
-            history.find(h => h.id === window.selectedIds[window.compareOrder[0]]),
-            history.find(h => h.id === window.selectedIds[window.compareOrder[1]])
-        ];
-        if (!items[0] || !items[1]) return;
-
-        document.getElementById('compare-left-title').textContent = items[0].name;
-        document.getElementById('compare-right-title').textContent = items[1].name;
-        document.getElementById('compare-left-content').innerHTML = '<div style="padding:16px;color:var(--text-muted);text-align:center">' + i18n.t('compareLoading') + '</div>';
-        document.getElementById('compare-right-content').innerHTML = '<div style="padding:16px;color:var(--text-muted);text-align:center">' + i18n.t('compareLoading') + '</div>';
-        document.getElementById('compare-container').classList.add('active');
-
-        const leftScroll = document.getElementById('compare-left-content');
-        const rightScroll = document.getElementById('compare-right-content');
-
-        if (window._compareScrollController) {
-            window._compareScrollController.abort();
-        }
-        const scrollController = new AbortController();
-        window._compareScrollController = scrollController;
-
-        let syncing = false;
-        leftScroll.addEventListener('scroll', () => {
-            if (syncing) return;
-            syncing = true;
-            rightScroll.scrollTop = leftScroll.scrollTop;
-            requestAnimationFrame(() => { syncing = false; });
-        }, { signal: scrollController.signal });
-        rightScroll.addEventListener('scroll', () => {
-            if (syncing) return;
-            syncing = true;
-            leftScroll.scrollTop = rightScroll.scrollTop;
-            requestAnimationFrame(() => { syncing = false; });
-        }, { signal: scrollController.signal });
-
-        requestAnimationFrame(() => {
-            var oldObj, newObj;
-            try { oldObj = JSON.parse(items[0].content); } catch { oldObj = items[0].content; }
-            try { newObj = JSON.parse(items[1].content); } catch { newObj = items[1].content; }
-
-            var diff = diffJson(oldObj, newObj);
-            var leftMap = {}, rightMap = {};
-            collectDiffPaths(diff, '', leftMap, rightMap);
-
-            var leftHtml = renderJsonNodeWithDiff(null, oldObj, '', leftMap, 'left', oldObj);
-            var rightHtml = renderJsonNodeWithDiff(null, newObj, '', rightMap, 'right', newObj);
-
-            document.getElementById('compare-left-content').innerHTML = '<div class="json-tree">' + leftHtml + '</div>';
-            document.getElementById('compare-right-content').innerHTML = '<div class="json-tree">' + rightHtml + '</div>';
-        });
-    }
-
-    function diffJson(a, b) {
-        if (a === b) return { t: 'same', v: a };
-        var ta = typeof a, tb = typeof b;
-        if (ta !== tb) return { t: 'chg', o: a, n: b };
-        if (a === null || b === null) return { t: 'chg', o: a, n: b };
-        if (ta !== 'object') return { t: 'chg', o: a, n: b };
-        var isArrA = Array.isArray(a), isArrB = Array.isArray(b);
-        if (isArrA !== isArrB) return { t: 'chg', o: a, n: b };
-
-        if (isArrA) {
-            var children = [], hasDiff = false;
-            var maxLen = Math.max(a.length, b.length);
-            for (var i = 0; i < maxLen; i++) {
-                if (i >= a.length) { children.push({ k: String(i), d: { t: 'add', v: b[i] } }); hasDiff = true; }
-                else if (i >= b.length) { children.push({ k: String(i), d: { t: 'rem', v: a[i] } }); hasDiff = true; }
-                else { var cd = diffJson(a[i], b[i]); children.push({ k: String(i), d: cd }); if (cd.t !== 'same') hasDiff = true; }
-            }
-            return hasDiff ? { t: 'arr', c: children } : { t: 'same', v: a };
-        }
-
-        var children = [], hasDiff = false;
-        var allKeys = [];
-        for (var k in a) { if (allKeys.indexOf(k) < 0) allKeys.push(k); }
-        for (var k in b) { if (allKeys.indexOf(k) < 0) allKeys.push(k); }
-        allKeys.sort();
-        for (var i = 0; i < allKeys.length; i++) {
-            var k = allKeys[i];
-            if (!(k in a)) { children.push({ k: k, d: { t: 'add', v: b[k] } }); hasDiff = true; }
-            else if (!(k in b)) { children.push({ k: k, d: { t: 'rem', v: a[k] } }); hasDiff = true; }
-            else { var cd = diffJson(a[k], b[k]); children.push({ k: k, d: cd }); if (cd.t !== 'same') hasDiff = true; }
-        }
-        return hasDiff ? { t: 'obj', c: children } : { t: 'same', v: a };
-    }
-
-    function collectDiffPaths(d, path, leftMap, rightMap) {
-        switch (d.t) {
-            case 'chg':
-                leftMap[path] = 'chg'; rightMap[path] = 'chg';
-                break;
-            case 'add':
-                rightMap[path] = 'add';
-                break;
-            case 'rem':
-                leftMap[path] = 'rem';
-                break;
-            case 'obj':
-            case 'arr':
-                for (var i = 0; i < d.c.length; i++) {
-                    collectDiffPaths(d.c[i].d, path ? path + '/' + d.c[i].k : d.c[i].k, leftMap, rightMap);
-                }
-                break;
-        }
-    }
-
-    function renderJsonNodeWithDiff(key, value, path, diffMap, side, rootVal) {
-        var prefix = key !== null ? '<span class="jt-key">' + JSON.stringify(key) + '</span>: ' : '';
-        var diffType = diffMap[path] || '';
-        var diffCls = diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '';
-        var toggleAttrs = 'role="button" tabindex="0" aria-label="折叠/展开" data-jt-toggle="1"';
-
-        if (value === null) return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-null">null</span></span>';
-        if (typeof value === 'boolean') return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-bool">' + value + '</span></span>';
-        if (typeof value === 'number') return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-number">' + value + '</span></span>';
-        if (typeof value === 'string') return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-string">' + JSON.stringify(value) + '</span></span>';
-
-        if (Array.isArray(value)) {
-            var count = value.length;
-            if (count === 0) return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-bracket">[]</span></span>';
-            var groupCls = diffCls;
-            var html = '<div class="jt-group' + groupCls + '">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + i18n.t('items', {count: count}) + ']</span></span>';
-            html += '<div class="jt-children">';
-            for (var i = 0; i < count; i++) {
-                html += renderJsonNodeWithDiff(String(i), value[i], path ? path + '/' + i : String(i), diffMap, side, rootVal);
-                if (i < count - 1) {
-                    html += '<span class="jt-comma">,</span>';
-                }
-            }
-            html += '</div>';
-            html += '<span class="jt-line jt-closing"><span class="jt-bracket">]</span></span>';
-            html += '</div>';
-            return html;
-        }
-
-        if (typeof value === 'object') {
-            var keys = Object.keys(value);
-            var count = keys.length;
-            if (count === 0) return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-bracket">{}</span></span>';
-            var groupCls = diffCls;
-            var html = '<div class="jt-group' + groupCls + '">';
-            html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">{</span><span class="jt-collapsed-summary"> {' + i18n.t('keys', {count: count}) + '}</span></span>';
-            html += '<div class="jt-children">';
-            for (var k = 0; k < count; k++) {
-                var keyStr = keys[k];
-                var childPath = path ? path + '/' + keyStr : keyStr;
-                html += renderJsonNodeWithDiff(keyStr, value[keyStr], childPath, diffMap, side, rootVal);
-                if (k < count - 1) {
-                    html += '<span class="jt-comma">,</span>';
-                }
-            }
-            html += '</div>';
-            html += '<span class="jt-line jt-closing"><span class="jt-bracket">}</span></span>';
-            html += '</div>';
-            return html;
-        }
-        return '';
-    }
-
-    function reverseCompare() {
-        window.compareOrder.reverse();
-        compareSelected();
-    }
-
-    function closeCompare() {
-        document.getElementById('compare-container').classList.remove('active');
-        if (window._compareScrollController) {
-            window._compareScrollController.abort();
-            window._compareScrollController = null;
-        }
-    }
-
-    /* ==============================================================
-       Drag & Drop
-    ============================================================== */
-    function initDragDrop() {
-        const inputBody = document.getElementById('input-body');
-        const overlay = document.getElementById('drop-overlay');
-        let dragCounter = 0;
-
-        inputBody.addEventListener('dragenter', (e) => {
-            e.preventDefault();
-            dragCounter++;
-            overlay.classList.add('active');
-        });
-
-        inputBody.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            dragCounter--;
-            if (dragCounter <= 0) {
-                dragCounter = 0;
-                overlay.classList.remove('active');
-            }
-        });
-
-        inputBody.addEventListener('dragover', (e) => {
-            e.preventDefault();
-        });
-
-        inputBody.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dragCounter = 0;
-            overlay.classList.remove('active');
-
-            const file = e.dataTransfer.files[0];
-            if (!file) return;
-
-            if (!file.name.endsWith('.json') && file.type !== 'application/json') {
-                showToast(i18n.t('jsonOnly'), 3000, 'icon-alert-triangle');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                document.getElementById('input').value = evt.target.result;
-                formatJSON();
-                showToast(i18n.t('loaded', {name: file.name}), 3000, 'icon-file-text');
-            };
-            reader.readAsText(file);
-        });
-
-        const resetDrag = () => {
-            dragCounter = 0;
-            overlay.classList.remove('active');
-        };
-        document.addEventListener('dragend', resetDrag);
-        document.addEventListener('drop', resetDrag);
-        document.addEventListener('dragleave', (e) => {
-            if (e.relatedTarget === null) resetDrag();
-        });
-    }
-
-    /* ==============================================================
-       Keyboard Shortcuts
-    ============================================================== */
-    function initKeyboard() {
-        document.addEventListener('keydown', (e) => {
-            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-            const mod = isMac ? e.metaKey : e.ctrlKey;
-
-            if (mod && e.key === 'f') {
-                e.preventDefault();
-                openSearch();
-                return;
-            }
-
-            if (mod && e.key === 'Enter') {
-                e.preventDefault();
-                formatJSON();
-                return;
-            }
-
-            if (mod && e.key === 's') {
-                e.preventDefault();
-                saveHistory();
-                return;
-            }
-
-            if (mod && e.key === 'd') {
-                e.preventDefault();
-                downloadJSON();
-                return;
-            }
-
-            if (e.key === 'Escape') {
-                const modal = document.getElementById('save-modal');
-                const compare = document.getElementById('compare-container');
-                const sheet = document.getElementById('mob-sheet');
-                const sidebar = document.getElementById('sidebar');
-                if (isSearchOpen()) {
-                    closeSearch();
-                } else if (modal.classList.contains('active')) {
-                    closeSaveModal();
-                } else if (compare.classList.contains('active')) {
-                    closeCompare();
-                } else if (sheet && sheet.classList.contains('open')) {
-                    toggleMobileMore();
-                } else if (sidebar && sidebar.classList.contains('active')) {
-                    toggleSidebar();
-                }
-            }
-        });
-
-        document.getElementById('save-name-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                confirmSave();
-            }
-        });
-
-        // 移动端：点击空白区域（非输入框、非按钮、非可交互元素）时
-        // 滚动回到顶部，取消 iOS 因输入法弹出的视口缩放
-        function _initMobileTapToReset() {
-            if (document.documentElement.getAttribute('data-device') !== 'mobile') return;
-            const interactiveSelectors = [
-                'button', '.btn', '.mob-btn', '.mob-icon-btn', '.mob-tab',
-                '.mob-sheet-item', '.mob-sheet-close', '.mob-sheet-overlay',
-                'a', 'input', 'textarea', 'select', '[data-action]',
-                '[data-jt-toggle]', '[data-list-toggle]', '[data-list-item]',
-                '.panel-icon-btn', '.search-nav-btn', '.search-close-btn'
-            ].join(', ');
-            document.addEventListener('touchstart', (e) => {
-                if (e.target.closest(interactiveSelectors) ||
-                    e.target.closest('.mob-toolbar') ||
-                    e.target.closest('.mob-sheet') ||
-                    e.target.closest('.mob-tabs') ||
-                    e.target.closest('.statusbar')) {
-                    return;
-                }
-                window.scrollTo(0, 0);
-            }, { passive: true });
-        }
-    }
-
-    /* ==============================================================
-       Input Size Tracker
-    ============================================================== */
-    function initInputTracker() {
-        const input = document.getElementById('input');
-        const indicator = document.getElementById('validation-indicator');
-        let validateTimer = null;
-
-        input.addEventListener('input', () => {
-            const val = input.value;
-            if (val) {
-                const size = new Blob([val]).size;
-                document.getElementById('input-size').textContent = formatBytes(size);
-            } else {
-                document.getElementById('input-size').textContent = '';
-            }
-
-            clearTimeout(validateTimer);
-            if (!val.trim()) {
-                indicator.style.display = 'none';
-                return;
-            }
-            validateTimer = setTimeout(() => {
-                try {
-                    JSON.parse(val);
-                    indicator.style.display = 'inline-flex';
-                    indicator.className = 'validation-indicator valid';
-                    indicator.innerHTML = '<span class="dot"></span> ' + i18n.t('valid');
-                } catch (e) {
-                    indicator.style.display = 'inline-flex';
-                    indicator.className = 'validation-indicator invalid';
-                    indicator.innerHTML = '<span class="dot"></span> ' + i18n.t('invalid');
-                }
-            }, 400);
-        });
-    }
-
-    /* ==============================================================
-       Theme
-    ============================================================== */
-    function getTheme() {
-        return localStorage.getItem('theme') || 'light';
-    }
-
-    function applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-        var icon = document.getElementById('theme-icon');
-        if (icon) icon.querySelector('use').setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
-        var mIconUse = document.getElementById('mobile-theme-icon-use');
-        if (mIconUse) mIconUse.setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
-        var d = document.getElementById('hljs-dark');
-        var l = document.getElementById('hljs-light');
-        if (d) d.disabled = theme === 'light';
-        if (l) l.disabled = theme === 'dark';
-        // Sync <meta name="theme-color"> with active background (PWA status bar / iOS safe area)
-        var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', theme === 'light' ? '#ffffff' : '#0d1117');
-        localStorage.setItem('theme', theme);
-    }
-
-    function toggleTheme() {
-        applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
-    }
-
-    (function() {
-        document.documentElement.setAttribute('data-theme', getTheme());
-    })();
-
-    /* ==============================================================
-       Background Image & Watermark Settings
-       Default: only the watermark is enabled (prevents screenshot misuse).
-       Background image is opt-in. Settings persist via localStorage.
-    ============================================================== */
-    const SETTINGS_KEY = 'appSettings';
-    const DEFAULT_SETTINGS = {
-        watermarkText: 'JSON Formatter',
-        watermarkOpacity: 0.15,
-        bgImageData: '',        // data URL; empty = no background image
-        bgImageOpacity: 0.25,
-    };
-
-    function getSettings() {
-        try {
-            const raw = localStorage.getItem(SETTINGS_KEY);
-            if (!raw) return { ...DEFAULT_SETTINGS };
-            return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
-        } catch (e) {
-            console.warn('Settings corrupted, resetting:', e);
-            try { localStorage.removeItem(SETTINGS_KEY); } catch (_) {}
-            return { ...DEFAULT_SETTINGS };
-        }
-    }
-
-    function saveSettings(obj) {
-        try {
-            localStorage.setItem(SETTINGS_KEY, JSON.stringify(obj));
-        } catch (e) {
-            console.warn('Failed to save settings:', e);
-        }
-    }
-
-    let _settings = getSettings();
-    let _watermarkResizeTimer = null;
-
-    function renderWatermark() {
-        const layer = document.getElementById('watermark-layer');
-        if (!layer) return;
-        const text = (_settings.watermarkText || '').trim();
-        if (!text) {
-            layer.classList.remove('active');
-            layer.style.backgroundImage = '';
-            return;
-        }
-        // Canvas-based tiled watermark for crisp rendering across platforms
-        const angle = -22;
-        const rad = (angle * Math.PI) / 180;
-        const fontPx = 14;
-        const fontFamily = getComputedStyle(document.body).fontFamily || 'sans-serif';
-        const tilePadX = 80;
-        const tilePadY = 60;
-
-        const measureCanvas = document.createElement('canvas');
-        const mctx = measureCanvas.getContext('2d');
-        mctx.font = `${fontPx}px ${fontFamily}`;
-        const textWidth = Math.ceil(mctx.measureText(text).width);
-        const tileW = Math.max(textWidth + tilePadX * 2, 120);
-        const tileH = Math.max(fontPx + tilePadY * 2, 80);
-
-        const canvas = document.createElement('canvas');
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        canvas.width = tileW * dpr;
-        canvas.height = tileH * dpr;
-        const ctx = canvas.getContext('2d');
-        ctx.scale(dpr, dpr);
-        ctx.font = `${fontPx}px ${fontFamily}`;
-        ctx.fillStyle = '#000000';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.save();
-        ctx.translate(tileW / 2, tileH / 2);
-        ctx.rotate(rad);
-        ctx.fillText(text, 0, 0);
-        ctx.restore();
-
-        const dataUrl = canvas.toDataURL('image/png');
-        layer.style.backgroundImage = `url("${dataUrl}")`;
-        layer.style.setProperty('--watermark-opacity', String(_settings.watermarkOpacity));
-        layer.classList.add('active');
-    }
-
-    function applyBackgroundImage() {
-        const layer = document.getElementById('bg-image-layer');
-        if (!layer) return;
-        if (_settings.bgImageData) {
-            layer.style.backgroundImage = `url("${_settings.bgImageData}")`;
-            layer.style.setProperty('--bg-image-opacity', String(_settings.bgImageOpacity));
-            layer.classList.add('has-image');
-        } else {
-            layer.style.backgroundImage = '';
-            layer.classList.remove('has-image');
-        }
-    }
-
-    function applyAllSettings() {
-        renderWatermark();
-        applyBackgroundImage();
-    }
-
-    function syncSettingsForm() {
-        const t = document.getElementById('watermark-text-input');
-        const o = document.getElementById('watermark-opacity-input');
-        const bo = document.getElementById('bg-image-opacity-input');
-        if (t) t.value = _settings.watermarkText;
-        if (o) o.value = _settings.watermarkOpacity;
-        if (bo) bo.value = _settings.bgImageOpacity;
-    }
-
-    function openSettings() {
-        syncSettingsForm();
-        // Close mobile "more" sheet if open (z-index 201 < settings modal 1000)
-        const sheet = document.getElementById('mob-sheet');
-        const overlay = document.getElementById('mob-sheet-overlay');
-        const moreBtn = document.getElementById('mob-more-btn');
-        if (sheet && sheet.classList.contains('open')) {
-            sheet.classList.remove('open');
-            if (overlay) overlay.classList.remove('open');
-            if (moreBtn) moreBtn.classList.remove('active');
-        }
-        const m = document.getElementById('settings-modal');
-        if (m) m.classList.add('active');
-        // Only auto-focus on desktop; on mobile it pops the soft keyboard
-        if (document.documentElement.getAttribute('data-device') !== 'mobile') {
-            const firstInput = document.getElementById('watermark-text-input');
-            if (firstInput) setTimeout(() => firstInput.focus(), 50);
-        }
-    }
-
-    function closeSettings() {
-        const m = document.getElementById('settings-modal');
-        if (m) m.classList.remove('active');
-    }
-
-    function commitSettingsFromForm() {
-        const wmTextInput = document.getElementById('watermark-text-input');
-        const wmOpacityInput = document.getElementById('watermark-opacity-input');
-        const bgOpacityInput = document.getElementById('bg-image-opacity-input');
-        _settings.watermarkText = (wmTextInput ? wmTextInput.value : '').slice(0, 40);
-        _settings.watermarkOpacity = clampOpacity(parseFloat(wmOpacityInput ? wmOpacityInput.value : DEFAULT_SETTINGS.watermarkOpacity), 0.05, 0.6, DEFAULT_SETTINGS.watermarkOpacity);
-        _settings.bgImageOpacity = clampOpacity(parseFloat(bgOpacityInput ? bgOpacityInput.value : DEFAULT_SETTINGS.bgImageOpacity), 0, 1, DEFAULT_SETTINGS.bgImageOpacity);
-        saveSettings(_settings);
-        applyAllSettings();
-    }
-
-    function clampOpacity(v, min, max, fallback) {
-        if (typeof v !== 'number' || isNaN(v)) return fallback;
-        return Math.min(max, Math.max(min, v));
-    }
-
-    function pickBackgroundImage() {
-        const input = document.getElementById('bg-image-file');
-        if (input) input.click();
-    }
-
-    function handleBackgroundImageFile(file) {
-        if (!file) return;
-        const allowed = ['image/png', 'image/jpeg', 'image/jpg'];
-        if (allowed.indexOf(file.type) === -1) {
-            showToast(i18n.t('jsonOnly'), 2500, 'icon-alert-triangle');
-            return;
-        }
-        if (file.size > 2 * 1024 * 1024) {
-            showToast(i18n.t('bgImageHint'), 3000, 'icon-alert-triangle');
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = function () {
-            _settings.bgImageData = String(reader.result || '');
-            saveSettings(_settings);
-            applyBackgroundImage();
-            showToast(i18n.t('settingsSaved'), 1500, 'icon-check');
-        };
-        reader.onerror = function () {
-            showToast(i18n.t('jsonError'), 2000, 'icon-alert-triangle');
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function clearBackgroundImage() {
-        _settings.bgImageData = '';
-        saveSettings(_settings);
-        applyBackgroundImage();
-        showToast(i18n.t('cleared'), 1500, 'icon-check');
-    }
-
-    function resetAllSettings() {
-        _settings = { ...DEFAULT_SETTINGS };
-        saveSettings(_settings);
-        syncSettingsForm();
-        applyAllSettings();
-        showToast(i18n.t('settingsSaved'), 1500, 'icon-check');
-    }
-
-    function _initWatermarkResizeHandler() {
-        window.addEventListener('resize', () => {
-            if (_watermarkResizeTimer) clearTimeout(_watermarkResizeTimer);
-            _watermarkResizeTimer = setTimeout(renderWatermark, 200);
-        });
-        window.addEventListener('orientationchange', () => {
-            setTimeout(renderWatermark, 300);
-        });
-    }
-
-    /* ==============================================================
-       Event delegation for dynamically generated content
-       (CSP-safe: no inline onclick handlers needed)
-    ============================================================== */
-    function _bindDynamicEventDelegation() {
-        // History list: click to load, checkbox to select for compare, delete button
-        const historyList = document.getElementById('history-list');
-        if (historyList) {
-            historyList.addEventListener('click', (e) => {
-                // Delete button
-                const delBtn = e.target.closest('[data-delete-id]');
-                if (delBtn) {
-                    e.stopPropagation();
-                    deleteHistory(Number(delBtn.dataset.deleteId));
-                    return;
-                }
-                // Checkbox
-                const checkbox = e.target.closest('[data-select-id]');
-                if (checkbox) {
-                    e.stopPropagation();
-                    toggleSelect(Number(checkbox.dataset.selectId));
-                    return;
-                }
-                // History item info button (load)
-                const infoBtn = e.target.closest('[data-load-id]');
-                if (infoBtn) {
-                    loadHistory(Number(infoBtn.dataset.loadId));
-                    return;
-                }
-            });
-            // Keyboard support for history info button
-            historyList.addEventListener('keydown', (e) => {
-                const infoBtn = e.target.closest('[data-load-id]');
-                if (infoBtn && (e.key === 'Enter' || e.key === ' ')) {
-                    e.preventDefault();
-                    loadHistory(Number(infoBtn.dataset.loadId));
-                    return;
-                }
-                const checkbox = e.target.closest('[data-select-id]');
-                if (checkbox && (e.key === ' ')) {
-                    e.preventDefault();
-                    toggleSelect(Number(checkbox.dataset.selectId));
-                    return;
-                }
-            });
-        }
-
-        // JSON tree toggle (fold/unfold) — works for both regular and compare views
-        document.addEventListener('click', (e) => {
-            const toggle = e.target.closest('[data-jt-toggle]');
-            if (toggle) {
-                toggleJsonNode(toggle);
-            }
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key !== 'Enter' && e.key !== ' ') return;
-            const toggle = e.target.closest('[data-jt-toggle]');
-            if (toggle) {
-                e.preventDefault();
-                toggleJsonNode(toggle);
-            }
-        });
-
-        // List view: panel toggle and item selection
-        document.addEventListener('click', (e) => {
-            const listToggle = e.target.closest('[data-list-toggle]');
-            if (listToggle) {
-                toggleListPanel();
-                return;
-            }
-            const listItem = e.target.closest('[data-list-item]');
-            if (listItem && window._listArr) {
-                selectListItem(Number(listItem.dataset.listItem), window._listArr);
-                return;
-            }
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key !== 'Enter' && e.key !== ' ') return;
-            const listToggle = e.target.closest('[data-list-toggle]');
-            if (listToggle) {
-                e.preventDefault();
-                toggleListPanel();
-                return;
-            }
-            const listItem = e.target.closest('[data-list-item]');
-            if (listItem && window._listArr) {
-                e.preventDefault();
-                selectListItem(Number(listItem.dataset.listItem), window._listArr);
-                return;
-            }
-        });
-    }
-
-    /* ==============================================================
-       Expose global functions (CSP-safe: no eval)
-       All functions are now bound via event delegation (data-action / data-* attributes),
-       so window exposure is only kept for backward compatibility / debugging.
-    ============================================================== */
-    function _exposeGlobals() {
-        const globals = {
-            formatJSON, minifyJSON, stringifyJSON, copyOutput,
-            downloadJSON, uploadFile, saveHistory, clearContent,
-            toggleTheme, toggleSidebar, toggleMobileMore,
-            switchMobileTab, compareSelected, clearAllHistory,
-            closeSaveModal, confirmSave, reverseCompare, closeCompare,
-            openSaveModal,
-            openSettings, closeSettings, pickBackgroundImage,
-            clearBackgroundImage, resetAllSettings,
-            loadHistory, toggleSelect, deleteHistory,
-            toggleJsonNode, toggleListPanel, selectListItem,
-            openSearch, closeSearch, toggleSearch, performSearch,
-            nextMatch, prevMatch,
-        };
-        for (const [name, fn] of Object.entries(globals)) {
-            if (typeof window[name] === 'undefined' && typeof fn === 'function') {
-                window[name] = fn;
-            }
-        }
-    }
-
-    function _bindEventListeners() {
-        const actions = {
-            '[data-action="format"]': formatJSON,
-            '[data-action="minify"]': minifyJSON,
-            '[data-action="stringify"]': stringifyJSON,
-            '[data-action="copy"]': copyOutput,
-            '[data-action="download"]': downloadJSON,
-            '[data-action="upload"]': uploadFile,
-            '[data-action="save"]': saveHistory,
-            '[data-action="clear"]': clearContent,
-            '[data-action="toggle-theme"]': toggleTheme,
-            '[data-action="toggle-search"]': toggleSearch,
-            '[data-action="toggle-sidebar"]': toggleSidebar,
-            '[data-action="toggle-mobile-more"]': toggleMobileMore,
-            '[data-action="compare"]': compareSelected,
-            '[data-action="clear-history"]': clearAllHistory,
-            '[data-action="close-save-modal"]': closeSaveModal,
-            '[data-action="confirm-save"]': confirmSave,
-            '[data-action="reverse-compare"]': reverseCompare,
-            '[data-action="close-compare"]': closeCompare,
-            '[data-action="open-save-modal"]': openSaveModal,
-            '[data-action="open-settings"]': openSettings,
-            '[data-action="close-settings"]': closeSettings,
-            '[data-action="pick-bg-image"]': pickBackgroundImage,
-            '[data-action="clear-bg-image"]': clearBackgroundImage,
-            '[data-action="reset-settings"]': resetAllSettings,
-        };
-        for (const [selector, handler] of Object.entries(actions)) {
-            document.querySelectorAll(selector).forEach(el => {
-                el.addEventListener('click', handler);
-            });
-        }
-        document.querySelectorAll('[data-tab]').forEach(tab => {
-            tab.addEventListener('click', () => switchMobileTab(tab.dataset.tab));
-        });
-        document.getElementById('lang-btn')?.addEventListener('click', () => {
-            i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh');
-        });
-        document.getElementById('mobile-lang-btn')?.addEventListener('click', () => {
-            i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh');
-            var l = document.getElementById('mobile-lang-label');
-            if (l) l.textContent = i18n._lang === 'zh' ? '中' : 'EN';
-        });
-        // Settings modal: live preview + commit on change
-        const wmText = document.getElementById('watermark-text-input');
-        const wmOpacity = document.getElementById('watermark-opacity-input');
-        const bgOpacity = document.getElementById('bg-image-opacity-input');
-        if (wmText) wmText.addEventListener('input', commitSettingsFromForm);
-        if (wmOpacity) wmOpacity.addEventListener('input', commitSettingsFromForm);
-        if (bgOpacity) bgOpacity.addEventListener('input', commitSettingsFromForm);
-        const bgFile = document.getElementById('bg-image-file');
-        if (bgFile) bgFile.addEventListener('change', (e) => {
-            const f = e.target.files && e.target.files[0];
-            handleBackgroundImageFile(f);
-            e.target.value = '';
-        });
-        // Close settings modal when clicking the backdrop
-        const settingsModal = document.getElementById('settings-modal');
-        if (settingsModal) settingsModal.addEventListener('click', (e) => {
-            if (e.target === settingsModal) closeSettings();
-        });
-        // Close save modal when clicking the backdrop
-        const saveModal = document.getElementById('save-modal');
-        if (saveModal) saveModal.addEventListener('click', (e) => {
-            if (e.target === saveModal) closeSaveModal();
-        });
-
-        // --- Event delegation for dynamically generated content (CSP-safe) ---
-        _bindDynamicEventDelegation();
-
-        // Esc closes settings modal
-        document.addEventListener('keydown', (e) => {
-            if (e.key !== 'Escape') return;
-            const m = document.getElementById('settings-modal');
-            if (m && m.classList.contains('active')) closeSettings();
-        });
-    }
-
-    /* ==============================================================
-       Mobile More Sheet
-    ============================================================== */
-    function toggleMobileMore() {
-        var s = document.getElementById('mob-sheet');
-        var o = document.getElementById('mob-sheet-overlay');
-        var b = document.getElementById('mob-more-btn');
-        if (!s) return;
-        var isOpen = s.classList.toggle('open');
-        if (o) o.classList.toggle('open', isOpen);
-        if (b) b.classList.toggle('active', isOpen);
-    }
-
-    /* ==============================================================
-       Init
-    ============================================================== */
-    window.addEventListener('DOMContentLoaded', () => {
-        _exposeGlobals();
-        _bindEventListeners();
-
-        // 移动端检测兜底：万一 CSS 媒体查询因 viewport 解析问题未触发，
-        // 用 JS 强制同步 data-device 属性
-        const checkMobile = () => {
-            const isMobile = window.innerWidth <= 900 ||
-                             /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-            document.documentElement.setAttribute('data-device', isMobile ? 'mobile' : 'desktop');
-        };
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        window.addEventListener('orientationchange', checkMobile);
-
-        applyAllTranslations();
-        applyTheme(getTheme());
-        renderHistory();
-        initDragDrop();
-        initKeyboard();
-        initInputTracker();
-        initSearch();
-        _initMobileTapToReset();
-        // Apply persisted watermark + background image (watermark enabled by default)
-        applyAllSettings();
-        _initWatermarkResizeHandler();
-        setStatus(i18n.t('statusReady'));
-
-        // Initialize mobile theme icon + language label
-        var themeIconUse = document.getElementById('mobile-theme-icon-use');
-        if (themeIconUse) {
-            var theme = document.documentElement.getAttribute('data-theme') || 'dark';
-            themeIconUse.setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
-        }
-        var langLabel = document.getElementById('mobile-lang-label');
-        if (langLabel && window.i18n) {
-            langLabel.textContent = i18n._lang === 'zh' ? '中' : 'EN';
-        }
-
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(err => {
-                    console.warn('SW registration failed:', err);
-                });
-            });
-        }
+      }
+      return s;
+    },
+    setLang: function (lang) {
+      this._lang = lang;
+      localStorage.setItem('appLang', lang);
+      if (window.__store) window.__store.persistLang(lang);
+      applyAllTranslations();
+    },
+    get lang() { return this._lang; }
+  };
+  window.i18n = i18n;
+
+  function applyAllTranslations() {
+    document.title = i18n.t('title');
+    document.documentElement.lang = i18n._lang;
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      var key = el.getAttribute('data-i18n');
+      if (key) el.textContent = i18n.t(key);
     });
+    document.querySelectorAll('[data-i18n-title]').forEach(function (el) {
+      var key = el.getAttribute('data-i18n-title');
+      if (key) el.setAttribute('title', i18n.t(key));
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
+      var key = el.getAttribute('data-i18n-placeholder');
+      if (key) el.setAttribute('placeholder', i18n.t(key).replace(/\\n/g, '\n'));
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(function (el) {
+      var key = el.getAttribute('data-i18n-html');
+      if (key) el.innerHTML = i18n.t(key);
+    });
+    var langBtn = document.getElementById('lang-btn');
+    if (langBtn) langBtn.textContent = i18n._lang === 'zh' ? 'EN' : '中';
+    var mobLangBtn = document.getElementById('mobile-lang-btn');
+    if (mobLangBtn) mobLangBtn.textContent = i18n._lang === 'zh' ? 'EN' : '中';
+    var mobLangLabel = document.getElementById('mobile-lang-label');
+    if (mobLangLabel) mobLangLabel.textContent = i18n._lang === 'zh' ? '中' : 'EN';
+    if (window.__render && window.__render.rerenderDynamicContent) {
+      window.__render.rerenderDynamicContent();
+    }
+  }
+
+  /* ==============================================================
+     Event binding (thin: delegates to __render)
+  ============================================================== */
+  function _bindEventListeners() {
+    var render = window.__render;
+    if (!render) return;
+
+    var actions = {
+      '[data-action="format"]': render.formatFromInput,
+      '[data-action="minify"]': render.minifyFromInput,
+      '[data-action="stringify"]': render.stringifyFromInput,
+      '[data-action="copy"]': render.handleCopy,
+      '[data-action="download"]': render.handleDownload,
+      '[data-action="upload"]': function () {
+        var fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.json,.txt,application/json,text/plain';
+        fileInput.onchange = function () {
+          var file = fileInput.files && fileInput.files[0];
+          if (!file) return;
+          var reader = new FileReader();
+          reader.onload = function () {
+            var input = document.getElementById('input');
+            if (input) {
+              input.value = String(reader.result);
+              input.dispatchEvent(new Event('input'));
+            }
+            if (render.formatFromInput) render.formatFromInput();
+            if (typeof render.handleCopy === 'function') {
+              // show loaded toast via render's showToast
+            }
+            var toast = document.getElementById('toast');
+            if (toast) {
+              toast.innerHTML = '<svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>' + i18n.t('loaded', { name: file.name });
+              toast.classList.add('show');
+              setTimeout(function () { toast.classList.remove('show'); }, 2000);
+            }
+          };
+          reader.readAsText(file);
+        };
+        fileInput.click();
+      },
+      '[data-action="save"]': render.saveHistoryFromOutput,
+      '[data-action="clear"]': render.handleClear,
+      '[data-action="toggle-theme"]': render.handleToggleTheme,
+      '[data-action="toggle-search"]': render.toggleSearch,
+      '[data-action="toggle-sidebar"]': render.toggleSidebar,
+      '[data-action="toggle-mobile-more"]': render.toggleMobileMore,
+      '[data-action="compare"]': render.handleCompare,
+      '[data-action="clear-history"]': render.handleClearHistory,
+      '[data-action="close-save-modal"]': render.closeSaveModal,
+      '[data-action="confirm-save"]': render.confirmSaveFromModal,
+      '[data-action="reverse-compare"]': function () {
+        if (render.reverseCompare) render.reverseCompare();
+      },
+      '[data-action="close-compare"]': render.closeCompare,
+      '[data-action="open-save-modal"]': render.openSaveModal,
+      '[data-action="open-settings"]': render.openSettings,
+      '[data-action="close-settings"]': render.closeSettings,
+      '[data-action="pick-bg-image"]': render.pickBackgroundImage,
+      '[data-action="clear-bg-image"]': render.clearBackgroundImage,
+      '[data-action="reset-settings"]': render.resetAllSettings,
+    };
+    for (var selector in actions) {
+      if (actions.hasOwnProperty(selector)) {
+        document.querySelectorAll(selector).forEach(function (el) {
+          el.addEventListener('click', actions[selector]);
+        });
+      }
+    }
+
+    document.querySelectorAll('[data-tab]').forEach(function (tab) {
+      tab.addEventListener('click', function () { render.switchMobileTab(tab.dataset.tab); });
+    });
+
+    var langBtn = document.getElementById('lang-btn');
+    if (langBtn) langBtn.addEventListener('click', function () {
+      i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh');
+    });
+    var mobLangBtn = document.getElementById('mobile-lang-btn');
+    if (mobLangBtn) mobLangBtn.addEventListener('click', function () {
+      i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh');
+    });
+
+    // Settings modal live preview
+    var wmText = document.getElementById('watermark-text-input');
+    var wmOpacity = document.getElementById('watermark-opacity-input');
+    var bgOpacity = document.getElementById('bg-image-opacity-input');
+    if (wmText) wmText.addEventListener('input', render.commitSettingsFromForm);
+    if (wmOpacity) wmOpacity.addEventListener('input', render.commitSettingsFromForm);
+    if (bgOpacity) bgOpacity.addEventListener('input', render.commitSettingsFromForm);
+    var bgFile = document.getElementById('bg-image-file');
+    if (bgFile) bgFile.addEventListener('change', function (e) {
+      var f = e.target.files && e.target.files[0];
+      render.handleBackgroundImageFile(f);
+      e.target.value = '';
+    });
+    var settingsModal = document.getElementById('settings-modal');
+    if (settingsModal) settingsModal.addEventListener('click', function (e) {
+      if (e.target === settingsModal) render.closeSettings();
+    });
+    var saveModal = document.getElementById('save-modal');
+    if (saveModal) saveModal.addEventListener('click', function (e) {
+      if (e.target === saveModal) render.closeSaveModal();
+    });
+  }
+
+  /* ==============================================================
+     Backward-compat globals (for Tauri / external scripts)
+  ============================================================== */
+  function _exposeGlobals() {
+    var render = window.__render;
+    if (!render) return;
+    var globals = {
+      formatJSON: render.formatFromInput,
+      minifyJSON: render.minifyFromInput,
+      stringifyJSON: render.stringifyFromInput,
+      copyOutput: render.handleCopy,
+      downloadJSON: render.handleDownload,
+      clearContent: render.handleClear,
+      toggleTheme: render.handleToggleTheme,
+      toggleSidebar: render.toggleSidebar,
+      toggleMobileMore: render.toggleMobileMore,
+      switchMobileTab: render.switchMobileTab,
+      compareSelected: render.handleCompare,
+      clearAllHistory: render.handleClearHistory,
+      closeSaveModal: render.closeSaveModal,
+      confirmSave: render.confirmSaveFromModal,
+      reverseCompare: render.reverseCompare || function () {},
+      closeCompare: render.closeCompare,
+      openSaveModal: render.openSaveModal,
+      openSettings: render.openSettings,
+      closeSettings: render.closeSettings,
+      pickBackgroundImage: render.pickBackgroundImage,
+      clearBackgroundImage: render.clearBackgroundImage,
+      resetAllSettings: render.resetAllSettings,
+      loadHistory: function (id) {
+        var hist = (window.__actions && window.__actions.getHistory()) || [];
+        var item = hist.find(function (h) { return h.id === id; });
+        if (!item) return;
+        var input = document.getElementById('input');
+        if (input) {
+          input.value = item.content;
+          input.dispatchEvent(new Event('input'));
+        }
+        if (render.formatFromInput) render.formatFromInput();
+        if (window.__router && window.__router.isMobileDevice()) render.toggleSidebar();
+        var toast = document.getElementById('toast');
+        if (toast) {
+          toast.innerHTML = '<svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-file-text"/></svg>' + i18n.t('loaded', { name: item.name });
+          toast.classList.add('show');
+          setTimeout(function () { toast.classList.remove('show'); }, 2000);
+        }
+      },
+      toggleSelect: function (id) {
+        var sel = (window.__store && window.__store.getStateForKey('selectedIds')) || [];
+        var newSel = (window.__actions && window.__actions.toggleSelect) ? window.__actions.toggleSelect(sel, id) : sel;
+        if (window.__store) window.__store.setState({ selectedIds: newSel });
+        if (render.renderHistory) render.renderHistory();
+      },
+      deleteHistory: function (id) {
+        var history = (window.__actions && window.__actions.getHistory()) || [];
+        var selectedIds = (window.__store && window.__store.getStateForKey('selectedIds')) || [];
+        var result = (window.__actions && window.__actions.deleteHistory) ? window.__actions.deleteHistory(history, id, selectedIds) : { history: history, selectedIds: selectedIds };
+        if (window.__actions && window.__actions.setHistory) window.__actions.setHistory(result.history);
+        if (window.__store) window.__store.setState({ selectedIds: result.selectedIds });
+        if (render.renderHistory) render.renderHistory();
+      },
+      toggleJsonNode: render.toggleJsonNode,
+      toggleListPanel: render.toggleListPanel,
+      selectListItem: render.selectListItem,
+      openSearch: render.openSearch,
+      closeSearch: render.closeSearch,
+      toggleSearch: render.toggleSearch,
+      performSearch: render.performSearch,
+      nextMatch: render.nextMatch,
+      prevMatch: render.prevMatch,
+    };
+    for (var name in globals) {
+      if (globals.hasOwnProperty(name) && typeof window[name] === 'undefined') {
+        window[name] = globals[name];
+      }
+    }
+    // Persist selected state to window for any external code that reads it
+    if (window.__store) {
+      var state = window.__store.getState();
+      window.selectedIds = state.selectedIds || [];
+      window.compareOrder = state.compareOrder || [0, 1];
+      window.lastFormattedContent = state.output || '';
+      window.lastOutputLineCount = state.lastOutputLineCount || 0;
+      window.lastParsedJson = state.outputParsed || null;
+      window.listSelectedIndex = state.listSelectedIndex || 0;
+      window.lastDetailContent = state.lastDetailContent || '';
+    }
+  }
+
+  /* ==============================================================
+     Init
+  ============================================================== */
+  window.addEventListener('DOMContentLoaded', function () {
+    // Initialize router first (device detection)
+    if (window.__router && window.__router.init) window.__router.init();
+
+    // Initialize store with persisted values
+    if (window.__store) {
+      var persistedLang = localStorage.getItem('appLang') || 'en';
+      var persistedTheme = localStorage.getItem('theme') || 'light';
+      window.__store.persistLang(persistedLang);
+      window.__store.persistTheme(persistedTheme);
+    }
+
+    _exposeGlobals();
+    _bindEventListeners();
+
+    // Initialize renderers (DOM operations, event delegation, etc.)
+    if (window.__render && window.__render.init) window.__render.init();
+
+    applyAllTranslations();
+    if (window.__render && window.__render.handleToggleTheme) {
+      // Apply persisted theme
+      var theme = (window.__store && window.__store.getStateForKey('theme')) || persistedTheme;
+      document.documentElement.setAttribute('data-theme', theme);
+      var icon = document.getElementById('theme-icon');
+      if (icon) {
+        var use = icon.querySelector('use');
+        if (use) use.setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
+      }
+      var mIconUse = document.getElementById('mobile-theme-icon-use');
+      if (mIconUse) mIconUse.setAttribute('href', theme === 'light' ? '#icon-moon' : '#icon-sun');
+      var d = document.getElementById('hljs-dark');
+      var l = document.getElementById('hljs-light');
+      if (d) d.disabled = theme === 'light';
+      if (l) l.disabled = theme === 'dark';
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', theme === 'light' ? '#ffffff' : '#0d1117');
+    }
+
+    // Render initial history
+    if (window.__render && window.__render.renderHistory) window.__render.renderHistory();
+
+    // Status bar
+    var statusEl = document.getElementById('status-msg');
+    if (statusEl) statusEl.textContent = i18n.t('statusReady');
+
+    // Mobile theme icon + language label
+    var themeIconUse = document.getElementById('mobile-theme-icon-use');
+    if (themeIconUse) {
+      var t = document.documentElement.getAttribute('data-theme') || 'dark';
+      themeIconUse.setAttribute('href', t === 'light' ? '#icon-moon' : '#icon-sun');
+    }
+    var langLabel = document.getElementById('mobile-lang-label');
+    if (langLabel) langLabel.textContent = i18n._lang === 'zh' ? '中' : 'EN';
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function (err) {
+          console.warn('SW registration failed:', err);
+        });
+      });
+    }
+  });
+})();

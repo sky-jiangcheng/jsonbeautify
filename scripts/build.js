@@ -30,6 +30,9 @@ const SRC_ASSETS = [
     'app.js',
 ];
 
+// 源子目录：从 src/app/ 复制到 dist/app/
+const SRC_APP_DIR = 'app';
+
 function ensureDir(dir) {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
@@ -93,6 +96,11 @@ for (const asset of SRC_ASSETS) {
     if (fs.existsSync(src)) {
         copyFile(src, path.join(DIST, asset));
     }
+}
+
+// Copy src/app/ subdirectory to dist/app/
+if (fs.existsSync(path.join(SRC, SRC_APP_DIR))) {
+    copyDir(path.join(SRC, SRC_APP_DIR), path.join(DIST, SRC_APP_DIR));
 }
 
 console.log('\nBuild complete. dist/ is ready for deployment.');
