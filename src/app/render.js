@@ -679,6 +679,8 @@
       // 避免 sidebar-footer 的 Compare/Clear 与主操作栏重叠
       var mobToolbar = document.querySelector('.mob-toolbar');
       if (mobToolbar) mobToolbar.style.display = isActive ? 'none' : '';
+      // 打开历史界面时重置状态栏, 避免上一界面的 format 结果消息残留
+      if (isActive) setStatus(_i18n.t('statusReady'));
     } else {
       sidebar.classList.toggle('collapsed');
       sidebar.classList.toggle('active');
@@ -1640,6 +1642,9 @@
      Init
   ============================================================== */
   function init() {
+    // render.js 先于 app.js 加载, 顶层求值时 window.i18n 尚不存在,
+    // 这里重新绑定保证运行时 _i18n.t 走真实翻译表而不是返回 key 字面量
+    if (window.i18n) _i18n = window.i18n;
     initSearch();
     initDragDrop();
     initKeyboard();
@@ -1648,8 +1653,28 @@
     bindDynamicDelegation();
     applyAllSettings();
 
-    // Subscribe to store changes for mobile tab switching on output update
+    // Subscribe to store — 输出渲染的唯一入口（单向数据流）:
+    // format/minify/stringify -> renderOutput() 只 setState,
+    // 这里检测 output 状态变化后真正渲染 DOM, 保证状态与视图永远同步
     _store.subscribe(function (state) {
+      if (state.output !== state._lastRenderContent || state.outputType !== state._lastRenderType) {
+        // 先打标记再渲染: 渲染函数内部的 renderLineNumbers 等会触发 setState,
+        // 重入此订阅者时变更检测不再成立, 避免无限递归
+        _store.setState({
+          _lastRenderContent: state.output,
+          _lastRenderType: state.outputType,
+          _lastRenderFixed: state.outputFixed,
+          _lastRenderParsedObj: state.outputParsed,
+        });
+        if (!state.output || state.outputType === 'empty') {
+          renderEmptyContent();
+        } else if (state.outputType === 'text') {
+          renderTextOutput(state.output);
+        } else {
+          renderRegularOutput(state.output);
+        }
+      }
+      // 移动端: 有输出时切到 output tab
       if (state.outputType && state.outputType !== 'empty' && _router.isMobileDevice()) {
         switchMobileTab('output');
       }

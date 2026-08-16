@@ -2009,7 +2009,7 @@
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
             padding-top: env(safe-area-inset-top, 0px);
-            padding-bottom: env(safe-area-inset-bottom, 0px);
+            /* 底部 safe-area 由 .sidebar-footer 自己处理, 这里不加避免双重留白 */
             overscroll-behavior: contain;
             touch-action: pan-y;
         }
