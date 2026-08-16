@@ -675,6 +675,10 @@
       }
       var isActive = sidebar.classList.toggle('active');
       if (overlay) overlay.classList.toggle('active', isActive);
+      // 移动端 sidebar 全屏抽屉打开时，临时隐藏底部 mob-toolbar，
+      // 避免 sidebar-footer 的 Compare/Clear 与主操作栏重叠
+      var mobToolbar = document.querySelector('.mob-toolbar');
+      if (mobToolbar) mobToolbar.style.display = isActive ? 'none' : '';
     } else {
       sidebar.classList.toggle('collapsed');
       sidebar.classList.toggle('active');
