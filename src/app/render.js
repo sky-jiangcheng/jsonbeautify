@@ -1671,6 +1671,8 @@
     saveHistoryFromOutput: saveHistoryFromOutput,
     handleCompare: handleCompare,
     handleClearHistory: handleClearHistory,
+    closeCompare: closeCompare,
+    reverseCompare: reverseCompare,
     // UI
     openSaveModal: openSaveModal,
     closeSaveModal: closeSaveModal,

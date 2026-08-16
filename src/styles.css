@@ -1285,10 +1285,10 @@
             flex-direction: column;
             animation: fade-in 0.15s ease;
             overscroll-behavior: contain;
-            /* iOS safe area: 让 header / 按钮避开刘海/灵动岛/横屏状态栏 */
+            /* iOS safe area: 上下避开刘海/灵动岛/Home 指示条。
+               左右不在这里加 —— 否则横屏时对比内容区两侧会出现空白,
+               横屏状态栏的避让由 .compare-header 自己处理 */
             padding-top: env(safe-area-inset-top, 0px);
-            padding-left: env(safe-area-inset-left, 0px);
-            padding-right: env(safe-area-inset-right, 0px);
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
@@ -1298,7 +1298,10 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            /* 横屏时状态栏出现在左侧(刘海侧), 标题/按钮需避让 */
             padding: 0 16px;
+            padding-left: calc(16px + env(safe-area-inset-left, 0px));
+            padding-right: calc(16px + env(safe-area-inset-right, 0px));
             height: 44px;
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border);

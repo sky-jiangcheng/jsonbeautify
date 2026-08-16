@@ -262,6 +262,12 @@
     };
     for (var selector in actions) {
       if (actions.hasOwnProperty(selector)) {
+        // 契约检查: handler 必须是函数, 否则 fail fast 而不是静默丢失点击
+        if (typeof actions[selector] !== 'function') {
+          console.error('[app] data-action handler missing for ' + selector +
+            ' — 检查 window.__render 导出列表是否删掉了对应函数');
+          continue;
+        }
         document.querySelectorAll(selector).forEach(function (el) {
           el.addEventListener('click', actions[selector]);
         });
