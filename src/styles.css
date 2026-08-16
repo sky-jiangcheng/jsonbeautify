@@ -1285,6 +1285,11 @@
             flex-direction: column;
             animation: fade-in 0.15s ease;
             overscroll-behavior: contain;
+            /* iOS safe area: 让 header / 按钮避开刘海/灵动岛/横屏状态栏 */
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         .compare-container.active { display: flex; }
