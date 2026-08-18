@@ -13,12 +13,10 @@
   function detect() {
     try {
       var ua = navigator.userAgent || '';
-      var pf = navigator.platform || '';
-      var isMobilePlatform = /iPhone|iPad|iPod|Android/i.test(pf);
       var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
       var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
       var narrow = window.innerWidth <= 900;
-      return (isMobilePlatform || isMobileUA || (isTouch && narrow) || narrow) ? 'mobile' : 'desktop';
+      return (isMobileUA || (isTouch && narrow) || narrow) ? 'mobile' : 'desktop';
     } catch (e) {
       return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') ? 'mobile' : 'desktop';
     }

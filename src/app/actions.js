@@ -179,8 +179,9 @@
    * confirmSave: returns the history entry to add.
    */
   function confirmSave(formattedContent, name) {
+    var id = Date.now() + '-' + Math.random().toString(36).slice(2, 8);
     return {
-      id: Date.now(),
+      id: id,
       name: name || 'untitled',
       content: formattedContent,
     };

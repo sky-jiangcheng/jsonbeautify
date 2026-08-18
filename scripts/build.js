@@ -56,6 +56,24 @@ function copyDir(srcDir, dstDir) {
     }
 }
 
+// Bundle src/app/{router,store,actions,render}.js + src/app.js into a single
+// dist/app.js. This is the file dist/index.html actually loads, so edits to
+// the per-file modules now ship. Without this step the published app ran a
+// stale, hand-built monolith that ignored src/ changes.
+const BUNDLE_ORDER = ['app/router.js', 'app/store.js', 'app/actions.js', 'app/render.js', 'app.js'];
+
+function bundleApp() {
+    const parts = BUNDLE_ORDER.map(function (rel) {
+        const f = path.join(SRC, rel);
+        if (!fs.existsSync(f)) throw new Error('Bundle source missing: ' + rel);
+        return fs.readFileSync(f, 'utf-8');
+    });
+    // Each module is an IIFE; join with a separator so ASI edge cases are safe.
+    const bundle = parts.join('\n;\n');
+    fs.writeFileSync(path.join(DIST, 'app.js'), bundle);
+    console.log('  BUNDLE ' + BUNDLE_ORDER.join(' + ') + ' → dist/app/../app.js (single file)');
+}
+
 console.log('Building dist/ from src/...\n');
 
 // Clean dist/ (keep icons/, .well-known/)
@@ -77,8 +95,12 @@ console.log('  WRITE .nojekyll');
 // Copy src/index.html and fix asset paths for flat dist/ layout
 let html = fs.readFileSync(path.join(SRC, 'index.html'), 'utf-8');
 html = html.replace(/\.\.\//g, '');
+// Replace the per-file module <script> tags with the single bundled app.js,
+// so the only entry point is the freshly-built bundle above.
+html = html.replace(/<script src="app\/router\.js"><\/script>\s*<script src="app\/store\.js"><\/script>\s*<script src="app\/actions\.js"><\/script>\s*<script src="app\/render\.js"><\/script>\s*<script src="app\.js"><\/script>/,
+    '<script src="app.js"></script>');
 fs.writeFileSync(path.join(DIST, 'index.html'), html);
-console.log(`  HTML ${path.relative(ROOT, path.join(SRC, 'index.html'))} → ${path.relative(ROOT, path.join(DIST, 'index.html'))} (paths fixed)`);
+console.log(`  HTML ${path.relative(ROOT, path.join(SRC, 'index.html'))} → ${path.relative(ROOT, path.join(DIST, 'index.html'))} (paths fixed, modules bundled)`);
 
 // Copy static assets from root to dist/
 console.log('');
@@ -89,18 +111,17 @@ for (const asset of STATIC_ASSETS) {
     }
 }
 
-// Copy src/ assets (styles.css, app.js) to dist/
+// Copy src/ assets (styles.css) to dist/ (app.js is produced by bundleApp)
 console.log('');
 for (const asset of SRC_ASSETS) {
+    if (asset === 'app.js') continue; // produced by bundleApp()
     const src = path.join(SRC, asset);
     if (fs.existsSync(src)) {
         copyFile(src, path.join(DIST, asset));
     }
 }
 
-// Copy src/app/ subdirectory to dist/app/
-if (fs.existsSync(path.join(SRC, SRC_APP_DIR))) {
-    copyDir(path.join(SRC, SRC_APP_DIR), path.join(DIST, SRC_APP_DIR));
-}
+// Produce the single bundled entry point from src.
+bundleApp();
 
 console.log('\nBuild complete. dist/ is ready for deployment.');

@@ -2,29 +2,10 @@
 <html lang="zh">
 <head>
   <script>
+    // Device detection lives in src/app/router.js (single source of truth).
+    // router.init() sets data-device on DOMContentLoaded + resize/orientationchange.
     (function(){
-      try {
-        var d = document.documentElement;
-        var ua = navigator.userAgent || '';
-        var pf = navigator.platform || '';
-        var isMobilePlatform = /iPhone|iPad|iPod|Android/i.test(pf);
-        var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-        var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
-        function detect() {
-          var narrow = window.innerWidth <= 900;
-          return (isMobilePlatform || isMobileUA || (isTouch && narrow) || narrow) ? 'mobile' : 'desktop';
-        }
-        d.setAttribute('data-device', detect());
-        window.addEventListener('resize', function(){
-          d.setAttribute('data-device', detect());
-        });
-        window.addEventListener('orientationchange', function(){
-          setTimeout(function(){ d.setAttribute('data-device', detect()); }, 100);
-        });
-      } catch(e) {
-        document.documentElement.setAttribute('data-device',
-          /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') ? 'mobile' : 'desktop');
-      }
+      try { document.documentElement.setAttribute('data-device', 'desktop'); } catch (e) {}
     })();
   </script>
 

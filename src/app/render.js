@@ -12,6 +12,15 @@
   var _router = window.__router;
   var _i18n = window.i18n || { t: function (k, v) { return k; }, _lang: 'en' };
 
+  // HTML-escape a string before injecting into innerHTML.
+  // JSON.stringify does NOT escape <, >, & — without this, a JSON value
+  // like "<img src=x onerror=alert(1)>" becomes live HTML (XSS).
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
   /* ==============================================================
      Core rendering
   ============================================================== */
@@ -162,9 +171,11 @@
     selectListItem(0, arr);
   }
 
+  function getIndent() { return 2; }
+
   function selectListItem(index, arr) {
-    var detailContent = JSON.stringify(arr[index], null, getIndent());
-    _store.setState({ listSelectedIndex: index, lastDetailContent: detailContent });
+    var detailStr = JSON.stringify(arr[index], null, getIndent());
+    _store.setState({ listSelectedIndex: index, lastDetailContent: detailStr });
     var detailContent = document.getElementById('list-detail-content');
     var detailLinenos = document.getElementById('list-detail-linenos');
     if (detailContent) {
@@ -184,12 +195,12 @@
   }
 
   function renderJsonNode(key, value) {
-    var prefix = key !== null ? '<span class="jt-key">' + JSON.stringify(key) + '</span>: ' : '';
+    var prefix = key !== null ? '<span class="jt-key">' + esc(JSON.stringify(key)) + '</span>: ' : '';
 
     if (value === null) return '<span class="jt-line">' + prefix + '<span class="jt-null">null</span></span>';
     if (typeof value === 'boolean') return '<span class="jt-line">' + prefix + '<span class="jt-bool">' + value + '</span></span>';
     if (typeof value === 'number') return '<span class="jt-line">' + prefix + '<span class="jt-number">' + value + '</span></span>';
-    if (typeof value === 'string') return '<span class="jt-line">' + prefix + '<span class="jt-string">' + JSON.stringify(value) + '</span></span>';
+    if (typeof value === 'string') return '<span class="jt-line">' + prefix + '<span class="jt-string">' + esc(JSON.stringify(value)) + '</span></span>';
 
     var toggleAttrs = 'role="button" tabindex="0" aria-label="折叠/展开" data-jt-toggle="1"';
 
@@ -481,6 +492,19 @@
     if (!isSearchOpen()) return;
     var input = document.getElementById('output-search-input');
     performSearch(input ? input.value : '');
+  }
+
+  // After the output DOM is rebuilt (re-render / language change), any stored
+  // <mark> elements from a previous search become detached. Re-run the search
+  // against the fresh DOM so highlights + stored match references stay valid.
+  // Guarded to avoid re-entrancy loops via the store subscriber.
+  var _restoringSearch = false;
+  function restoreSearchHighlights() {
+    if (_restoringSearch) return;
+    var q = _store.getStateForKey('searchQuery');
+    if (!q || !isSearchOpen()) return;
+    _restoringSearch = true;
+    try { performSearch(q); } finally { _restoringSearch = false; }
   }
 
   function initSearch() {
@@ -797,7 +821,7 @@
   }
 
   function renderJsonNodeWithDiff(key, value, path, diffMap, side, rootVal) {
-    var prefix = key !== null ? '<span class="jt-key">' + JSON.stringify(key) + '</span>: ' : '';
+    var prefix = key !== null ? '<span class="jt-key">' + esc(JSON.stringify(key)) + '</span>: ' : '';
     var diffType = diffMap[path] || '';
     var diffCls = diffType ? ' jt-diff-' + (diffType === 'chg' ? 'changed' : diffType === 'add' ? 'added' : 'removed') : '';
     var toggleAttrs = 'role="button" tabindex="0" aria-label="折叠/展开" data-jt-toggle="1"';
@@ -805,7 +829,7 @@
     if (value === null) return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-null">null</span></span>';
     if (typeof value === 'boolean') return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-bool">' + value + '</span></span>';
     if (typeof value === 'number') return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-number">' + value + '</span></span>';
-    if (typeof value === 'string') return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-string">' + JSON.stringify(value) + '</span></span>';
+    if (typeof value === 'string') return '<span class="jt-line' + diffCls + '">' + prefix + '<span class="jt-string">' + esc(JSON.stringify(value)) + '</span></span>';
 
     if (Array.isArray(value)) {
       var count = value.length;
@@ -1375,7 +1399,6 @@
 
   function getFriendlyJsonError(error, input) {
     var msg = error.message || String(error);
-    var raw = msg;
     var posMatch = msg.match(/position\s+(\d+)/i);
     var pos = posMatch ? parseInt(posMatch[1]) : -1;
 
@@ -1475,15 +1498,6 @@
       showToast(_i18n.t('nothingToCopy'), 2000, 'icon-alert-triangle');
       return;
     }
-    var isTauri = typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
-    if (isTauri) {
-      window.__TAURI__.clipboardManager.writeText(content).then(function () {
-        showToast(_i18n.t('copied'), 2000, 'icon-check');
-      }).catch(function () {
-        showToast(_i18n.t('copyFailed'), 2000, 'icon-alert-triangle');
-      });
-      return;
-    }
     var fallbackCopy = function () {
       var ta = document.createElement('textarea');
       ta.value = content;
@@ -1493,6 +1507,23 @@
       document.body.removeChild(ta);
       showToast(ok ? _i18n.t('copied') : _i18n.t('copyFailed'), 2000, ok ? 'icon-check' : 'icon-alert-triangle');
     };
+    var isTauri = typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
+    if (isTauri) {
+      // Tauri v2 plugin-clipboard-manager exposes `clipboard` (v1 name was
+      // `clipboardManager`). Try both for forward/backward compatibility.
+      var clipboard = (window.__TAURI__.clipboardManager || window.__TAURI__.clipboard);
+      var writeText = clipboard && (clipboard.writeText || clipboard.writeText);
+      if (writeText) {
+        writeText.call(clipboard, content).then(function () {
+          showToast(_i18n.t('copied'), 2000, 'icon-check');
+        }).catch(function () {
+          showToast(_i18n.t('copyFailed'), 2000, 'icon-alert-triangle');
+        });
+      } else {
+        fallbackCopy();
+      }
+      return;
+    }
     if (!navigator.clipboard) { fallbackCopy(); return; }
     navigator.clipboard.writeText(content).then(function () {
       showToast(_i18n.t('copied'), 2000, 'icon-check');
@@ -1619,6 +1650,10 @@
     var fixed = _store.getStateForKey('outputFixed') || false;
     var parsed = _store.getStateForKey('outputParsed') || null;
     if (output) {
+      // Force a re-render: the store subscriber guards on _lastRenderContent,
+      // so reset it to bypass the guard and let the JSON tree re-localize its
+      // "N items"/"N keys" labels under the new language.
+      _store.setState({ _lastRenderContent: '__force_i18n__' });
       renderOutput(output, type, fixed, parsed);
     }
     renderHistory();
@@ -1673,10 +1708,12 @@
         } else {
           renderRegularOutput(state.output);
         }
-      }
-      // 移动端: 有输出时切到 output tab
-      if (state.outputType && state.outputType !== 'empty' && _router.isMobileDevice()) {
-        switchMobileTab('output');
+        // 移动端: 仅在输出真正变化时切到 output tab（避免每次 setState 都切）
+        if (state.outputType && state.outputType !== 'empty' && _router.isMobileDevice()) {
+          switchMobileTab('output');
+        }
+        // 输出已重建: 刷新搜索高亮, 防止存储的 <mark> 节点失效
+        restoreSearchHighlights();
       }
     });
   }
