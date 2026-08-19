@@ -40,23 +40,6 @@ const updates = [
         replacement: `version = "${newVersion}"`,
     },
     {
-        file: 'ios/App/App/Info.plist',
-        pattern: /(<key>CFBundleShortVersionString<\/key>\s*<string>)\d+\.\d+\.\d+(<\/string>)/,
-        replacement: `$1${newVersion}$2`,
-    },
-    {
-        // iOS build number: 每次版本 bump 时递增 (+1), 避免 App Store 重复 build 号被拒
-        // (CFBundleVersion 从 1 开始计数, 独立于语义化版本号)
-        file: 'ios/App/App/Info.plist',
-        pattern: /(<key>CFBundleVersion<\/key>\s*<string>)(\d+)(<\/string>)/,
-        replacement: (_m, pre, num, post) => `${pre}${parseInt(num, 10) + 1}${post}`,
-    },
-    {
-        file: 'ios/App/App.xcodeproj/project.pbxproj',
-        pattern: /(MARKETING_VERSION\s*=\s*)[^;]+;/g,
-        replacement: `$1${newVersion};`,
-    },
-    {
         // PWA service worker 缓存名绑定版本号: 版本升级时缓存名同步更新,
         // 否则旧 CACHE_NAME 仍能命中旧资源, SW 无法刷新(activate 只删不匹配的旧缓存)
         file: 'sw.js',

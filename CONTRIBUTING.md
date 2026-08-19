@@ -15,7 +15,6 @@ JSON Beautify Tool — 本地优先的 JSON 格式化工具（Tauri v2 桌面 + 
 | `docs/` | GitHub Pages **生成产物**（由 `pages.yml` 从 `src/` 生成并提交） | ⚠️ 自动生成，勿手改 |
 | `dist/` | Tauri 构建产物（`build.js` 生成） | ❌ 已忽略 |
 | `src-tauri/` | Rust 后端 + 桌面/iOS/AppStore 配置 + 图标 | ✅ 源码 |
-| `ios/` | Xcode 工程（Tauri iOS 生成 + 自定义） | ✅ 源码 |
 | `scripts/` | 构建 / CI / 上架辅助脚本 | ✅ 源码 |
 | `screenshots/` | App Store 截屏**源文件** | ✅ 源码 |
 | `appstore-screenshots/` `ipad-screenshots/` | 截屏**交付包**（脚本生成） | ❌ 已忽略 |
@@ -57,12 +56,12 @@ JSON Beautify Tool — 本地优先的 JSON 格式化工具（Tauri v2 桌面 + 
 package.json              → "version"
 src-tauri/tauri.conf.json → "version"
 src-tauri/Cargo.toml      → version
-ios/App/App/Info.plist    → CFBundleShortVersionString
+sw.js                     → CACHE_NAME
 ```
 
 - 发版打 `vX.Y.Z` tag，tag 版本号必须等于上述文件版本（否则 CI `version-gate` 拒绝）。
 - 升版本用 `npm run bump`（自动同步全部 4 处），不要手改单处。
-- **构建号 ≠ 商店版本号**：`APP_VERSION`（如 1.5.11）是构建号用于匹配 build；商店版本是 marketing version（如 1.0），提交脚本按 marketing version 选版本（详见 §6.7）。
+- **构建号 ≠ 商店版本号**：`APP_VERSION`（如 1.5.11）是构建号用于匹配 build；商店版本是 marketing version（如 1.0），提交脚本按 marketing version 选版本（详见 §6.7）。iOS 商店版本继承 `tauri.conf.json`（Tauri iOS），无独立 `ios/` 工程。
 
 ---
 

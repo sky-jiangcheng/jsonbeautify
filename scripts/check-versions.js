@@ -2,16 +2,15 @@
 /* ==============================================================
    版本一致性检查 / 自动修复引擎
 
-   五处版本号必须保持一致:
+   四处版本号必须保持一致:
      - package.json              (web / npm)
      - src-tauri/tauri.conf.json (Tauri 主配置, 桌面/App Store 继承)
      - src-tauri/Cargo.toml     (Rust 包版本)
-     - ios/App/App/Info.plist   (iOS CFBundleShortVersionString)
-     - project.pbxproj          (iOS MARKETING_VERSION)
+     - sw.js                     (PWA service worker 缓存名)
 
    子命令:
-     check              检查五处是否一致 (不一致 -> exit 1)
-     fix                以 package.json 为准, 把另外四处同步成一致
+     check              检查四处是否一致 (不一致 -> exit 1)
+     fix                以 package.json 为准, 把另外三处同步成一致
                          (复用 scripts/bump-version.js)
      tag [vX.Y.Z]      检查 tag 版本号(去掉 v) 是否等于文件当前版本
                          (发版门禁: 不一致则 exit 1, 防止上传错误/重复版本)
@@ -28,8 +27,7 @@ const FILES = {
   'package.json': /"version":\s*"([^"]+)"/,
   'src-tauri/tauri.conf.json': /"version":\s*"([^"]+)"/,
   'src-tauri/Cargo.toml': /^\s*version\s*=\s*"([^"]+)"/m,
-  'ios/App/App/Info.plist': /<key>CFBundleShortVersionString<\/key>\s*<string>([^<]+)<\/string>/,
-  'ios/App/App.xcodeproj/project.pbxproj': /MARKETING_VERSION\s*=\s*([^;]+);/,
+  'sw.js': /CACHE_NAME\s*=\s*'json-formatter-v([\d\.]+)'/,
 };
 
 function readVersion(file, re) {
@@ -57,7 +55,7 @@ if (cmd === 'check') {
   const vals = Object.values(v).filter((x) => x != null);
   const uniq = [...new Set(vals)];
   if (uniq.length <= 1) {
-    console.log(`\n✅ 五处版本一致: ${uniq[0] ?? 'N/A'}`);
+    console.log(`\n✅ 四处版本一致: ${uniq[0] ?? 'N/A'}`);
     process.exit(0);
   } else {
     console.error('\n❌ 版本不一致! 请以 package.json 为准统一 (运行 check-versions.js fix):');

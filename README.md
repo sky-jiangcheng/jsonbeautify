@@ -150,8 +150,7 @@ main/
 src/index.html               — Web 源码（HTML + CSS + JS 单文件）
 src/                         — 静态资源（CSS / JS）
 scripts/                     — 构建与工具脚本
-src-tauri/                   — Tauri v2 桌面端（Rust）
-ios/                         — iOS 工程（历史遗留的 Capacitor 工程；CI 上架实际由 `src-tauri/gen/apple/` 生成）
+src-tauri/                   — Tauri v2 桌面端（Rust；iOS 由 CI 生成 `src-tauri/gen/apple/` 构建）
 screenshots/                 — 截图文件
   ├── phone/                 — 手机端截图
   └── ipad-portrait/         — iPad 竖屏截图

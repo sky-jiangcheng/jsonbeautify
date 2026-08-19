@@ -40,10 +40,9 @@ jobs:
           node scripts/check-versions.js fix
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # bump-version.js 实际更新 6 处(含 iOS 双文件与 sw.js), 必须全部提交,
-          # 否则 PR 自动修复不完整, iOS 构建仍带着不一致版本
-          git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml \
-                  ios/App/App/Info.plist ios/App/App.xcodeproj/project.pbxproj sw.js
+          # bump-version.js 实际更新 4 处(三配置文件 + sw.js), 必须全部提交,
+          # 否则 PR 自动修复不完整, 构建仍带着不一致版本
+          git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml sw.js
           git commit -m "ci: auto-sync versions to $(node -p "require('./package.json').version")" \
             || echo "nothing to commit"
           git push

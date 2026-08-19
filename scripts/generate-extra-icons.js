@@ -49,33 +49,7 @@ const targets = [
 ];
 
 // iOS Xcode Assets 目录下文件名 → 尺寸映射（解析 AppIcon-{size}x{size}@{scale}x.png）
-const iosAssetsDir = path.join(ROOT, 'ios/App/App/Assets.xcassets/AppIcon.appiconset');
-
-function parseIosSize(filename) {
-  // AppIcon-1024.png → 1024
-  // AppIcon-20x20@1x.png → 20
-  // AppIcon-20x20@2x.png → 40
-  // AppIcon-83.5x83.5@2x.png → 167
-  const m1 = filename.match(/^AppIcon-(\d+(?:\.\d+)?)\.png$/);
-  if (m1) return { w: parseFloat(m1[1]), h: parseFloat(m1[1]) };
-
-  const m2 = filename.match(/^AppIcon-(\d+(?:\.\d+)?)[xX](\d+(?:\.\d+)?)@(\d+)x(?:-\d+)?\.png$/);
-  if (m2) {
-    const w = parseFloat(m2[1]);
-    const scale = parseInt(m2[3], 10);
-    return { w: w * scale, h: w * scale };
-  }
-
-  // AppIcon-{size}@{scale}x.png (legacy)
-  const m3 = filename.match(/^AppIcon-(\d+(?:\.\d+)?)@(\d+)x(?:-\d+)?\.png$/);
-  if (m3) {
-    const base = parseFloat(m3[1]);
-    const scale = parseInt(m3[2], 10);
-    return { w: base * scale, h: base * scale };
-  }
-
-  return null;
-}
+// 注: Capacitor 工程(ios/)已移除, 此逻辑保留注释供参考; Tauri iOS 图标由 generate-icons.js 生成到 src-tauri/icons/ios/
 
 async function main() {
   if (!fs.existsSync(SOURCE)) {
@@ -105,28 +79,6 @@ async function main() {
     await fs.promises.copyFile(srcSvg, dstSvg);
     console.log('Copied docs/icon.svg');
     count++;
-  }
-
-  // 3) iOS Xcode Assets：扫描所有 .png，按文件名解析尺寸 resize
-  if (fs.existsSync(iosAssetsDir)) {
-    const files = await fs.promises.readdir(iosAssetsDir);
-    for (const f of files) {
-      if (!f.endsWith('.png')) continue;
-      const dim = parseIosSize(f);
-      if (!dim) {
-        console.log(`Skip (unknown size format): ${f}`);
-        continue;
-      }
-      const size = Math.round(dim.w);
-      const abs = path.join(iosAssetsDir, f);
-      await sharp(SOURCE)
-        .ensureAlpha()
-        .resize(size, size, { kernel: sharp.kernel.lanczos3 })
-        .png({ compressionLevel: 9 })
-        .toFile(abs);
-      console.log(`Generated ios/App/App/Assets.xcassets/AppIcon.appiconset/${f} (${size}x${size})`);
-      count++;
-    }
   }
 
   console.log(`\nExtra icons generated: ${count} total`);
