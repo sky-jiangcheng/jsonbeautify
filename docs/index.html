@@ -1,13 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <script>
-    // Device detection lives in src/app/router.js (single source of truth).
-    // router.init() sets data-device on DOMContentLoaded + resize/orientationchange.
-    (function(){
-      try { document.documentElement.setAttribute('data-device', 'desktop'); } catch (e) {}
-    })();
-  </script>
+  <!-- 早期同步设置 data-device,避免桌面端闪出移动布局。注意: Tauri CSP 不允许内联脚本,
+       故放在外部 head.js 中同步执行(效果同内联)。router.js 会在 DOMContentLoaded 时重新精确检测。 -->
+  <script src="head.js"></script>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
