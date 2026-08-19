@@ -10,6 +10,8 @@ permissions:
 
 jobs:
   deploy:
+    # 跳过 bot 自己的 push: docs/ 已是最新, 避免每次 main push 触发两次构建
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

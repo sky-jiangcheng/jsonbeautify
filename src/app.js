@@ -54,6 +54,7 @@
       needFormatFirst: '请先格式化有效的 JSON',
       unnamed: '未命名', noHistory: '暂无历史记录', noHistoryHint: '格式化后保存即可',
       selectForCompare: '选中用于对比', deleteItem: '删除',
+      historyTooLarge: '记录过大，无法保存（上限 500KB）',
       autoQuoteId: '（已自动为标识符添加引号）',
       autoBracket: '（已自动补全括号）',
       autoBracketNotification: '原始 JSON 缺失部分括号，已自动补全',
@@ -120,6 +121,7 @@
       needFormatFirst: 'Please format valid JSON first',
       unnamed: 'Untitled', noHistory: 'No history yet', noHistoryHint: 'Format and save to see history',
       selectForCompare: 'Select to compare', deleteItem: 'Delete',
+      historyTooLarge: 'Entry too large to save (max 500KB)',
       autoQuoteId: ' (auto-quoted identifier)',
       autoBracket: ' (auto-closed brackets)',
       autoBracketNotification: 'Some brackets were missing and have been auto-closed',
@@ -182,6 +184,15 @@
       var key = el.getAttribute('data-i18n-placeholder');
       if (key) el.setAttribute('placeholder', i18n.t(key).replace(/\\n/g, '\n'));
     });
+    // 状态栏快捷键: macOS 用 ⌘ 替代 Ctrl
+    var shortcutsEl = document.getElementById('status-shortcuts');
+    if (shortcutsEl) {
+      var shortcutsText = i18n.t('statusShortcuts');
+      if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
+        shortcutsText = shortcutsText.replace(/Ctrl/g, '\u2318');
+      }
+      shortcutsEl.textContent = shortcutsText;
+    }
     document.querySelectorAll('[data-i18n-html]').forEach(function (el) {
       var key = el.getAttribute('data-i18n-html');
       if (key) el.innerHTML = i18n.t(key);
@@ -394,16 +405,31 @@
         window[name] = globals[name];
       }
     }
-    // Persist selected state to window for any external code that reads it
+    // 实时同步到 window.* 只读 getter: 外部代码读取时始终拿到 store 最新值,
+    // 而不是初始化时拷贝一次后永久过期
     if (window.__store) {
-      var state = window.__store.getState();
-      window.selectedIds = state.selectedIds || [];
-      window.compareOrder = state.compareOrder || [0, 1];
-      window.lastFormattedContent = state.output || '';
-      window.lastOutputLineCount = state.lastOutputLineCount || 0;
-      window.lastParsedJson = state.outputParsed || null;
-      window.listSelectedIndex = state.listSelectedIndex || 0;
-      window.lastDetailContent = state.lastDetailContent || '';
+      var liveState = {
+        selectedIds: { key: 'selectedIds', def: [] },
+        compareOrder: { key: 'compareOrder', def: [0, 1] },
+        lastFormattedContent: { key: 'output', def: '' },
+        lastOutputLineCount: { key: 'lastOutputLineCount', def: 0 },
+        lastParsedJson: { key: 'outputParsed', def: null },
+        listSelectedIndex: { key: 'listSelectedIndex', def: 0 },
+        lastDetailContent: { key: 'lastDetailContent', def: '' },
+      };
+      for (var gk in liveState) {
+        if (liveState.hasOwnProperty(gk) && typeof window[gk] === 'undefined') {
+          (function (name, cfg) {
+            Object.defineProperty(window, name, {
+              configurable: true,
+              get: function () {
+                var v = window.__store.getStateForKey(cfg.key);
+                return v === undefined || v === null ? cfg.def : v;
+              }
+            });
+          })(gk, liveState[gk]);
+        }
+      }
     }
   }
 

@@ -42,8 +42,55 @@
     }
   }
 
+  /**
+   * 自动修复未加引号的键名: `{key: 1}` → `{"key": 1}`。
+   * 状态机扫描而非正则: 原正则不感知字符串边界, 会误改字符串内容里
+   * 恰好出现的 `{key: ` 模式 (如 `{a: "x: {y: 1}"}` 会破坏字符串内容)。
+   */
   function tryFixUnquotedKeys(input) {
-    return input.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
+    var out = '';
+    var inString = false, escape = false;
+    var i = 0;
+
+    function isIdStart(c) { return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c === '_' || c === '$'; }
+    function isIdChar(c) { return isIdStart(c) || c >= '0' && c <= '9'; }
+    function isWs(c) { return c === ' ' || c === '\t' || c === '\n' || c === '\r'; }
+
+    while (i < input.length) {
+      var ch = input[i];
+
+      // 字符串内部: 原样输出, 不做任何修复
+      if (inString) {
+        out += ch;
+        if (escape) escape = false;
+        else if (ch === '\\') escape = true;
+        else if (ch === '"') inString = false;
+        i++;
+        continue;
+      }
+      if (ch === '"') { inString = true; out += ch; i++; continue; }
+
+      // 非字符串: 仅在 `{` / `,` 后紧跟 空白? 标识符 空白? `:` 时补引号
+      if (ch === '{' || ch === ',') {
+        var j = i + 1;
+        while (j < input.length && isWs(input[j])) j++;
+        if (j < input.length && isIdStart(input[j])) {
+          var k = j + 1;
+          while (k < input.length && isIdChar(input[k])) k++;
+          var m = k;
+          while (m < input.length && isWs(input[m])) m++;
+          if (m < input.length && input[m] === ':') {
+            out += ch + input.slice(i + 1, j) + '"' + input.slice(j, k) + '"';
+            i = m; // 跳到冒号, 后续字符原样处理
+            continue;
+          }
+        }
+      }
+
+      out += ch;
+      i++;
+    }
+    return out;
   }
 
   function tryFixJson(str) {

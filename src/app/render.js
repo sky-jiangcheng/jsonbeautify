@@ -12,6 +12,9 @@
   var _router = window.__router;
   var _i18n = window.i18n || { t: function (k, v) { return k; }, _lang: 'en' };
 
+  // 单条历史记录最大字符数 (≈1MB UTF-8): 防止 localStorage 配额被单条撑爆
+  var HISTORY_MAX_CHARS = 500 * 1024;
+
   // HTML-escape a string before injecting into innerHTML.
   // JSON.stringify does NOT escape <, >, & — without this, a JSON value
   // like "<img src=x onerror=alert(1)>" becomes live HTML (XSS).
@@ -78,9 +81,10 @@
     var lineCount = content.split('\n').length;
     renderLineNumbers(lineCount);
     var codeEl = area.querySelector('code');
-    if (codeEl && typeof hljs !== 'undefined') {
+    if (codeEl) {
+      // 无条件先写文本: 即使 hljs 未加载, 输出也不会空白
       codeEl.textContent = content;
-      hljs.highlightElement(codeEl);
+      if (typeof hljs !== 'undefined') hljs.highlightElement(codeEl);
     }
     var contentEl = area.querySelector('.output-content');
     if (contentEl) contentEl.onscroll = syncLineNumberScroll;
@@ -776,6 +780,10 @@
     });
   }
 
+  // diff 路径分隔符: 用 NUL 而非 '/', 避免 JSON key 本身含 '/' 时
+  // (如 {"a/b":1} vs {"a":{"b":1}}) 两条不同路径映射到同一个 map key, 高亮互相覆盖
+  var PATH_SEP = '\u0000';
+
   function diffJson(a, b) {
     if (a === b) return { t: 'same', v: a };
     var ta = typeof a, tb = typeof b;
@@ -824,7 +832,7 @@
       case 'obj':
       case 'arr':
         for (var i = 0; i < d.c.length; i++) {
-          collectDiffPaths(d.c[i].d, path ? path + '/' + d.c[i].k : d.c[i].k, leftMap, rightMap);
+          collectDiffPaths(d.c[i].d, path ? path + PATH_SEP + d.c[i].k : d.c[i].k, leftMap, rightMap);
         }
         break;
     }
@@ -848,7 +856,7 @@
       html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + _i18n.t('items', { count: count }) + ']</span></span>';
       html += '<div class="jt-children">';
       for (var i = 0; i < count; i++) {
-        html += renderJsonNodeWithDiff(String(i), value[i], path ? path + '/' + i : String(i), diffMap, side, rootVal);
+        html += renderJsonNodeWithDiff(String(i), value[i], path ? path + PATH_SEP + i : String(i), diffMap, side, rootVal);
         if (i < count - 1) html += '<span class="jt-comma">,</span>';
       }
       html += '</div>';
@@ -866,7 +874,7 @@
       html2 += '<div class="jt-children">';
       for (var k = 0; k < kcount; k++) {
         var keyStr = keys[k];
-        var childPath = path ? path + '/' + keyStr : keyStr;
+        var childPath = path ? path + PATH_SEP + keyStr : keyStr;
         html2 += renderJsonNodeWithDiff(keyStr, value[keyStr], childPath, diffMap, side, rootVal);
         if (k < kcount - 1) html2 += '<span class="jt-comma">,</span>';
       }
@@ -1056,7 +1064,7 @@
     if (!file) return;
     var allowed = ['image/png', 'image/jpeg', 'image/jpg'];
     if (allowed.indexOf(file.type) === -1) {
-      showToast(_i18n.t('jsonOnly'), 2500, 'icon-alert-triangle');
+      showToast(_i18n.t('bgImageHint'), 2500, 'icon-alert-triangle');
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
@@ -1284,16 +1292,18 @@
       if (mod && e.key === 'f') { e.preventDefault(); openSearch(); return; }
       if (mod && e.key === 'Enter') { e.preventDefault(); formatFromInput(); return; }
       if (mod && e.key === 's') { e.preventDefault(); saveHistoryFromOutput(); return; }
-      if (mod && e.key === 'd') { e.preventDefault(); downloadFromOutput(); return; }
+      if (mod && e.key === 'd') { e.preventDefault(); handleDownload(); return; }
 
       if (e.key === 'Escape') {
         if (isSearchOpen()) { closeSearch(); }
         else {
           var modal = document.getElementById('save-modal');
+          var settings = document.getElementById('settings-modal');
           var compare = document.getElementById('compare-container');
           var sheet = document.getElementById('mob-sheet');
           var sidebar = document.getElementById('sidebar');
           if (modal && modal.classList.contains('active')) closeSaveModal();
+          else if (settings && settings.classList.contains('active')) closeSettings();
           else if (compare && compare.classList.contains('active')) closeCompare();
           else if (sheet && sheet.classList.contains('open')) toggleMobileMore();
           else if (sidebar && sidebar.classList.contains('active')) toggleSidebar();
@@ -1607,7 +1617,12 @@
     _store.setState(state);
     renderOutput('', 'empty');
     var input = document.getElementById('input');
-    if (input) input.value = '';
+    if (input) {
+      input.value = '';
+      // dispatch input 事件让 initInputTracker 同步 store 并隐藏校验指示灯,
+      // 否则红灯/绿灯在清空后残留
+      input.dispatchEvent(new Event('input'));
+    }
     clearNotifications();
     var inputSize = document.getElementById('input-size');
     if (inputSize) inputSize.textContent = '';
@@ -1649,6 +1664,12 @@
 
   function confirmSaveFromModal() {
     var formatted = _store.getStateForKey('output') || '';
+    // 单条历史大小上限: 超大 JSON 会迅速写满 localStorage 配额,
+    // setHistory 降级裁剪失败后会把整个 jsonHistory 键删除, 用户历史静默全丢
+    if (formatted.length > HISTORY_MAX_CHARS) {
+      showToast(_i18n.t('historyTooLarge'), 2500, 'icon-alert-triangle');
+      return;
+    }
     var nameInput = document.getElementById('save-name-input');
     var name = nameInput ? nameInput.value.trim() : '';
     var entry = _actions.confirmSave(formatted, name || _i18n.t('unnamed'));
