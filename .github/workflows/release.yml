@@ -397,6 +397,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Fix Homebrew tap trust warnings (macOS runner image compat)
+        run: |
+          brew untap aws/tap 2>/dev/null || true
+          brew tap --repair 2>/dev/null || true
+
       # ---- App Store 版本重复快速拦截 (在耗时构建之前失败) ----
       - name: Write App Store Connect API key
         if: env.APP_STORE_CONNECT_API_KEY != ''
