@@ -2,6 +2,7 @@ const CACHE_NAME = 'json-formatter-v1530';
 const urlsToCache = [
   './',
   './index.html',
+  './head.js',
   './app.js',
   './styles.css',
   './manifest.json',

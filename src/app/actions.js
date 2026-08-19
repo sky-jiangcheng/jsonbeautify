@@ -26,7 +26,20 @@
   }
 
   function setHistory(arr) {
-    localStorage.setItem('jsonHistory', JSON.stringify(arr));
+    try {
+      // 裁剪上限,避免超大历史撑爆 localStorage 配额
+      if (Array.isArray(arr)) arr = arr.slice(0, 100);
+      localStorage.setItem('jsonHistory', JSON.stringify(arr));
+    } catch (e) {
+      // 配额满/序列化失败时静默降级: 尝试只保留最近的 20 条再写一次
+      console.warn('[actions] setHistory failed, trimming:', e);
+      try {
+        if (Array.isArray(arr)) arr = arr.slice(0, 20);
+        localStorage.setItem('jsonHistory', JSON.stringify(arr));
+      } catch (e2) {
+        try { localStorage.removeItem('jsonHistory'); } catch (_) {}
+      }
+    }
   }
 
   function tryFixUnquotedKeys(input) {

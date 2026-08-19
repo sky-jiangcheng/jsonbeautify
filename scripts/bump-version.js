@@ -49,6 +49,13 @@ const updates = [
         pattern: /(MARKETING_VERSION\s*=\s*)[^;]+;/g,
         replacement: `$1${newVersion};`,
     },
+    {
+        // PWA service worker 缓存名绑定版本号: 版本升级时缓存名同步更新,
+        // 否则旧 CACHE_NAME 仍能命中旧资源, SW 无法刷新(activate 只删不匹配的旧缓存)
+        file: 'sw.js',
+        pattern: /(const CACHE_NAME = 'json-formatter-v)[\d\.]+(';)/,
+        replacement: `$1${newVersion}$2`,
+    },
 ];
 
 let updated = 0;

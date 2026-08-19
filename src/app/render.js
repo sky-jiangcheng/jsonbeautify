@@ -35,9 +35,16 @@
         linenos.className = 'output-linenos';
         area.insertBefore(linenos, area.firstChild);
       }
-      var lines = [];
-      for (var i = 0; i < lineCount; i++) lines.push('<span>' + (i + 1) + '</span>');
-      linenos.innerHTML = lines.join('');
+      // 用 DocumentFragment + textContent 批量生成行号, 避免超大 JSON 时
+      // 生成巨大 innerHTML 字符串(高内存 + 慢)。textContent 也更安全(纯数字)。
+      var frag = document.createDocumentFragment();
+      for (var i = 0; i < lineCount; i++) {
+        var span = document.createElement('span');
+        span.textContent = i + 1;
+        frag.appendChild(span);
+      }
+      linenos.textContent = '';
+      linenos.appendChild(frag);
       _store.setState({ lastOutputLineCount: lineCount });
     } else if (linenos) {
       linenos.remove();
@@ -393,14 +400,17 @@
       textNodes.forEach(function (node) {
         var text = node.nodeValue;
         var lowerText = text.toLowerCase();
+        // 用 lower.length 而非 q.length: idx 来自 lowerText/小写字符串,长度以转换后为准,
+        // 避免个别字符 (如 İ→i̇) 在 toLowerCase 后 码元跨度变化导致切割错位。
+        var needleLen = lower.length;
         var idx = lowerText.indexOf(lower);
         if (idx === -1) return;
         var parts = [];
         var last = 0;
         while (idx !== -1) {
           if (idx > last) parts.push({ text: text.substring(last, idx), isMatch: false });
-          parts.push({ text: text.substring(idx, idx + q.length), isMatch: true });
-          last = idx + q.length;
+          parts.push({ text: text.substring(idx, idx + needleLen), isMatch: true });
+          last = idx + needleLen;
           idx = lowerText.indexOf(lower, last);
         }
         if (last < text.length) parts.push({ text: text.substring(last), isMatch: false });
@@ -1102,7 +1112,8 @@
         var delBtn = e.target.closest('[data-delete-id]');
         if (delBtn) {
           e.stopPropagation();
-          var id = Number(delBtn.dataset.deleteId);
+          // id 是字符串("<timestamp>-<base36>"),不能 Number() 转换,否则变 NaN 导致删除失效
+          var id = delBtn.dataset.deleteId;
           var history = _actions.getHistory();
           var selectedIds = _store.getStateForKey('selectedIds') || [];
           var result = _actions.deleteHistory(history, id, selectedIds);
@@ -1114,7 +1125,7 @@
         var checkbox = e.target.closest('[data-select-id]');
         if (checkbox) {
           e.stopPropagation();
-          var sid = Number(checkbox.dataset.selectId);
+          var sid = checkbox.dataset.selectId;
           var sel = _store.getStateForKey('selectedIds') || [];
           var newSel = _actions.toggleSelect(sel, sid);
           _store.setState({ selectedIds: newSel });
@@ -1123,7 +1134,7 @@
         }
         var infoBtn = e.target.closest('[data-load-id]');
         if (infoBtn) {
-          var hid = Number(infoBtn.dataset.loadId);
+          var hid = infoBtn.dataset.loadId;
           var hist = _actions.getHistory();
           var loaded = _actions.loadHistory(hist, hid);
           if (loaded) {
@@ -1264,6 +1275,9 @@
   ============================================================== */
   function initKeyboard() {
     document.addEventListener('keydown', function (e) {
+      // 中文/日文等 IME 组合输入期间 (isComposing 或 keyCode 229) 应按回车选词,
+      // 不应触发格式化/保存等快捷键,否则选词时误触发操作。
+      if (e.isComposing || e.keyCode === 229) return;
       var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       var mod = isMac ? e.metaKey : e.ctrlKey;
 
@@ -1509,12 +1523,15 @@
     };
     var isTauri = typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
     if (isTauri) {
-      // Tauri v2 plugin-clipboard-manager exposes `clipboard` (v1 name was
-      // `clipboardManager`). Try both for forward/backward compatibility.
-      var clipboard = (window.__TAURI__.clipboardManager || window.__TAURI__.clipboard);
-      var writeText = clipboard && (clipboard.writeText || clipboard.writeText);
+      // Tauri v2 plugin-clipboard-manager exposes `clipboard`; the v1 name was
+      // `clipboardManager`. Resolve the object and its writeText in both shapes.
+      var clipboardObj = window.__TAURI__.clipboardManager || window.__TAURI__.clipboard;
+      var clipboard2 = window.__TAURI__.clipboard;
+      var writeText = null;
+      if (clipboardObj && typeof clipboardObj.writeText === 'function') writeText = clipboardObj.writeText.bind(clipboardObj);
+      else if (clipboard2 && typeof clipboard2.writeText === 'function') writeText = clipboard2.writeText.bind(clipboard2);
       if (writeText) {
-        writeText.call(clipboard, content).then(function () {
+        writeText(content).then(function () {
           showToast(_i18n.t('copied'), 2000, 'icon-check');
         }).catch(function () {
           showToast(_i18n.t('copyFailed'), 2000, 'icon-alert-triangle');
