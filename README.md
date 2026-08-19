@@ -84,7 +84,7 @@
 
 ---
 
-## 桌面应用与 iOS (Tauri + Capacitor)
+## 桌面应用与 iOS (Tauri)
 
 支持打包为原生桌面应用与 iOS App。推送 `v*` tag 后由 CI 自动构建并上架：
 
@@ -93,7 +93,7 @@
 | macOS | Tauri v2 | `.dmg` / `.app` |
 | Windows | Tauri v2 | `.msi` / `.exe` |
 | Linux | Tauri v2 | `.deb` / `.rpm` / `.AppImage` |
-| iOS | Capacitor | App Store |
+| iOS | Tauri v2 (iOS) | App Store |
 
 [![Deploy Status](https://github.com/sky-jiangcheng/jsonbeautify/actions/workflows/pages.yml/badge.svg)](https://github.com/sky-jiangcheng/jsonbeautify/actions/workflows/pages.yml)
 
@@ -119,7 +119,7 @@ npm run build     # 产物在 src-tauri/target/release/bundle/
 | 语法高亮 | highlight.js |
 | 存储 | localStorage |
 | 桌面端 | Tauri v2（Rust） |
-| 移动端 | Capacitor / Tauri iOS |
+| 移动端 | Tauri iOS |
 | CI/CD | GitHub Actions |
 
 ---
@@ -151,7 +151,7 @@ src/index.html               — Web 源码（HTML + CSS + JS 单文件）
 src/                         — 静态资源（CSS / JS）
 scripts/                     — 构建与工具脚本
 src-tauri/                   — Tauri v2 桌面端（Rust）
-ios/                         — iOS 工程（Capacitor）
+ios/                         — iOS 工程（历史遗留的 Capacitor 工程；CI 上架实际由 `src-tauri/gen/apple/` 生成）
 screenshots/                 — 截图文件
   ├── phone/                 — 手机端截图
   └── ipad-portrait/         — iPad 竖屏截图

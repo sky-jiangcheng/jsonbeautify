@@ -1046,6 +1046,8 @@
     img.onerror = function () {
       _bgIsDark = false;
       renderWatermark();
+      // 浏览器可能不支持该图片格式(如 HEIC 在 Chrome/WebView2), 提示而非静默失败
+      showToast(_i18n.t('bgImageUnsupported'), 3000, 'icon-alert-triangle');
     };
     img.src = _settings.bgImageData;
   }
