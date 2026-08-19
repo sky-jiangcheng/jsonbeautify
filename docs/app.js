@@ -173,8 +173,55 @@
     }
   }
 
+  /**
+   * 自动修复未加引号的键名: `{key: 1}` → `{"key": 1}`。
+   * 状态机扫描而非正则: 原正则不感知字符串边界, 会误改字符串内容里
+   * 恰好出现的 `{key: ` 模式 (如 `{a: "x: {y: 1}"}` 会破坏字符串内容)。
+   */
   function tryFixUnquotedKeys(input) {
-    return input.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
+    var out = '';
+    var inString = false, escape = false;
+    var i = 0;
+
+    function isIdStart(c) { return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c === '_' || c === '$'; }
+    function isIdChar(c) { return isIdStart(c) || c >= '0' && c <= '9'; }
+    function isWs(c) { return c === ' ' || c === '\t' || c === '\n' || c === '\r'; }
+
+    while (i < input.length) {
+      var ch = input[i];
+
+      // 字符串内部: 原样输出, 不做任何修复
+      if (inString) {
+        out += ch;
+        if (escape) escape = false;
+        else if (ch === '\\') escape = true;
+        else if (ch === '"') inString = false;
+        i++;
+        continue;
+      }
+      if (ch === '"') { inString = true; out += ch; i++; continue; }
+
+      // 非字符串: 仅在 `{` / `,` 后紧跟 空白? 标识符 空白? `:` 时补引号
+      if (ch === '{' || ch === ',') {
+        var j = i + 1;
+        while (j < input.length && isWs(input[j])) j++;
+        if (j < input.length && isIdStart(input[j])) {
+          var k = j + 1;
+          while (k < input.length && isIdChar(input[k])) k++;
+          var m = k;
+          while (m < input.length && isWs(input[m])) m++;
+          if (m < input.length && input[m] === ':') {
+            out += ch + input.slice(i + 1, j) + '"' + input.slice(j, k) + '"';
+            i = m; // 跳到冒号, 后续字符原样处理
+            continue;
+          }
+        }
+      }
+
+      out += ch;
+      i++;
+    }
+    return out;
   }
 
   function tryFixJson(str) {
@@ -425,6 +472,9 @@
   var _router = window.__router;
   var _i18n = window.i18n || { t: function (k, v) { return k; }, _lang: 'en' };
 
+  // 单条历史记录最大字符数 (≈1MB UTF-8): 防止 localStorage 配额被单条撑爆
+  var HISTORY_MAX_CHARS = 500 * 1024;
+
   // HTML-escape a string before injecting into innerHTML.
   // JSON.stringify does NOT escape <, >, & — without this, a JSON value
   // like "<img src=x onerror=alert(1)>" becomes live HTML (XSS).
@@ -491,9 +541,10 @@
     var lineCount = content.split('\n').length;
     renderLineNumbers(lineCount);
     var codeEl = area.querySelector('code');
-    if (codeEl && typeof hljs !== 'undefined') {
+    if (codeEl) {
+      // 无条件先写文本: 即使 hljs 未加载, 输出也不会空白
       codeEl.textContent = content;
-      hljs.highlightElement(codeEl);
+      if (typeof hljs !== 'undefined') hljs.highlightElement(codeEl);
     }
     var contentEl = area.querySelector('.output-content');
     if (contentEl) contentEl.onscroll = syncLineNumberScroll;
@@ -1189,6 +1240,10 @@
     });
   }
 
+  // diff 路径分隔符: 用 NUL 而非 '/', 避免 JSON key 本身含 '/' 时
+  // (如 {"a/b":1} vs {"a":{"b":1}}) 两条不同路径映射到同一个 map key, 高亮互相覆盖
+  var PATH_SEP = '\u0000';
+
   function diffJson(a, b) {
     if (a === b) return { t: 'same', v: a };
     var ta = typeof a, tb = typeof b;
@@ -1237,7 +1292,7 @@
       case 'obj':
       case 'arr':
         for (var i = 0; i < d.c.length; i++) {
-          collectDiffPaths(d.c[i].d, path ? path + '/' + d.c[i].k : d.c[i].k, leftMap, rightMap);
+          collectDiffPaths(d.c[i].d, path ? path + PATH_SEP + d.c[i].k : d.c[i].k, leftMap, rightMap);
         }
         break;
     }
@@ -1261,7 +1316,7 @@
       html += '<span class="jt-line">' + prefix + '<span class="jt-toggle" ' + toggleAttrs + '>&#9660;</span><span class="jt-bracket">[</span><span class="jt-collapsed-summary"> [' + _i18n.t('items', { count: count }) + ']</span></span>';
       html += '<div class="jt-children">';
       for (var i = 0; i < count; i++) {
-        html += renderJsonNodeWithDiff(String(i), value[i], path ? path + '/' + i : String(i), diffMap, side, rootVal);
+        html += renderJsonNodeWithDiff(String(i), value[i], path ? path + PATH_SEP + i : String(i), diffMap, side, rootVal);
         if (i < count - 1) html += '<span class="jt-comma">,</span>';
       }
       html += '</div>';
@@ -1279,7 +1334,7 @@
       html2 += '<div class="jt-children">';
       for (var k = 0; k < kcount; k++) {
         var keyStr = keys[k];
-        var childPath = path ? path + '/' + keyStr : keyStr;
+        var childPath = path ? path + PATH_SEP + keyStr : keyStr;
         html2 += renderJsonNodeWithDiff(keyStr, value[keyStr], childPath, diffMap, side, rootVal);
         if (k < kcount - 1) html2 += '<span class="jt-comma">,</span>';
       }
@@ -1338,6 +1393,7 @@
     bgImageOpacity: 0.25,
   };
   var _settings = getSettings();
+  var _bgIsDark = false;
 
   function getSettings() {
     try {
@@ -1351,7 +1407,13 @@
   }
 
   function saveSettings(obj) {
-    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(obj)); } catch (e) { console.warn('Failed to save settings:', e); }
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(obj));
+      return true;
+    } catch (e) {
+      console.warn('Failed to save settings:', e);
+      return false;
+    }
   }
 
   function renderWatermark() {
@@ -1383,7 +1445,7 @@
     var ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
     ctx.font = fontPx + 'px ' + fontFamily;
-    ctx.fillStyle = '#000000';
+    ctx.fillStyle = _bgIsDark ? '#ffffff' : '#000000';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.save();
@@ -1409,6 +1471,43 @@
       layer.style.backgroundImage = '';
       layer.classList.remove('has-image');
     }
+    computeBgLuminance();
+  }
+
+  // 采样背景图平均亮度，深色背景时水印自动切换为白色
+  function computeBgLuminance() {
+    if (!_settings.bgImageData) {
+      _bgIsDark = false;
+      renderWatermark();
+      return;
+    }
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var sampleSize = 16;
+        var c = document.createElement('canvas');
+        c.width = sampleSize;
+        c.height = sampleSize;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
+        var data = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
+        var sum = 0, count = 0;
+        for (var i = 0; i < data.length; i += 4) {
+          // 感知亮度: 0.299R + 0.587G + 0.114B
+          sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+          count++;
+        }
+        _bgIsDark = (sum / count) < 128;
+      } catch (e) {
+        _bgIsDark = false;
+      }
+      renderWatermark();
+    };
+    img.onerror = function () {
+      _bgIsDark = false;
+      renderWatermark();
+    };
+    img.src = _settings.bgImageData;
   }
 
   function applyAllSettings() {
@@ -1451,7 +1550,10 @@
     _settings.watermarkText = (wmTextInput ? wmTextInput.value : '').slice(0, 40);
     _settings.watermarkOpacity = clampOpacity(parseFloat(wmOpacityInput ? wmOpacityInput.value : DEFAULT_SETTINGS.watermarkOpacity), 0.05, 0.6, DEFAULT_SETTINGS.watermarkOpacity);
     _settings.bgImageOpacity = clampOpacity(parseFloat(bgOpacityInput ? bgOpacityInput.value : DEFAULT_SETTINGS.bgImageOpacity), 0, 1, DEFAULT_SETTINGS.bgImageOpacity);
-    saveSettings(_settings);
+    if (!saveSettings(_settings)) {
+      showToast(_i18n.t('settingsSaveFailed'), 2500, 'icon-alert-triangle');
+      return;
+    }
     applyAllSettings();
   }
 
@@ -1467,19 +1569,21 @@
 
   function handleBackgroundImageFile(file) {
     if (!file) return;
-    var allowed = ['image/png', 'image/jpeg', 'image/jpg'];
-    if (allowed.indexOf(file.type) === -1) {
-      showToast(_i18n.t('jsonOnly'), 2500, 'icon-alert-triangle');
+    if (!isSupportedImageFile(file)) {
+      showToast(_i18n.t('bgImageHint'), 2500, 'icon-alert-triangle');
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      showToast(_i18n.t('bgImageHint'), 3000, 'icon-alert-triangle');
+      showToast(_i18n.t('bgImageTooLarge'), 3000, 'icon-alert-triangle');
       return;
     }
     var reader = new FileReader();
     reader.onload = function () {
       _settings.bgImageData = String(reader.result || '');
-      saveSettings(_settings);
+      if (!saveSettings(_settings)) {
+        showToast(_i18n.t('settingsSaveFailed'), 2500, 'icon-alert-triangle');
+        return;
+      }
       applyBackgroundImage();
       showToast(_i18n.t('settingsSaved'), 1500, 'icon-check');
     };
@@ -1489,16 +1593,30 @@
     reader.readAsDataURL(file);
   }
 
+  // MIME 或扩展名任一命中即视为支持的图片格式
+  function isSupportedImageFile(file) {
+    var type = (file.type || '').toLowerCase();
+    if (type.indexOf('image/') === 0) return true;
+    var name = (file.name || '').toLowerCase();
+    return /\.(png|jpe?g|gif|webp|bmp|avif|heic|heif|ico)$/.test(name);
+  }
+
   function clearBackgroundImage() {
     _settings.bgImageData = '';
-    saveSettings(_settings);
+    if (!saveSettings(_settings)) {
+      showToast(_i18n.t('settingsSaveFailed'), 2500, 'icon-alert-triangle');
+      return;
+    }
     applyBackgroundImage();
     showToast(_i18n.t('cleared'), 1500, 'icon-check');
   }
 
   function resetAllSettings() {
     _settings = Object.assign({}, DEFAULT_SETTINGS);
-    saveSettings(_settings);
+    if (!saveSettings(_settings)) {
+      showToast(_i18n.t('settingsSaveFailed'), 2500, 'icon-alert-triangle');
+      return;
+    }
     syncSettingsForm();
     applyAllSettings();
     showToast(_i18n.t('settingsSaved'), 1500, 'icon-check');
@@ -1697,16 +1815,18 @@
       if (mod && e.key === 'f') { e.preventDefault(); openSearch(); return; }
       if (mod && e.key === 'Enter') { e.preventDefault(); formatFromInput(); return; }
       if (mod && e.key === 's') { e.preventDefault(); saveHistoryFromOutput(); return; }
-      if (mod && e.key === 'd') { e.preventDefault(); downloadFromOutput(); return; }
+      if (mod && e.key === 'd') { e.preventDefault(); handleDownload(); return; }
 
       if (e.key === 'Escape') {
         if (isSearchOpen()) { closeSearch(); }
         else {
           var modal = document.getElementById('save-modal');
+          var settings = document.getElementById('settings-modal');
           var compare = document.getElementById('compare-container');
           var sheet = document.getElementById('mob-sheet');
           var sidebar = document.getElementById('sidebar');
           if (modal && modal.classList.contains('active')) closeSaveModal();
+          else if (settings && settings.classList.contains('active')) closeSettings();
           else if (compare && compare.classList.contains('active')) closeCompare();
           else if (sheet && sheet.classList.contains('open')) toggleMobileMore();
           else if (sidebar && sidebar.classList.contains('active')) toggleSidebar();
@@ -2020,7 +2140,12 @@
     _store.setState(state);
     renderOutput('', 'empty');
     var input = document.getElementById('input');
-    if (input) input.value = '';
+    if (input) {
+      input.value = '';
+      // dispatch input 事件让 initInputTracker 同步 store 并隐藏校验指示灯,
+      // 否则红灯/绿灯在清空后残留
+      input.dispatchEvent(new Event('input'));
+    }
     clearNotifications();
     var inputSize = document.getElementById('input-size');
     if (inputSize) inputSize.textContent = '';
@@ -2062,6 +2187,12 @@
 
   function confirmSaveFromModal() {
     var formatted = _store.getStateForKey('output') || '';
+    // 单条历史大小上限: 超大 JSON 会迅速写满 localStorage 配额,
+    // setHistory 降级裁剪失败后会把整个 jsonHistory 键删除, 用户历史静默全丢
+    if (formatted.length > HISTORY_MAX_CHARS) {
+      showToast(_i18n.t('historyTooLarge'), 2500, 'icon-alert-triangle');
+      return;
+    }
     var nameInput = document.getElementById('save-name-input');
     var name = nameInput ? nameInput.value.trim() : '';
     var entry = _actions.confirmSave(formatted, name || _i18n.t('unnamed'));
@@ -2275,6 +2406,7 @@
       needFormatFirst: '请先格式化有效的 JSON',
       unnamed: '未命名', noHistory: '暂无历史记录', noHistoryHint: '格式化后保存即可',
       selectForCompare: '选中用于对比', deleteItem: '删除',
+      historyTooLarge: '记录过大，无法保存（上限 500KB）',
       autoQuoteId: '（已自动为标识符添加引号）',
       autoBracket: '（已自动补全括号）',
       autoBracketNotification: '原始 JSON 缺失部分括号，已自动补全',
@@ -2295,9 +2427,11 @@
       settings: '设置', settingsTitle: '界面设置',
       watermarkLabel: '水印文字', watermarkPlaceholder: '输入水印文字（留空则不显示）',
       watermarkOpacity: '水印透明度', watermarkEnabled: '启用水印',
-      bgImageLabel: '背景图片', bgImageHint: '支持 JPG/PNG，建议 ≤ 2MB',
+      bgImageLabel: '背景图片', bgImageHint: '支持常见图片格式（JPG/PNG/WebP/HEIC 等）',
       bgImageUpload: '选择图片', bgImageClear: '清除图片',
       bgImageOpacity: '背景透明度', settingsSaved: '设置已保存', resetSettings: '恢复默认',
+      bgImageTooLarge: '图片过大，请选择 ≤ 2MB 的图片',
+      settingsSaveFailed: '设置保存失败，存储空间可能不足',
     },
     en: {
       title: 'JSON Formatter', logoText: 'JSON Formatter', mobTitle: 'JSON Tool',
@@ -2341,6 +2475,7 @@
       needFormatFirst: 'Please format valid JSON first',
       unnamed: 'Untitled', noHistory: 'No history yet', noHistoryHint: 'Format and save to see history',
       selectForCompare: 'Select to compare', deleteItem: 'Delete',
+      historyTooLarge: 'Entry too large to save (max 500KB)',
       autoQuoteId: ' (auto-quoted identifier)',
       autoBracket: ' (auto-closed brackets)',
       autoBracketNotification: 'Some brackets were missing and have been auto-closed',
@@ -2361,9 +2496,11 @@
       settings: 'Settings', settingsTitle: 'Interface Settings',
       watermarkLabel: 'Watermark Text', watermarkPlaceholder: 'Enter watermark text (empty to disable)',
       watermarkOpacity: 'Watermark Opacity', watermarkEnabled: 'Enable Watermark',
-      bgImageLabel: 'Background Image', bgImageHint: 'JPG/PNG supported, recommended ≤ 2MB',
+      bgImageLabel: 'Background Image', bgImageHint: 'Common image formats supported (JPG/PNG/WebP/HEIC etc.)',
       bgImageUpload: 'Choose Image', bgImageClear: 'Clear Image',
       bgImageOpacity: 'Background Opacity', settingsSaved: 'Settings saved', resetSettings: 'Reset to Default',
+      bgImageTooLarge: 'Image too large, choose ≤ 2MB',
+      settingsSaveFailed: 'Failed to save settings, storage may be full',
     }
   };
 
@@ -2403,6 +2540,15 @@
       var key = el.getAttribute('data-i18n-placeholder');
       if (key) el.setAttribute('placeholder', i18n.t(key).replace(/\\n/g, '\n'));
     });
+    // 状态栏快捷键: macOS 用 ⌘ 替代 Ctrl
+    var shortcutsEl = document.getElementById('status-shortcuts');
+    if (shortcutsEl) {
+      var shortcutsText = i18n.t('statusShortcuts');
+      if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
+        shortcutsText = shortcutsText.replace(/Ctrl/g, '\u2318');
+      }
+      shortcutsEl.textContent = shortcutsText;
+    }
     document.querySelectorAll('[data-i18n-html]').forEach(function (el) {
       var key = el.getAttribute('data-i18n-html');
       if (key) el.innerHTML = i18n.t(key);
@@ -2615,16 +2761,31 @@
         window[name] = globals[name];
       }
     }
-    // Persist selected state to window for any external code that reads it
+    // 实时同步到 window.* 只读 getter: 外部代码读取时始终拿到 store 最新值,
+    // 而不是初始化时拷贝一次后永久过期
     if (window.__store) {
-      var state = window.__store.getState();
-      window.selectedIds = state.selectedIds || [];
-      window.compareOrder = state.compareOrder || [0, 1];
-      window.lastFormattedContent = state.output || '';
-      window.lastOutputLineCount = state.lastOutputLineCount || 0;
-      window.lastParsedJson = state.outputParsed || null;
-      window.listSelectedIndex = state.listSelectedIndex || 0;
-      window.lastDetailContent = state.lastDetailContent || '';
+      var liveState = {
+        selectedIds: { key: 'selectedIds', def: [] },
+        compareOrder: { key: 'compareOrder', def: [0, 1] },
+        lastFormattedContent: { key: 'output', def: '' },
+        lastOutputLineCount: { key: 'lastOutputLineCount', def: 0 },
+        lastParsedJson: { key: 'outputParsed', def: null },
+        listSelectedIndex: { key: 'listSelectedIndex', def: 0 },
+        lastDetailContent: { key: 'lastDetailContent', def: '' },
+      };
+      for (var gk in liveState) {
+        if (liveState.hasOwnProperty(gk) && typeof window[gk] === 'undefined') {
+          (function (name, cfg) {
+            Object.defineProperty(window, name, {
+              configurable: true,
+              get: function () {
+                var v = window.__store.getStateForKey(cfg.key);
+                return v === undefined || v === null ? cfg.def : v;
+              }
+            });
+          })(gk, liveState[gk]);
+        }
+      }
     }
   }
 
