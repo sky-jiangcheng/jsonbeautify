@@ -1777,5 +1777,7 @@
     // Init
     init: init,
     rerenderDynamicContent: rerenderDynamicContent,
+    // Toast (带 XSS 转义, 外部调用请走这里而不是直接改 toast.innerHTML)
+    showToast: showToast,
   };
 })();
