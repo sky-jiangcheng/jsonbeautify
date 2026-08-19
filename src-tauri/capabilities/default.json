@@ -8,12 +8,15 @@
     "dialog:default",
     "clipboard-manager:allow-write-text",
     "fs:allow-write-text-file",
+    "fs:allow-apply-scope",
     {
       "identifier": "fs:scope",
       "allow": [
         "$DOCUMENT/**",
         "$DOWNLOAD/**",
-        "$HOME/**"
+        "$HOME/**",
+        "$TEMP/**",
+        "$TMP/**"
       ]
     }
   ]
