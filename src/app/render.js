@@ -933,6 +933,7 @@
     bgImageOpacity: 0.25,
   };
   var _settings = getSettings();
+  var _bgIsDark = false;
 
   function getSettings() {
     try {
@@ -946,7 +947,13 @@
   }
 
   function saveSettings(obj) {
-    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(obj)); } catch (e) { console.warn('Failed to save settings:', e); }
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(obj));
+      return true;
+    } catch (e) {
+      console.warn('Failed to save settings:', e);
+      return false;
+    }
   }
 
   function renderWatermark() {
@@ -978,7 +985,7 @@
     var ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
     ctx.font = fontPx + 'px ' + fontFamily;
-    ctx.fillStyle = '#000000';
+    ctx.fillStyle = _bgIsDark ? '#ffffff' : '#000000';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.save();
@@ -1004,6 +1011,43 @@
       layer.style.backgroundImage = '';
       layer.classList.remove('has-image');
     }
+    computeBgLuminance();
+  }
+
+  // 采样背景图平均亮度，深色背景时水印自动切换为白色
+  function computeBgLuminance() {
+    if (!_settings.bgImageData) {
+      _bgIsDark = false;
+      renderWatermark();
+      return;
+    }
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var sampleSize = 16;
+        var c = document.createElement('canvas');
+        c.width = sampleSize;
+        c.height = sampleSize;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
+        var data = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
+        var sum = 0, count = 0;
+        for (var i = 0; i < data.length; i += 4) {
+          // 感知亮度: 0.299R + 0.587G + 0.114B
+          sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+          count++;
+        }
+        _bgIsDark = (sum / count) < 128;
+      } catch (e) {
+        _bgIsDark = false;
+      }
+      renderWatermark();
+    };
+    img.onerror = function () {
+      _bgIsDark = false;
+      renderWatermark();
+    };
+    img.src = _settings.bgImageData;
   }
 
   function applyAllSettings() {
@@ -1046,7 +1090,10 @@
     _settings.watermarkText = (wmTextInput ? wmTextInput.value : '').slice(0, 40);
     _settings.watermarkOpacity = clampOpacity(parseFloat(wmOpacityInput ? wmOpacityInput.value : DEFAULT_SETTINGS.watermarkOpacity), 0.05, 0.6, DEFAULT_SETTINGS.watermarkOpacity);
     _settings.bgImageOpacity = clampOpacity(parseFloat(bgOpacityInput ? bgOpacityInput.value : DEFAULT_SETTINGS.bgImageOpacity), 0, 1, DEFAULT_SETTINGS.bgImageOpacity);
-    saveSettings(_settings);
+    if (!saveSettings(_settings)) {
+      showToast(_i18n.t('settingsSaveFailed'), 2500, 'icon-alert-triangle');
+      return;
+    }
     applyAllSettings();
   }
 
@@ -1062,19 +1109,21 @@
 
   function handleBackgroundImageFile(file) {
     if (!file) return;
-    var allowed = ['image/png', 'image/jpeg', 'image/jpg'];
-    if (allowed.indexOf(file.type) === -1) {
+    if (!isSupportedImageFile(file)) {
       showToast(_i18n.t('bgImageHint'), 2500, 'icon-alert-triangle');
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      showToast(_i18n.t('bgImageHint'), 3000, 'icon-alert-triangle');
+      showToast(_i18n.t('bgImageTooLarge'), 3000, 'icon-alert-triangle');
       return;
     }
     var reader = new FileReader();
     reader.onload = function () {
       _settings.bgImageData = String(reader.result || '');
-      saveSettings(_settings);
+      if (!saveSettings(_settings)) {
+        showToast(_i18n.t('settingsSaveFailed'), 2500, 'icon-alert-triangle');
+        return;
+      }
       applyBackgroundImage();
       showToast(_i18n.t('settingsSaved'), 1500, 'icon-check');
     };
@@ -1084,16 +1133,30 @@
     reader.readAsDataURL(file);
   }
 
+  // MIME 或扩展名任一命中即视为支持的图片格式
+  function isSupportedImageFile(file) {
+    var type = (file.type || '').toLowerCase();
+    if (type.indexOf('image/') === 0) return true;
+    var name = (file.name || '').toLowerCase();
+    return /\.(png|jpe?g|gif|webp|bmp|avif|heic|heif|ico)$/.test(name);
+  }
+
   function clearBackgroundImage() {
     _settings.bgImageData = '';
-    saveSettings(_settings);
+    if (!saveSettings(_settings)) {
+      showToast(_i18n.t('settingsSaveFailed'), 2500, 'icon-alert-triangle');
+      return;
+    }
     applyBackgroundImage();
     showToast(_i18n.t('cleared'), 1500, 'icon-check');
   }
 
   function resetAllSettings() {
     _settings = Object.assign({}, DEFAULT_SETTINGS);
-    saveSettings(_settings);
+    if (!saveSettings(_settings)) {
+      showToast(_i18n.t('settingsSaveFailed'), 2500, 'icon-alert-triangle');
+      return;
+    }
     syncSettingsForm();
     applyAllSettings();
     showToast(_i18n.t('settingsSaved'), 1500, 'icon-check');

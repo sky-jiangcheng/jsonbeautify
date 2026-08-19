@@ -75,9 +75,11 @@
       settings: '设置', settingsTitle: '界面设置',
       watermarkLabel: '水印文字', watermarkPlaceholder: '输入水印文字（留空则不显示）',
       watermarkOpacity: '水印透明度', watermarkEnabled: '启用水印',
-      bgImageLabel: '背景图片', bgImageHint: '支持 JPG/PNG，建议 ≤ 2MB',
+      bgImageLabel: '背景图片', bgImageHint: '支持常见图片格式（JPG/PNG/WebP/HEIC 等）',
       bgImageUpload: '选择图片', bgImageClear: '清除图片',
       bgImageOpacity: '背景透明度', settingsSaved: '设置已保存', resetSettings: '恢复默认',
+      bgImageTooLarge: '图片过大，请选择 ≤ 2MB 的图片',
+      settingsSaveFailed: '设置保存失败，存储空间可能不足',
     },
     en: {
       title: 'JSON Formatter', logoText: 'JSON Formatter', mobTitle: 'JSON Tool',
@@ -142,9 +144,11 @@
       settings: 'Settings', settingsTitle: 'Interface Settings',
       watermarkLabel: 'Watermark Text', watermarkPlaceholder: 'Enter watermark text (empty to disable)',
       watermarkOpacity: 'Watermark Opacity', watermarkEnabled: 'Enable Watermark',
-      bgImageLabel: 'Background Image', bgImageHint: 'JPG/PNG supported, recommended ≤ 2MB',
+      bgImageLabel: 'Background Image', bgImageHint: 'Common image formats supported (JPG/PNG/WebP/HEIC etc.)',
       bgImageUpload: 'Choose Image', bgImageClear: 'Clear Image',
       bgImageOpacity: 'Background Opacity', settingsSaved: 'Settings saved', resetSettings: 'Reset to Default',
+      bgImageTooLarge: 'Image too large, choose ≤ 2MB',
+      settingsSaveFailed: 'Failed to save settings, storage may be full',
     }
   };
 
