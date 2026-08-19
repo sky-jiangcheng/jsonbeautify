@@ -1506,6 +1506,8 @@
     img.onerror = function () {
       _bgIsDark = false;
       renderWatermark();
+      // 浏览器可能不支持该图片格式(如 HEIC 在 Chrome/WebView2), 提示而非静默失败
+      showToast(_i18n.t('bgImageUnsupported'), 3000, 'icon-alert-triangle');
     };
     img.src = _settings.bgImageData;
   }
@@ -2432,6 +2434,7 @@
       bgImageOpacity: '背景透明度', settingsSaved: '设置已保存', resetSettings: '恢复默认',
       bgImageTooLarge: '图片过大，请选择 ≤ 2MB 的图片',
       settingsSaveFailed: '设置保存失败，存储空间可能不足',
+      bgImageUnsupported: '图片无法显示，当前浏览器不支持该格式',
     },
     en: {
       title: 'JSON Formatter', logoText: 'JSON Formatter', mobTitle: 'JSON Tool',
@@ -2501,6 +2504,7 @@
       bgImageOpacity: 'Background Opacity', settingsSaved: 'Settings saved', resetSettings: 'Reset to Default',
       bgImageTooLarge: 'Image too large, choose ≤ 2MB',
       settingsSaveFailed: 'Failed to save settings, storage may be full',
+      bgImageUnsupported: 'Image cannot be displayed, format not supported by this browser',
     }
   };
 
