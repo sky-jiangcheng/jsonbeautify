@@ -1958,6 +1958,26 @@
     }).catch(function () { fallbackCopy(); });
   }
 
+  /**
+   * Tauri 写文件, 先尝试把目标路径加入临时 fs scope(allow-apply-scope),
+   * 使 dialog.save 用户所选任意路径都能写入; apply_scope 不可用时回退到受限 scope 写入。
+   * 返回 Promise 且成功时 resolve(true)。
+   */
+  function writeWithAppliedScope(path, content) {
+    function doWrite() {
+      return window.__TAURI__.fs.writeTextFile(path, content).then(function () { return true; });
+    }
+    var tauri = window.__TAURI__;
+    var core = tauri && tauri.core;
+    // 尝试 apply_scope (tauri-plugin-fs v2): 把 path 加入允许范围。
+    // apply_scope 失败(命令不存在/未授权/路径不被允许)不阻断, 继续走受限 scope 直接写。
+    var pre = [];
+    if (core && typeof core.invoke === 'function') {
+      pre.push(core.invoke('plugin:fs|apply_scope', { paths: [path] }).catch(function () {}));
+    }
+    return Promise.all(pre).then(doWrite);
+  }
+
   function handleDownload() {
     var formatted = _store.getStateForKey('output') || '';
     var download = _actions.downloadJSON(formatted);
@@ -1972,9 +1992,12 @@
         filters: [{ name: 'JSON', extensions: ['json'] }]
       }).then(function (path) {
         if (!path) return;
-        return window.__TAURI__.fs.writeTextFile(path, download.content);
-      }).then(function () {
-        showToast(_i18n.t('downloaded'), 2000, 'icon-download');
+        // 把用户所选路径加入临时写范围(apply_scope), 允许保存到任意位置,
+        // 而不必全局放开 fs:scope "**"。若该命令不可用/未授权, 静默回退到
+        // 原有限 scope 的 writeTextFile, 不影响已授权路径的保存。
+        return writeWithAppliedScope(path, download.content);
+      }).then(function (done) {
+        if (done) showToast(_i18n.t('downloaded'), 2000, 'icon-download');
       }).catch(function () {
         showToast(_i18n.t('downloadFailed'), 2000, 'icon-alert-triangle');
       });
