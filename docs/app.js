@@ -22,9 +22,11 @@
     }
   }
 
+  // 每次实时检测 (不缓存): 供 resize/orientationchange 时重新判定设备。
+  // 之前用 getDevice() 缓存过一次就永远不变, 导致桌面窗口缩到手机宽度时
+  // 仍然 data-device="desktop", 移动端控件完全不出现 / 点不动。
   function getDevice() {
-    if (_device === null) _device = detect();
-    return _device;
+    return detect();
   }
 
   function isMobileDevice() {
@@ -34,7 +36,7 @@
   function syncDeviceToDOM() {
     var d = document.documentElement;
     var current = d.getAttribute('data-device');
-    var detected = getDevice();
+    var detected = detect();
     if (current !== detected) {
       d.setAttribute('data-device', detected);
       _device = detected;
