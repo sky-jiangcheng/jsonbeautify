@@ -12,6 +12,9 @@ const targets = [
   // 1. 根目录 favicon
   ['favicon-32.png', 32],
 
+  // 1b. 页面 header logo（左上角，22px 显示 @2x；与 favicon 同源保证标识一致）
+  ['logo.png', 48],
+
   // 2. docs/ 下的 PWA 与 favicon
   ['docs/favicon-32.png', 32],
   ['docs/icon-192.png', 192],

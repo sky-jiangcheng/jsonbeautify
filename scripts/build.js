@@ -22,6 +22,7 @@ const STATIC_ASSETS = [
     'favicon-32.png',
     'icon-192.png',
     'icon-512.png',
+    'logo.png',
 ];
 
 // 源文件：从 src/ 复制（拆分后的 CSS/JS）

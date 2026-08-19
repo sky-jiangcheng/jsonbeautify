@@ -146,7 +146,12 @@
         .logo-icon {
             width: 22px;
             height: 22px;
-            color: var(--accent);
+            flex-shrink: 0;
+            border-radius: 5px;
+            /* 品牌图标自带奶油底色, 暗色模式下用轻微描边与背景区分 */
+            box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.15);
+            object-fit: contain;
+            display: block;
         }
 
         /* ========== Toolbar ========== */
@@ -1552,7 +1557,13 @@
             min-width: 0;
         }
         [data-device="mobile"] .mob-logo-icon {
-            color: var(--accent-color, #5b9cf5);
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            border-radius: 4px;
+            box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.15);
+            object-fit: contain;
+            display: block;
         }
         [data-device="mobile"] .mob-title {
             font-size: clamp(14px, 3.5vw, 17px);
