@@ -2188,6 +2188,8 @@
     // Init
     init: init,
     rerenderDynamicContent: rerenderDynamicContent,
+    // Toast (带 XSS 转义, 外部调用请走这里而不是直接改 toast.innerHTML)
+    showToast: showToast,
   };
 })();
 
@@ -2424,9 +2426,13 @@
             }
             var toast = document.getElementById('toast');
             if (toast) {
-              toast.innerHTML = '<svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>' + i18n.t('loaded', { name: file.name });
-              toast.classList.add('show');
-              setTimeout(function () { toast.classList.remove('show'); }, 2000);
+              // 用 render.showToast 展示(内部对 msg 做 escapeHtml, 防文件名的 XSS)
+              if (render.showToast) render.showToast(i18n.t('loaded', { name: file.name }), 2000, 'icon-folder-open');
+              else {
+                toast.innerHTML = '<svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-folder-open"/></svg>' + i18n.t('loaded', { name: file.name });
+                toast.classList.add('show');
+                setTimeout(function () { toast.classList.remove('show'); }, 2000);
+              }
             }
           };
           reader.readAsText(file);
@@ -2546,9 +2552,13 @@
         if (window.__router && window.__router.isMobileDevice()) render.toggleSidebar();
         var toast = document.getElementById('toast');
         if (toast) {
-          toast.innerHTML = '<svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-file-text"/></svg>' + i18n.t('loaded', { name: item.name });
-          toast.classList.add('show');
-          setTimeout(function () { toast.classList.remove('show'); }, 2000);
+          // 用 render.showToast 展示(内部 escapeHtml, 防历史名 XSS)
+          if (render.showToast) render.showToast(i18n.t('loaded', { name: item.name }), 2000, 'icon-file-text');
+          else {
+            toast.innerHTML = '<svg aria-hidden="true" class="svg-icon-sm" viewBox="0 0 24 24"><use href="#icon-file-text"/></svg>' + i18n.t('loaded', { name: item.name });
+            toast.classList.add('show');
+            setTimeout(function () { toast.classList.remove('show'); }, 2000);
+          }
         }
       },
       toggleSelect: function (id) {
