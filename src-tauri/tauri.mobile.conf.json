@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/nicedoc/nicedoc/master/web.json",
   "productName": "JSON 格式化工具",
   "version": "1.5.51",
-  "identifier": "com.jsonbeautify.desktop",
+  "identifier": "com.jsonbeautify.mobile",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:8000",
@@ -30,20 +30,21 @@
     "active": true,
     "targets": "all",
     "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.ico",
-      "icons/icon.png",
-      "icons/16x16.png",
-      "icons/64x64.png",
-      "icons/256x256.png",
-      "icons/512x512.png",
-      "icons/512x512@2x.png"
+      "icons/mobile/16x16.png",
+      "icons/mobile/32x32.png",
+      "icons/mobile/128x128.png",
+      "icons/mobile/128x128@2x.png",
+      "icons/mobile/icon.ico",
+      "icons/mobile/icon.png",
+      "icons/mobile/16x16.png",
+      "icons/mobile/64x64.png",
+      "icons/mobile/256x256.png",
+      "icons/mobile/512x512.png",
+      "icons/mobile/512x512@2x.png"
     ],
     "createUpdaterArtifacts": false,
     "category": "Developer Tools",
     "shortDescription": "JSON 格式化与验证工具",
-    "longDescription": "JSON 格式化工具支持 JSON 格式化、压缩、树形视图、内容对比和历史记录。适合开发者和日常 JSON 数据处理。"
+    "longDescription": "JSON 格式化工具支持 JSON 格式化、压缩、树形视图、内容对比和历史记录。适合移动端 JSON 数据处理。"
   }
 }

@@ -32,7 +32,6 @@ const sizes = [
   { size: 76, filename: 'ios/AppIcon-76x76@1x.png' },
   { size: 152, filename: 'ios/AppIcon-76x76@2x.png' },
   { size: 167, filename: 'ios/AppIcon-83.5x83.5@2x.png' },
-  { size: 1024, filename: 'ios/AppIcon-1024.png' },
   { size: 1024, filename: 'ios/AppIcon-512@2x.png' },
 ];
 

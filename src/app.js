@@ -9,6 +9,47 @@
   'use strict';
 
   /* ==============================================================
+     Platform Detection Layer
+  ============================================================== */
+  var Platform = {
+    isMobile: function() {
+      return this._detectMobile();
+    },
+    _cached: null,
+    _detectMobile: function() {
+      if (this._cached !== null) return this._cached;
+      
+      // iOS Safari / WebView detection
+      var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      
+      // Android detection
+      var isAndroid = /Android/.test(navigator.userAgent);
+      
+      // Tauri mobile detection
+      var isTauriMobile = typeof window !== 'undefined' && 
+                           window.__TAURI__ && 
+                           window.__TAURI__?.platform === 'mobile';
+      
+      this._cached = !!(isIOS || isAndroid || isTauriMobile);
+      return this._cached;
+    },
+    isTauri: function() {
+      return typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
+    },
+    getPlatform: function() {
+      if (this.isMobile()) {
+        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) return 'ios';
+        if (/Android/.test(navigator.userAgent)) return 'android';
+        return 'mobile';
+      }
+      if (this.isTauri()) return 'tauri';
+      return 'desktop';
+    }
+  };
+  window.Platform = Platform;
+
+  /* ==============================================================
      i18n (kept here since it drives DOM text content directly)
   ============================================================== */
   var I18N = {

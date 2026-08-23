@@ -2,6 +2,7 @@
  * src/app/store.js
  * Central state store with pub/sub. All app state lives here — no more
  * scattered window.* globals.
+ * Enhanced with platform-aware state management.
  */
 
 (function () {
@@ -31,6 +32,7 @@
     _lastRenderFixed: false,
     _lastRenderParsedObj: null,
     _compareScrollController: null,
+    _platform: null, // Track current platform: 'desktop' | 'mobile' | 'ios' | 'android' | 'tauri'
   };
 
   var _subscribers = [];
@@ -40,6 +42,11 @@
   function setState(partial) {
     for (var key in partial) {
       if (partial.hasOwnProperty(key)) _state[key] = partial[key];
+    }
+    // Sync platform tracking to localStorage for persistence
+    if (partial._platform) {
+      localStorage.setItem('appPlatform', partial._platform);
+      _state._platform = partial._platform;
     }
     for (var i = 0; i < _subscribers.length; i++) _subscribers[i](_state);
   }

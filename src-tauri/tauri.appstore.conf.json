@@ -19,5 +19,6 @@
         "embedded.provisionprofile": "./embedded.provisionprofile"
       }
     }
-  }
+  },
+  "version": "1.5.51"
 }
