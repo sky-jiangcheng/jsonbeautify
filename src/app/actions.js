@@ -16,26 +16,79 @@
     });
   }
 
+  function normalizeHistoryItem(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    var id = String(raw.id || raw._id || '');
+    if (!id) id = 'legacy-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+    var name = String(raw.name || raw.title || raw.label || '');
+    if (!name) name = 'untitled';
+    var content = '';
+    // 跨版本字段兼容：历史上可能用过 content / json / text / data / value 等字段存内容
+    if (typeof raw.content === 'string') content = raw.content;
+    else if (typeof raw.json === 'string') content = raw.json;
+    else if (typeof raw.text === 'string') content = raw.text;
+    else if (typeof raw.data === 'string') content = raw.data;
+    else if (typeof raw.value === 'string') content = raw.value;
+    // 老版本 {id, entries:[...]} 这种容器对象也尝试兜底取出第一个字符串
+    else if (raw && typeof raw === 'object') {
+      for (var k in raw) {
+        var v = raw[k];
+        if (typeof v === 'string' && v.length > 0 && /[{["\d\-tfnsu]/.test(v.charAt(0) === ' ' ? v.trimLeft().charAt(0) : v.charAt(0))) {
+          content = v;
+          break;
+        }
+      }
+    }
+    // 如果字符串本身是 stringify 过的一层 shell ("\"...\"") 就解一次
+    if (content && content.length > 2 && content.charCodeAt(0) === 34 && content.charCodeAt(content.length - 1) === 34) {
+      try { content = JSON.parse(content); } catch (_) {}
+    }
+    // 单条超大记录的降级提示：不丢弃数据，但后续调用方可以根据 size 决定 UI 提示
+    var sizeBytes = content.length;
+    return { id: id, name: name, content: String(content || ''), _legacy: true, _size: sizeBytes };
+  }
+
   function getHistory() {
+    var raw = null;
     try {
-      return JSON.parse(localStorage.getItem('jsonHistory') || '[]');
+      raw = JSON.parse(localStorage.getItem('jsonHistory') || '[]');
     } catch (e) {
       try { localStorage.removeItem('jsonHistory'); } catch (_) {}
       return [];
     }
+    if (!Array.isArray(raw)) return [];
+    var out = [];
+    for (var i = 0; i < raw.length; i++) {
+      var n = normalizeHistoryItem(raw[i]);
+      if (n) out.push(n);
+    }
+    return out;
   }
 
   function setHistory(arr) {
     try {
       // 裁剪上限,避免超大历史撑爆 localStorage 配额
-      if (Array.isArray(arr)) arr = arr.slice(0, 100);
+      if (Array.isArray(arr)) {
+        var normalized = [];
+        for (var i = 0; i < Math.min(arr.length, 100); i++) {
+          var n = normalizeHistoryItem(arr[i]);
+          if (n) normalized.push({ id: n.id, name: n.name, content: n.content });
+        }
+        arr = normalized;
+      }
       localStorage.setItem('jsonHistory', JSON.stringify(arr));
     } catch (e) {
       // 配额满/序列化失败时静默降级: 尝试只保留最近的 20 条再写一次
       console.warn('[actions] setHistory failed, trimming:', e);
       try {
-        if (Array.isArray(arr)) arr = arr.slice(0, 20);
-        localStorage.setItem('jsonHistory', JSON.stringify(arr));
+        if (Array.isArray(arr)) {
+          var trimmed = [];
+          for (var j = 0; j < Math.min(arr.length, 20); j++) {
+            var m = normalizeHistoryItem(arr[j]);
+            if (m) trimmed.push({ id: m.id, name: m.name, content: m.content });
+          }
+          localStorage.setItem('jsonHistory', JSON.stringify(trimmed));
+        }
       } catch (e2) {
         try { localStorage.removeItem('jsonHistory'); } catch (_) {}
       }

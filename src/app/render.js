@@ -581,17 +581,22 @@
     }
 
     var html = history.map(function (item) {
-      var snippet = item.content.replace(/\s+/g, '').slice(0, 50);
-      var checked = selectedIds.indexOf(item.id) >= 0 ? 'checked' : '';
-      var selected = selectedIds.indexOf(item.id) >= 0 ? 'selected' : '';
+      // 跨版本安全: 旧 item 可能无 content / 字段名不一致, getHistory 已经 normalize, 这里再兜底
+      var rawContent = (item && typeof item.content === 'string') ? item.content : '';
+      var snippet = rawContent.replace(/\s+/g, '').slice(0, 50);
+      if (!snippet) snippet = _i18n.t('legacyEmptySnippet') || '[empty entry]';
+      var name = item && item.name ? item.name : (_i18n.t('untitled') || 'untitled');
+      var id = item && item.id ? item.id : '';
+      var checked = id && selectedIds.indexOf(id) >= 0 ? 'checked' : '';
+      var selected = id && selectedIds.indexOf(id) >= 0 ? 'selected' : '';
       return (
         '<div class="history-item ' + selected + '">' +
-        '  <input type="checkbox" class="history-checkbox" data-select-id="' + item.id + '" ' + checked + ' title="' + _i18n.t('selectForCompare') + '" aria-label="' + _i18n.t('selectForCompare') + '" />' +
-        '  <button type="button" class="history-info" data-load-id="' + item.id + '" aria-label="加载历史：' + _actions.escapeHtml(item.name) + '">' +
-        '    <div class="history-name">' + _actions.escapeHtml(item.name) + '</div>' +
+        '  <input type="checkbox" class="history-checkbox" data-select-id="' + id + '" ' + checked + ' title="' + _i18n.t('selectForCompare') + '" aria-label="' + _i18n.t('selectForCompare') + '" />' +
+        '  <button type="button" class="history-info" data-load-id="' + id + '" aria-label="加载历史：' + _actions.escapeHtml(name) + '">' +
+        '    <div class="history-name">' + _actions.escapeHtml(name) + '</div>' +
         '    <div class="history-snippet">' + _actions.escapeHtml(snippet) + '</div>' +
         '  </button>' +
-        '  <button type="button" class="history-delete" data-delete-id="' + item.id + '" title="' + _i18n.t('deleteItem') + '" aria-label="' + _i18n.t('deleteItem') + '">&times;</button>' +
+        '  <button type="button" class="history-delete" data-delete-id="' + id + '" title="' + _i18n.t('deleteItem') + '" aria-label="' + _i18n.t('deleteItem') + '">&times;</button>' +
         '</div>'
       );
     }).join('');
@@ -1206,7 +1211,7 @@
       var hid = infoBtn.dataset.loadId;
       var hist = _actions.getHistory();
       var loaded = _actions.loadHistory(hist, hid);
-      if (loaded) {
+      if (loaded && typeof loaded.content === 'string' && loaded.content.length > 0) {
         var input = document.getElementById('input');
         if (input) input.value = loaded.content;
         if (input) input.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
@@ -1223,6 +1228,10 @@
         if (_router.isMobileDevice()) toggleSidebar();
         showToast(_i18n.t('loaded', { name: loaded.name }), 2000, 'icon-file-text');
         _store.setState({ _platform: Platform.getPlatform() });
+      } else {
+        // 老版本记录字段不兼容 / 内容为空 → 友好提示不静默失败
+        var name = loaded && loaded.name ? loaded.name : (_i18n.t('untitled') || 'untitled');
+        showToast(_i18n.t('legacyHistoryUnavailable', { name: name }) || ('Cannot load "' + name + '" (legacy format unavailable). You can delete it after backing up.'), 3000, 'icon-alert-triangle');
       }
       return true;
     }
