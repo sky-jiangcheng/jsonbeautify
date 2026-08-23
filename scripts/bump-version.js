@@ -35,6 +35,18 @@ const updates = [
         replacement: `"version": "${newVersion}"`,
     },
     {
+        // iOS TestFlight 构建使用的 CFBundleShortVersionString 从此 config 的 version 字段解析
+        file: 'src-tauri/tauri.ios.conf.json',
+        pattern: /"version":\s*"\d+\.\d+\.\d+"/,
+        replacement: `"version": "${newVersion}"`,
+    },
+    {
+        // App Store Review 上架构建使用独立 config, 必须与主 version 保持一致
+        file: 'src-tauri/tauri.appstore.conf.json',
+        pattern: /"version":\s*"\d+\.\d+\.\d+"/,
+        replacement: `"version": "${newVersion}"`,
+    },
+    {
         file: 'src-tauri/Cargo.toml',
         pattern: /version\s*=\s*"\d+\.\d+\.\d+"/,
         replacement: `version = "${newVersion}"`,
