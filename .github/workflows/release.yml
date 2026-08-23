@@ -511,7 +511,9 @@ jobs:
           echo "PROFILE_NAME=$PROFILE_NAME" >> $GITHUB_ENV
 
       - name: Generate iOS icons
-        run: npx tauri icon src-tauri/app-icon-source.png
+        run: |
+          npx tauri icon src-tauri/app-icon-source.png
+          npm run icons:generate
 
       - name: Initialize iOS project
         run: npx tauri ios init --ci --config src-tauri/tauri.ios.conf.json
