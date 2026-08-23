@@ -64,6 +64,7 @@
  * src/app/store.js
  * Central state store with pub/sub. All app state lives here — no more
  * scattered window.* globals.
+ * Enhanced with platform-aware state management.
  */
 
 (function () {
@@ -93,6 +94,7 @@
     _lastRenderFixed: false,
     _lastRenderParsedObj: null,
     _compareScrollController: null,
+    _platform: null, // Track current platform: 'desktop' | 'mobile' | 'ios' | 'android' | 'tauri'
   };
 
   var _subscribers = [];
@@ -102,6 +104,11 @@
   function setState(partial) {
     for (var key in partial) {
       if (partial.hasOwnProperty(key)) _state[key] = partial[key];
+    }
+    // Sync platform tracking to localStorage for persistence
+    if (partial._platform) {
+      localStorage.setItem('appPlatform', partial._platform);
+      _state._platform = partial._platform;
     }
     for (var i = 0; i < _subscribers.length; i++) _subscribers[i](_state);
   }
@@ -1636,69 +1643,87 @@
   }
 
   /* ==============================================================
+     Platform-aware event handling helpers
+  ============================================================== */
+  function handleHistoryClick(e) {
+    var delBtn = e.target.closest('[data-delete-id]');
+    if (delBtn) {
+      e.stopPropagation();
+      var id = delBtn.dataset.deleteId;
+      var history = _actions.getHistory();
+      var selectedIds = _store.getStateForKey('selectedIds') || [];
+      var result = _actions.deleteHistory(history, id, selectedIds);
+      _actions.setHistory(result.history);
+      _store.setState({ selectedIds: result.selectedIds, _platform: Platform.getPlatform() });
+      renderHistory();
+      return true;
+    }
+    var checkbox = e.target.closest('[data-select-id]');
+    if (checkbox) {
+      e.stopPropagation();
+      var sid = checkbox.dataset.selectId;
+      var sel = _store.getStateForKey('selectedIds') || [];
+      var newSel = _actions.toggleSelect(sel, sid);
+      _store.setState({ selectedIds: newSel, _platform: Platform.getPlatform() });
+      renderHistory();
+      return true;
+    }
+    var infoBtn = e.target.closest('[data-load-id]');
+    if (infoBtn) {
+      var hid = infoBtn.dataset.loadId;
+      var hist = _actions.getHistory();
+      var loaded = _actions.loadHistory(hist, hid);
+      if (loaded) {
+        var input = document.getElementById('input');
+        if (input) input.value = loaded.content;
+        if (input) input.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+        var result = _actions.formatJSON(loaded.content);
+        if (result.error) {
+          renderErrorOutput(result.error, result.input);
+          setStatus(_i18n.t('jsonError'));
+        } else {
+          var notifMsg = result.fixed ? _i18n.t(result.fixMsg) : '';
+          renderOutput(result.content, result.type, result.fixed, result.parsed);
+          setStatus(_i18n.t('formatSuccess') + notifMsg, true);
+          updateOutputStatus(result.content);
+        }
+        if (_router.isMobileDevice()) toggleSidebar();
+        showToast(_i18n.t('loaded', { name: loaded.name }), 2000, 'icon-file-text');
+        _store.setState({ _platform: Platform.getPlatform() });
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /* ==============================================================
      Dynamic event delegation (re-used by app.js)
   ============================================================== */
   function bindDynamicDelegation() {
     var historyList = document.getElementById('history-list');
-    if (historyList) {
-      historyList.addEventListener('click', function (e) {
-        var delBtn = e.target.closest('[data-delete-id]');
-        if (delBtn) {
-          e.stopPropagation();
-          // id 是字符串("<timestamp>-<base36>"),不能 Number() 转换,否则变 NaN 导致删除失效
-          var id = delBtn.dataset.deleteId;
-          var history = _actions.getHistory();
-          var selectedIds = _store.getStateForKey('selectedIds') || [];
-          var result = _actions.deleteHistory(history, id, selectedIds);
-          _actions.setHistory(result.history);
-          _store.setState({ selectedIds: result.selectedIds });
-          renderHistory();
-          return;
-        }
-        var checkbox = e.target.closest('[data-select-id]');
-        if (checkbox) {
-          e.stopPropagation();
-          var sid = checkbox.dataset.selectId;
-          var sel = _store.getStateForKey('selectedIds') || [];
-          var newSel = _actions.toggleSelect(sel, sid);
-          _store.setState({ selectedIds: newSel });
-          renderHistory();
-          return;
-        }
-        var infoBtn = e.target.closest('[data-load-id]');
-        if (infoBtn) {
-          var hid = infoBtn.dataset.loadId;
-          var hist = _actions.getHistory();
-          var loaded = _actions.loadHistory(hist, hid);
-          if (loaded) {
-            var input = document.getElementById('input');
-            if (input) input.value = loaded.content;
-            input && input.dispatchEvent(new Event('input'));
-            // Format using actions
-            var result = _actions.formatJSON(loaded.content);
-            if (result.error) {
-              renderErrorOutput(result.error, result.input);
-              setStatus(_i18n.t('jsonError'));
-            } else {
-              var notifMsg = result.fixed ? _i18n.t(result.fixMsg) : '';
-              renderOutput(result.content, result.type, result.fixed, result.parsed);
-              setStatus(_i18n.t('formatSuccess') + notifMsg, true);
-              updateOutputStatus(result.content);
-            }
-            if (_router.isMobileDevice()) toggleSidebar();
-            showToast(_i18n.t('loaded', { name: loaded.name }), 2000, 'icon-file-text');
-          }
-          return;
-        }
-      });
-      // iOS touchend 补充：click 在部分 iOS 版本上可能被延迟或丢失
-      historyList.addEventListener('touchend', function (e) {
+    if (!historyList) return;
+    
+    // Unified click/touch handler for all platforms
+    function handleEvent(e) {
+      var handled = handleHistoryClick(e);
+      if (!handled) {
+        document.getElementById('output-content-area')?.querySelector('.jt-toggle')?.forEach(function(t) {
+          if (e.target.closest('[data-jt-toggle]')) toggleJsonNode(e.target.closest('[data-jt-toggle]'));
+        });
+      }
+    }
+    
+    historyList.addEventListener('click', handleEvent);
+    
+    // iOS/Android touchend handling with touch-action fix
+    if (Platform.isMobile()) {
+      historyList.addEventListener('touchend', function(e) {
         var delBtn = e.target.closest('[data-delete-id]');
         if (delBtn && !delBtn.dataset.touched) {
           delBtn.dataset.touched = '1';
           e.preventDefault();
           delBtn.click();
-          delete delBtn.dataset.touched;
+          setTimeout(function() { delete delBtn.dataset.touched; }, 150);
           return;
         }
         var checkbox = e.target.closest('[data-select-id]');
@@ -1706,7 +1731,7 @@
           checkbox.dataset.touched = '1';
           e.preventDefault();
           checkbox.click();
-          delete checkbox.dataset.touched;
+          setTimeout(function() { delete checkbox.dataset.touched; }, 150);
           return;
         }
         var infoBtn = e.target.closest('[data-load-id]');
@@ -1714,26 +1739,28 @@
           infoBtn.dataset.touched = '1';
           e.preventDefault();
           infoBtn.click();
-          delete infoBtn.dataset.touched;
-          return;
-        }
-      });
-      historyList.addEventListener('keydown', function (e) {
-        var infoBtn = e.target.closest('[data-load-id]');
-        if (infoBtn && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          infoBtn.click();
-          return;
-        }
-        var checkbox = e.target.closest('[data-select-id]');
-        if (checkbox && e.key === ' ') {
-          e.preventDefault();
-          checkbox.click();
+          setTimeout(function() { delete infoBtn.dataset.touched; }, 150);
           return;
         }
       });
     }
+    
+    historyList.addEventListener('keydown', function(e) {
+      var infoBtn = e.target.closest('[data-load-id]');
+      if (infoBtn && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        infoBtn.click();
+        return;
+      }
+      var checkbox = e.target.closest('[data-select-id]');
+      if (checkbox && e.key === ' ') {
+        e.preventDefault();
+        checkbox.click();
+        return;
+      }
+    });
 
+    // JSON tree toggle handlers (shared across platforms)
     document.addEventListener('click', function (e) {
       var toggle = e.target.closest('[data-jt-toggle]');
       if (toggle) toggleJsonNode(toggle);
@@ -1744,6 +1771,7 @@
       if (toggle) { e.preventDefault(); toggleJsonNode(toggle); }
     });
 
+    // List item handlers (shared across platforms)
     document.addEventListener('click', function (e) {
       var listToggle = e.target.closest('[data-list-toggle]');
       if (listToggle) { toggleListPanel(); return; }
@@ -2388,6 +2416,47 @@
 
 (function () {
   'use strict';
+
+  /* ==============================================================
+     Platform Detection Layer
+  ============================================================== */
+  var Platform = {
+    isMobile: function() {
+      return this._detectMobile();
+    },
+    _cached: null,
+    _detectMobile: function() {
+      if (this._cached !== null) return this._cached;
+      
+      // iOS Safari / WebView detection
+      var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      
+      // Android detection
+      var isAndroid = /Android/.test(navigator.userAgent);
+      
+      // Tauri mobile detection
+      var isTauriMobile = typeof window !== 'undefined' && 
+                           window.__TAURI__ && 
+                           window.__TAURI__?.platform === 'mobile';
+      
+      this._cached = !!(isIOS || isAndroid || isTauriMobile);
+      return this._cached;
+    },
+    isTauri: function() {
+      return typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
+    },
+    getPlatform: function() {
+      if (this.isMobile()) {
+        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) return 'ios';
+        if (/Android/.test(navigator.userAgent)) return 'android';
+        return 'mobile';
+      }
+      if (this.isTauri()) return 'tauri';
+      return 'desktop';
+    }
+  };
+  window.Platform = Platform;
 
   /* ==============================================================
      i18n (kept here since it drives DOM text content directly)
