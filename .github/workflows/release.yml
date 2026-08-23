@@ -510,13 +510,30 @@ jobs:
           echo "PROFILE_UUID=$PROFILE_UUID" >> $GITHUB_ENV
           echo "PROFILE_NAME=$PROFILE_NAME" >> $GITHUB_ENV
 
-      - name: Generate iOS icons
+      - name: Initialize iOS project
+        run: npx tauri ios init --ci --config src-tauri/tauri.ios.conf.json
+
+      # 必须在 ios init 之后跑：tauri icon 只有检测到
+      # gen/apple/Assets.xcassets/AppIcon.appiconset 已存在才会把 iOS 图标
+      # 写进 Xcode 资产目录，否则只回退写到 icons/ios/。
+      # 而 ios init 用模板内嵌的默认 Tauri 图标填充 appiconset，
+      # 先 icon 后 init = 上线默认图标（v1.5.52 及之前多轮图标修复无效的根因）。
+      - name: Generate iOS icons (into Xcode asset catalog)
         run: |
           npx tauri icon src-tauri/app-icon-source.png
           npm run icons:generate
-
-      - name: Initialize iOS project
-        run: npx tauri ios init --ci --config src-tauri/tauri.ios.conf.json
+          # 用自研脚本的无 alpha 版本覆盖（2026 Apple 规范：RGB 不透明、全出血）
+          cp src-tauri/icons/ios/AppIcon-*.png src-tauri/gen/apple/Assets.xcassets/AppIcon.appiconset/
+          echo "=== appiconset contents ==="
+          ls src-tauri/gen/apple/Assets.xcassets/AppIcon.appiconset/
+          # 熔断：512@2x 为 1024px 亚麻纹理大图，正常远大于 1MB；
+          # 默认 Tauri 图标只有几十 KB，若命中说明图标链路又断了
+          SIZE=$(stat -f%z src-tauri/gen/apple/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png)
+          echo "AppIcon-512@2x.png size: $SIZE bytes"
+          if [ "$SIZE" -lt 1000000 ]; then
+            echo "::error::appiconset 疑似仍是默认 Tauri 图标（<1MB），中止构建"
+            exit 1
+          fi
 
       - name: Configure iOS signing
         env:
