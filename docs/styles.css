@@ -1133,6 +1133,7 @@
             color: inherit;
             font: inherit;
             cursor: pointer;
+            touch-action: manipulation;
         }
 
         .history-info:focus-visible {
