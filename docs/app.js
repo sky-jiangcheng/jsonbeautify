@@ -79,6 +79,7 @@
     lang: localStorage.getItem('appLang') || 'en',
     theme: localStorage.getItem('theme') || 'light',
     selectedIds: [],
+    loadedHistoryId: null, // id of the history record currently loaded into the editor; save overwrites it
     compareOrder: [0, 1],
     listSelectedIndex: 0,
     lastDetailContent: '',
@@ -1713,6 +1714,9 @@
       var result = _actions.deleteHistory(history, id, selectedIds);
       _actions.setHistory(result.history);
       _store.setState({ selectedIds: result.selectedIds, _platform: Platform.getPlatform() });
+      if (_store.getStateForKey('loadedHistoryId') === id) {
+        _store.setState({ loadedHistoryId: null });
+      }
       renderHistory();
       return true;
     }
@@ -1747,7 +1751,7 @@
         }
         if (_router.isMobileDevice()) toggleSidebar();
         showToast(_i18n.t('loaded', { name: loaded.name }), 2000, 'icon-file-text');
-        _store.setState({ _platform: Platform.getPlatform() });
+        _store.setState({ loadedHistoryId: hid, _platform: Platform.getPlatform() });
       } else {
         // 老版本记录字段不兼容 / 内容为空 → 友好提示不静默失败
         var name = loaded && loaded.name ? loaded.name : (_i18n.t('untitled') || 'untitled');
@@ -2279,9 +2283,11 @@
   }
 
   function saveHistoryFromOutput() {
-    var formatted = _store.getStateForKey('output') || '';
-    var result = _actions.saveHistory(formatted);
-    if (!result.valid) {
+    var inputEl = document.getElementById('input');
+    var inputValue = inputEl ? inputEl.value : '';
+    var outputValue = _store.getStateForKey('output') || '';
+    // 编辑器有内容即可保存(确认时会重新格式化); 两者都空才提示
+    if (!inputValue.trim() && !outputValue) {
       showToast(_i18n.t('needFormatFirst'), 2000, 'icon-alert-triangle');
       return;
     }
@@ -2293,9 +2299,22 @@
     if (!modal) return;
     modal.classList.add('active');
     var input = document.getElementById('save-name-input');
+    var toggleWrap = document.getElementById('save-as-new-wrap');
+    var toggle = document.getElementById('save-as-new-checkbox');
+    var loadedId = _store.getStateForKey('loadedHistoryId');
+    var loaded = null;
+    if (loadedId) {
+      var hist = _actions.getHistory();
+      loaded = hist.find(function (h) { return h.id === loadedId; }) || null;
+    }
     if (input) {
-      input.value = '';
+      // 已加载记录: 预填原名, 改名即重命名
+      input.value = loaded ? loaded.name : '';
       if (!_router.isMobileDevice()) setTimeout(function () { input.focus(); }, 50);
+    }
+    if (toggleWrap && toggle) {
+      toggleWrap.style.display = loaded ? '' : 'none';
+      toggle.checked = false;
     }
   }
 
@@ -2305,19 +2324,67 @@
   }
 
   function confirmSaveFromModal() {
-    var formatted = _store.getStateForKey('output') || '';
+    // 关键修复: 以编辑器当前内容为准重新格式化. 旧逻辑读 store 的 output
+    // (最后一次格式化的结果), 还原历史记录后编辑但未重新格式化时,
+    // 保存的是编辑前的旧内容.
+    var inputEl = document.getElementById('input');
+    var inputValue = inputEl ? inputEl.value : '';
+    var content = '';
+    if (inputValue.trim()) {
+      var fmt = _actions.formatJSON(inputValue);
+      if (fmt.error) {
+        showToast(_i18n.t('jsonError'), 2000, 'icon-alert-triangle');
+        return;
+      }
+      content = fmt.content;
+      // 同步输出视图, 保证"所见即所存"
+      renderOutput(fmt.content, fmt.type, fmt.fixed, fmt.parsed);
+      updateOutputStatus(fmt.content);
+    } else {
+      content = _store.getStateForKey('output') || '';
+      if (!content) {
+        showToast(_i18n.t('needFormatFirst'), 2000, 'icon-alert-triangle');
+        return;
+      }
+    }
     // 单条历史大小上限: 超大 JSON 会迅速写满 localStorage 配额,
     // setHistory 降级裁剪失败后会把整个 jsonHistory 键删除, 用户历史静默全丢
-    if (formatted.length > HISTORY_MAX_CHARS) {
+    if (content.length > HISTORY_MAX_CHARS) {
       showToast(_i18n.t('historyTooLarge'), 2500, 'icon-alert-triangle');
       return;
     }
     var nameInput = document.getElementById('save-name-input');
     var name = nameInput ? nameInput.value.trim() : '';
-    var entry = _actions.confirmSave(formatted, name || _i18n.t('unnamed'));
-    var history = _actions.getHistory();
-    history.unshift(entry);
-    _actions.setHistory(history);
+    var finalName = name || _i18n.t('unnamed');
+
+    // 覆盖保存: 编辑器内容来自某条历史记录且未勾选"另存为新记录"时,
+    // 就地更新该记录(内容 + 重命名), 而不是新建一条
+    var loadedId = _store.getStateForKey('loadedHistoryId');
+    var asNewToggle = document.getElementById('save-as-new-checkbox');
+    var saveAsNew = asNewToggle ? asNewToggle.checked : false;
+    if (loadedId && !saveAsNew) {
+      var history = _actions.getHistory();
+      var idx = -1;
+      for (var i = 0; i < history.length; i++) {
+        if (history[i].id === loadedId) { idx = i; break; }
+      }
+      if (idx >= 0) {
+        history[idx].name = finalName;
+        history[idx].content = content;
+        _actions.setHistory(history);
+        closeSaveModal();
+        renderHistory();
+        showToast(_i18n.t('historyUpdated', { name: finalName }), 2000, 'icon-save');
+        return;
+      }
+      // 记录已被删除 → 走新建
+      _store.setState({ loadedHistoryId: null });
+    }
+
+    var entry = _actions.confirmSave(content, finalName);
+    var history2 = _actions.getHistory();
+    history2.unshift(entry);
+    _actions.setHistory(history2);
     closeSaveModal();
     renderHistory();
     showToast(_i18n.t('saved', { name: entry.name }), 2000, 'icon-save');
@@ -2339,7 +2406,7 @@
   function handleClearHistory() {
     var result = _actions.clearAllHistory();
     _actions.setHistory(result.history);
-    _store.setState({ selectedIds: result.selectedIds });
+    _store.setState({ selectedIds: result.selectedIds, loadedHistoryId: null });
     renderHistory();
     showToast(_i18n.t('historyCleared'), 2000, 'icon-trash');
   }
@@ -2537,6 +2604,7 @@
       statusReady: '就绪',
       statusShortcuts: 'Ctrl+Enter 格式化 · Ctrl+S 保存 · Ctrl+D 下载 · Ctrl+F 搜索',
       saveModalTitle: '保存到历史记录', saveNamePlaceholder: '输入记录名称（可选）',
+      saveAsNew: '另存为新记录', historyUpdated: '已更新：{name}',
       cancel: '取消',
       compareTitle: 'JSON 对比', compareLoading: '正在比对…',
       themeTitle: '切换暗色/亮色模式',
@@ -2607,6 +2675,7 @@
       statusReady: 'Ready',
       statusShortcuts: 'Ctrl+Enter Format · Ctrl+S Save · Ctrl+D Download · Ctrl+F Search',
       saveModalTitle: 'Save to History', saveNamePlaceholder: 'Enter name (optional)',
+      saveAsNew: 'Save as a new entry', historyUpdated: 'Updated: {name}',
       cancel: 'Cancel',
       compareTitle: 'JSON Compare', compareLoading: 'Comparing…',
       themeTitle: 'Toggle dark/light mode',
@@ -2882,6 +2951,7 @@
           input.dispatchEvent(new Event('input'));
         }
         if (render.formatFromInput) render.formatFromInput();
+        if (window.__store) window.__store.setState({ loadedHistoryId: id });
         if (window.__router && window.__router.isMobileDevice()) render.toggleSidebar();
         var toast = document.getElementById('toast');
         if (toast) {
