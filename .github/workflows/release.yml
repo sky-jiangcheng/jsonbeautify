@@ -385,7 +385,7 @@ jobs:
 
   ios:
     if: github.ref_name == 'appstore' || startsWith(github.ref, 'refs/tags/')
-    needs: [version-gate, macos-appstore]
+    needs: [version-gate]
     runs-on: macos-latest
     concurrency:
       group: ios-build-${{ github.ref }}
