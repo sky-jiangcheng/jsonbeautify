@@ -15,7 +15,8 @@
       "icons/ios/AppIcon-60x60@3x.png",
       "icons/ios/AppIcon-76x76@1x.png",
       "icons/ios/AppIcon-76x76@2x.png",
-      "icons/ios/AppIcon-83.5x83.5@2x.png"
+      "icons/ios/AppIcon-83.5x83.5@2x.png",
+      "icons/ios/AppIcon-512@2x.png"
     ]
   },
   "version": "1.5.51"
