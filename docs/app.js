@@ -1691,6 +1691,33 @@
           return;
         }
       });
+      // iOS touchend 补充：click 在部分 iOS 版本上可能被延迟或丢失
+      historyList.addEventListener('touchend', function (e) {
+        var delBtn = e.target.closest('[data-delete-id]');
+        if (delBtn && !delBtn.dataset.touched) {
+          delBtn.dataset.touched = '1';
+          e.preventDefault();
+          delBtn.click();
+          delete delBtn.dataset.touched;
+          return;
+        }
+        var checkbox = e.target.closest('[data-select-id]');
+        if (checkbox && !checkbox.dataset.touched) {
+          checkbox.dataset.touched = '1';
+          e.preventDefault();
+          checkbox.click();
+          delete checkbox.dataset.touched;
+          return;
+        }
+        var infoBtn = e.target.closest('[data-load-id]');
+        if (infoBtn && !infoBtn.dataset.touched) {
+          infoBtn.dataset.touched = '1';
+          e.preventDefault();
+          infoBtn.click();
+          delete infoBtn.dataset.touched;
+          return;
+        }
+      });
       historyList.addEventListener('keydown', function (e) {
         var infoBtn = e.target.closest('[data-load-id]');
         if (infoBtn && (e.key === 'Enter' || e.key === ' ')) {
