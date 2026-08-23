@@ -248,16 +248,78 @@ def create_version(app_id, jwt, platform, version_string):
         sys.exit(1)
 
 
+def find_review_submission(app_id, version_id, jwt):
+    """查找该版本关联的 reviewSubmission (ASC API 1.7+ 新提审流程)。
+
+    旧的 appStoreVersionSubmissions 已废弃: 撤审(developer reject)后用旧端点重提
+    必 403 ("does not allow 'CREATE'. Allowed operation is: DELETE")，且其
+    related-resource GET 返回的 404 会拿 version id 冒充 submission id，永远查不到
+    真实 submission。新流程通过 reviewSubmissions / reviewSubmissionItems 操作。
+    返回 (submission_id, state)；找不到返回 (None, None)。
+    """
+    try:
+        resp = api_request(
+            "GET", f"/v1/reviewSubmissions?filter[app]={app_id}&limit=10", jwt
+        )
+    except urllib.error.HTTPError as e:
+        print(f"  查询 reviewSubmissions 失败: HTTP {e.code}")
+        return None, None
+    for rs in resp.get("data", []):
+        rs_id = rs.get("id")
+        state = rs.get("attributes", {}).get("state", "")
+        if state in ("COMPLETE", "CANCELING"):
+            continue
+        try:
+            items = api_request(
+                "GET", f"/v1/reviewSubmissions/{rs_id}/items?limit=20", jwt
+            )
+        except urllib.error.HTTPError:
+            continue
+        for item in items.get("data", []):
+            linked = (
+                item.get("relationships", {})
+                .get("appStoreVersion", {})
+                .get("data")
+                or {}
+            )
+            if linked.get("id") == version_id:
+                return rs_id, state
+    return None, None
+
+
+def cancel_review_submission(app_id, version_id, jwt):
+    """撤下正在审核的 submission (developer reject, 新流程)。"""
+    rs_id, state = find_review_submission(app_id, version_id, jwt)
+    if not rs_id:
+        print("  未找到 reviewSubmission (可能已撤审)")
+        return
+    if state not in ("WAITING_FOR_REVIEW", "IN_REVIEW", "READY_FOR_REVIEW"):
+        print(f"  submission 状态 {state}, 无需撤审")
+        return
+    patch_body = {
+        "data": {
+            "type": "reviewSubmissions",
+            "id": rs_id,
+            "attributes": {"canceled": True},
+        }
+    }
+    try:
+        api_request("PATCH", f"/v1/reviewSubmissions/{rs_id}", jwt, patch_body)
+        print(f"  已撤审 (canceled submission {rs_id})")
+    except urllib.error.HTTPError as e:
+        print(f"  撤审失败: HTTP {e.code}")
+
+
 def supersede_version(app_id, jwt, platform, version_id, old_ver, new_ver):
     """撤下正在审核中的旧版本 (developer reject), 把唯一可编辑位让给新版本。
 
     Apple 规则: 同平台同时只能有一个"可编辑/在审"版本, 在审版本会阻塞新版本创建 (409)。
-    流程: 删除 appStoreVersionSubmission 撤审 -> 等状态脱离审核队列 ->
+    流程: cancel reviewSubmission 撤审 -> 等状态脱离审核队列 ->
     优先 PATCH versionString 复用版本位 (保留已填的元数据);
     改号失败则 DELETE 旧版本重建 (元数据丢失, 但 versionString 干净)。
     """
     print(f"\n=== 版本 {old_ver} 审核中, 撤审并由 {new_ver} 取代 (supersede) ===")
-    delete_submission(version_id, jwt)
+    cancel_review_submission(app_id, version_id, jwt)
 
     # 等待状态脱离审核队列 (WAITING_FOR_REVIEW -> DEVELOPER_REJECTED)
     state = ""
@@ -367,9 +429,21 @@ def get_submission_version(app_id, jwt, platform, app_store_version, build_versi
                 app_id, jwt, platform, vid, ver, build_version
             )
         # 可编辑状态 (PREPARE_FOR_SUBMISSION / REJECTED / DEVELOPER_REJECTED 等):
-        # 直接复用, 版本上残留的旧 submission 由 submit_for_review 阶段的
-        # delete_submission 清理 (跳过它反而会掉进"创建新版本 -> 409"的坑)
+        # 直接复用, 并把 versionString 同步为本次构建号 (撤审复用的旧版本号会滞留)
         print(f"  自动选择当前版本 {ver} (id={vid}, state={st})")
+        if ver != build_version:
+            patch_body = {
+                "data": {
+                    "type": "appStoreVersions",
+                    "id": vid,
+                    "attributes": {"versionString": build_version},
+                }
+            }
+            try:
+                api_request("PATCH", f"/v1/appStoreVersions/{vid}", jwt, patch_body)
+                print(f"  已将版本号 {ver} 改为 {build_version}")
+            except urllib.error.HTTPError as e:
+                print(f"  ⚠️ 改号失败 (HTTP {e.code}), 商店版本号保持 {ver}")
         return vid, st
 
     print("  没有可复用的版本, 创建新版本...")
@@ -406,7 +480,7 @@ def associate_build(version_id, build_id, build_version, jwt):
     print(f"  已关联构建 {build_version}")
 
 
-def preflight_check(version_id, jwt):
+def preflight_check(app_id, version_id, build_id, jwt):
     """提交前诊断: 检查版本状态、构建关联、导出合规性等,
     打印诊断信息, 帮助定位 403 的具体原因。"""
     print("\n=== 提交前诊断 ===")
@@ -444,40 +518,28 @@ def preflight_check(version_id, jwt):
         if e.code != 404:
             issues.append(f"无法查询构建关联: HTTP {e.code}")
 
-    # 3. 检查残留 submission
-    try:
-        sub_resp = api_request(
-            "GET", f"/v1/appStoreVersions/{version_id}/appStoreVersionSubmission", jwt
-        )
-        sub_data = sub_resp.get("data")
-        if sub_data:
-            print(f"  ⚠️ 存在残留 submission: {sub_data.get('id')}")
-            issues.append("存在残留 submission (需先删除)")
-        else:
-            print("  无残留 submission")
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            print("  无残留 submission")
-        else:
-            print(f"  查询 submission 状态: HTTP {e.code}")
+    # 3. 检查 reviewSubmission (新流程)
+    rs_id, rs_state = find_review_submission(app_id, version_id, jwt)
+    if rs_id:
+        print(f"  现有 reviewSubmission: {rs_id} (state={rs_state})")
+    else:
+        print("  无 reviewSubmission (提交时新建)")
 
-    # 4. 检查导出合规性 (export compliance / encryption declaration)
+    # 4. 检查导出合规性: build 的 usesNonExemptEncryption 属性
+    #    (注意: appStoreVersion 没有 appEncryptionDeclaration 关系,
+    #     用旧端点查必 404, 千万别据此去创建 appEncryptionDeclarations)
     try:
-        enc_resp = api_request(
-            "GET", f"/v1/appStoreVersions/{version_id}/appEncryptionDeclaration", jwt
+        build_resp = api_request("GET", f"/v1/builds/{build_id}", jwt)
+        enc = build_resp.get("data", {}).get("attributes", {}).get(
+            "usesNonExemptEncryption"
         )
-        enc_data = enc_resp.get("data")
-        if enc_data:
-            print(f"  已有关密声明: {enc_data.get('id')}")
+        if enc is None:
+            print("  ⚠️ 构建未回答出口合规 (usesNonExemptEncryption 为空)")
+            issues.append("未设置出口合规 — 提交时由 ensure_export_compliance 处理")
         else:
-            print("  ⚠️ 未关联加密声明 (export compliance)")
-            issues.append("缺少加密声明 (export compliance) — 这通常是 403 的原因")
+            print(f"  出口合规已设置: usesNonExemptEncryption={enc}")
     except urllib.error.HTTPError as e:
-        if e.code == 404:
-            print("  ⚠️ 未关联加密声明 (export compliance)")
-            issues.append("缺少加密声明 (export compliance) — 这通常是 403 的原因")
-        else:
-            print(f"  查询加密声明: HTTP {e.code}")
+        issues.append(f"无法查询构建信息: HTTP {e.code}")
 
     if issues:
         print("\n  发现以下潜在问题:")
@@ -488,215 +550,107 @@ def preflight_check(version_id, jwt):
     return issues
 
 
-def ensure_export_compliance(version_id, app_id, build_id, jwt):
-    """尝试自动处理导出合规性: 为不含加密的 app 创建加密声明并关联到版本。
-    仅当版本缺少加密声明时才执行。"""
-    # 先检查是否已有加密声明
-    try:
-        resp = api_request(
-            "GET", f"/v1/appStoreVersions/{version_id}/appEncryptionDeclaration", jwt
-        )
-        if resp.get("data"):
-            print("  已有关密声明, 跳过")
-            return
-    except urllib.error.HTTPError as e:
-        if e.code != 404:
-            print(f"  查询加密声明失败 (HTTP {e.code}), 尝试继续创建...")
+def ensure_export_compliance(build_id, jwt):
+    """设置构建的出口合规 (export compliance)。
 
-    print("  创建加密声明 (不含自定义加密)...")
-    body = {
+    正确做法: 直接 PATCH build 的 usesNonExemptEncryption 属性。
+    千万不要创建 appEncryptionDeclarations —— 每次 CI 都新建会在单 App
+    上限 5 个时 409 (STATE_ERROR.APP_ENCRYPTION_DECLARATIONS_LIMIT_REACHED)。
+    已设置过的 build 再 PATCH 会 409, 属预期行为, 忽略即可。
+    """
+    patch_body = {
         "data": {
-            "type": "appEncryptionDeclarations",
-            "attributes": {
-                "appDescription": "JSON formatting and validation tool",
-                "availableOnFrenchStore": True,
-                "containsProprietaryCryptography": True,
-                "containsThirdPartyCryptography": False,
-            },
-            "relationships": {
-                "app": {
-                    "data": {"type": "apps", "id": app_id}
+            "type": "builds",
+            "id": build_id,
+            "attributes": {"usesNonExemptEncryption": False},
+        }
+    }
+    try:
+        api_request("PATCH", f"/v1/builds/{build_id}", jwt, patch_body)
+        print("  已设置出口合规 (不含非豁免加密)")
+    except urllib.error.HTTPError as e:
+        if e.code == 409:
+            print("  出口合规已设置过, 跳过")
+        else:
+            print(f"  ⚠️ 设置出口合规失败 (HTTP {e.code}), 非致命")
+
+
+def submit_for_review(app_id, version_id, jwt):
+    """提交审核 (ASC API 1.7+ 新流程: reviewSubmissions)。
+
+    旧端点 POST /v1/appStoreVersionSubmissions 已废弃, 在"撤审后重提"场景下
+    必 403 ("does not allow 'CREATE'. Allowed operation is: DELETE")。
+    新流程三步:
+      1) 无可复用 submission 时 POST /v1/reviewSubmissions 创建容器;
+      2) POST /v1/reviewSubmissionItems 把版本挂进容器 (已存在则跳过);
+      3) PATCH submitted=true 送审 (409 "not ready yet" 是 Apple 内部
+         传播时序问题, 等待后重试)。
+    """
+    print("\n=== 提交审核 (reviewSubmissions 新流程) ===")
+    rs_id, state = find_review_submission(app_id, version_id, jwt)
+    if rs_id and state in ("WAITING_FOR_REVIEW", "IN_REVIEW"):
+        print(f"  submission {rs_id} 状态 {state}, 已在审核队列, 跳过")
+        return True
+
+    if not rs_id:
+        body = {
+            "data": {
+                "type": "reviewSubmissions",
+                "relationships": {
+                    "app": {"data": {"type": "apps", "id": app_id}}
                 },
-            },
-        }
-    }
-    try:
-        resp = api_request("POST", "/v1/appEncryptionDeclarations", jwt, body)
-        decl_id = resp.get("data", {}).get("id")
-        print(f"  已创建加密声明 (id={decl_id})")
-        # 关联到版本 (通过 build relationship, 非 appStoreVersions 直接关系)
-        try:
-            patch_body = {
-                "data": {
-                    "type": "builds",
-                    "id": build_id,
-                    "relationships": {
-                        "appEncryptionDeclaration": {
-                            "data": {
-                                "type": "appEncryptionDeclarations",
-                                "id": decl_id,
-                            }
-                        },
-                    },
-                }
             }
-            api_request("PATCH", f"/v1/builds/{build_id}", jwt, patch_body)
-            print(f"  已关联加密声明到构建")
-        except urllib.error.HTTPError as e:
-            print(f"  ⚠️ 关联加密声明失败 (非致命): {e}")
-    except urllib.error.HTTPError as e:
-        print(f"  ⚠️ 创建加密声明失败: {e}")
-        print("  (非致命, 可在 App Store Connect 手动填写)")
-
-
-def delete_submission(version_id, jwt, max_retries=3):
-    """查找并删除残留的 appStoreVersionSubmission。
-
-    处理 Apple API 的时序问题: GET 找到 submission, 但 DELETE 可能返回 404,
-    同时 POST 仍报 403 "Allowed operation is: DELETE"。
-    尝试多种删除方式: 按 ID 删除, 通过版本关系端点删除。
-    """
-    for retry in range(max_retries):
-        # 查找残留 submission
-        old_id = None
-        try:
-            existing = api_request(
-                "GET", f"/v1/appStoreVersions/{version_id}/appStoreVersionSubmission", jwt
-            )
-            old_id = (existing.get("data") or {}).get("id")
-        except urllib.error.HTTPError as e:
-            if e.code != 404:
-                print(f"  查询 submission 异常: HTTP {e.code}")
-
-        if not old_id:
-            # GET 返回 404, 但可能 submission 仍存在 (Apple API 不一致)
-            # 尝试直接通过版本关系端点删除
-            if retry == 0:
-                print("  GET 未找到 submission, 尝试通过版本关系端点清理...")
-            try:
-                api_request(
-                    "DELETE",
-                    f"/v1/appStoreVersions/{version_id}/appStoreVersionSubmission",
-                    jwt,
-                )
-                print("  通过版本关系端点删除 submission 成功")
-                time.sleep(5)
-                return
-            except urllib.error.HTTPError as e:
-                if e.code == 404:
-                    # 确实没有 submission
-                    return
-                if e.code == 405:
-                    # Method not allowed, 此端点不支持 DELETE
-                    print("  版本关系端点不支持 DELETE, 尝试其他方式...")
-                else:
-                    print(f"  版本关系端点删除: HTTP {e.code}")
-                # 等待后重试 (submission 可能正在传播)
-                if retry < max_retries - 1:
-                    print(f"  等待 15s 后重试...")
-                    time.sleep(15)
-            continue
-
-        print(f"  发现残留 submission {old_id} (第 {retry + 1} 次尝试删除)...")
-        try:
-            api_request("DELETE", f"/v1/appStoreVersionSubmissions/{old_id}", jwt)
-            print("  已删除旧 submission, 版本回到可编辑状态")
-            time.sleep(5)
-            return
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                # Apple API 时序问题: submission 存在但 DELETE 返回 404
-                # 尝试通过版本关系端点删除
-                print(f"  DELETE by ID 返回 404, 尝试版本关系端点...")
-                try:
-                    api_request(
-                        "DELETE",
-                        f"/v1/appStoreVersions/{version_id}/appStoreVersionSubmission",
-                        jwt,
-                    )
-                    print("  通过版本关系端点删除成功")
-                    time.sleep(5)
-                    return
-                except urllib.error.HTTPError as e2:
-                    if e2.code != 404 and e2.code != 405:
-                        print(f"  版本关系端点: HTTP {e2.code}")
-                # 等待后重新 GET
-                print(f"  等待 15s 后重试...")
-                time.sleep(15)
-                continue
-            raise
-
-    print("  ⚠️ 多次删除残留 submission 失败, 继续尝试提交...")
-
-
-def submit_for_review(version_id, jwt):
-    """提交审核
-
-    兼容 REJECTED / DEVELOPER_REJECTED 版本的重提:
-    Apple 不允许对同一个版本 CREATE 第二个 appStoreVersionSubmission,
-    被驳回的版本上会残留旧 submission -> 盲 POST 直接 403
-    ("does not allow 'CREATE'. Allowed operation is: DELETE")。
-    因此先查并删除已存在的 submission, 再创建新的。
-    """
-    print("\n=== 提交审核 ===")
-    # 1. 删除残留 submission (REJECTED 版本可能有)
-    delete_submission(version_id, jwt)
-
-    # 2. 创建新 submission
-    body = {
-        "data": {
-            "type": "appStoreVersionSubmissions",
-            "relationships": {
-                "appStoreVersion": {
-                    "data": {
-                        "type": "appStoreVersions",
-                        "id": version_id,
-                    }
-                }
-            },
         }
-    }
-    last_err = None
-    for attempt in range(3):
+        resp = api_request("POST", "/v1/reviewSubmissions", jwt, body)
+        rs_id = resp.get("data", {}).get("id")
+        print(f"  已创建 reviewSubmission (id={rs_id})")
+        item_body = {
+            "data": {
+                "type": "reviewSubmissionItems",
+                "relationships": {
+                    "reviewSubmission": {
+                        "data": {"type": "reviewSubmissions", "id": rs_id}
+                    },
+                    "appStoreVersion": {
+                        "data": {"type": "appStoreVersions", "id": version_id}
+                    },
+                },
+            }
+        }
         try:
-            resp = api_request(
-                "POST", "/v1/appStoreVersionSubmissions", jwt, body
-            )
-            sub_id = resp.get("data", {}).get("id")
-            print(f"  已提交审核! (submission id={sub_id})")
+            api_request("POST", "/v1/reviewSubmissionItems", jwt, item_body)
+            print("  已把版本加入 submission")
+        except urllib.error.HTTPError as e:
+            if e.code != 409:
+                raise
+            # 版本已挂在某个 submission 里, 重新查找定位
+            print("  版本已在其他 submission 中, 重新定位...")
+            rs_id, state = find_review_submission(app_id, version_id, jwt)
+            if not rs_id:
+                raise
+    else:
+        print(f"  复用现有 submission {rs_id} (state={state})")
+
+    # submitted=true 送审
+    for attempt in range(6):
+        patch_body = {
+            "data": {
+                "type": "reviewSubmissions",
+                "id": rs_id,
+                "attributes": {"submitted": True},
+            }
+        }
+        try:
+            api_request("PATCH", f"/v1/reviewSubmissions/{rs_id}", jwt, patch_body)
+            print(f"  已提交审核! (submission id={rs_id})")
             return True
         except urllib.error.HTTPError as e:
-            last_err = e
-            if e.code == 409:
-                print("  版本已在审核中或已提交，跳过")
-                return True
-            if e.code == 403 and attempt < 2:
-                # 检查是否是 "Allowed operation is: DELETE" 错误
-                is_delete_only = False
-                if hasattr(e, "apple_errors") and e.apple_errors:
-                    for err in e.apple_errors:
-                        detail = err.get("detail", "")
-                        if "DELETE" in detail:
-                            is_delete_only = True
-                        print(f"  Apple 错误: {err.get('title', '')} - {detail}")
-
-                if is_delete_only:
-                    # 残留 submission 未完全释放, 重新删除后重试
-                    print(f"  检测到残留 submission 阻塞, 重新清理后重试...")
-                    delete_submission(version_id, jwt)
-                    time.sleep(5 * (attempt + 1))
-                else:
-                    print(f"  提交被拒 (403), {5 * (attempt + 1)}s 后重试...")
-                    time.sleep(5 * (attempt + 1))
+            if e.code == 409 and attempt < 5:
+                print(f"  尚未就绪 (409), {20 * (attempt + 1)}s 后重试...")
+                time.sleep(20 * (attempt + 1))
                 continue
-            # 最终失败时, 输出 Apple 错误详情
-            if hasattr(e, "apple_errors") and e.apple_errors:
-                for err in e.apple_errors:
-                    print(f"  ❌ Apple 错误: {err.get('title', '')} - {err.get('detail', '')}")
-                    if err.get("source"):
-                        print(f"     source: {err['source']}")
             raise
-    raise last_err
+    return False
 
 
 def main():
@@ -768,39 +722,14 @@ def main():
     # 3. 关联构建
     associate_build(version_id, build_id, build_version, jwt)
 
-    # 4. 提交前诊断 (检查版本状态、构建关联、导出合规性等)
-    preflight_check(version_id, jwt)
+    # 4. 提交前诊断 (检查版本状态、构建关联、出口合规等)
+    preflight_check(app_id, version_id, build_id, jwt)
 
-    # 5. 尝试自动处理导出合规性 (缺少加密声明是 403 最常见原因)
-    ensure_export_compliance(version_id, app_id, build_id, jwt)
+    # 5. 设置出口合规 (PATCH build 的 usesNonExemptEncryption)
+    ensure_export_compliance(build_id, jwt)
 
-    # 6. 提交审核 (如果失败且版本有僵尸 submission, 删除版本后创建新版本重试)
-    try:
-        submit_for_review(version_id, jwt)
-    except urllib.error.HTTPError as e:
-        is_zombie = (
-            e.code == 403
-            and hasattr(e, "apple_errors")
-            and any("DELETE" in err.get("detail", "") for err in e.apple_errors)
-        )
-        if not is_zombie:
-            raise
-        print("\n⚠️ 版本有僵尸 submission, 删除版本后创建新版本重试...")
-        # 删除卡住的版本
-        try:
-            api_request("DELETE", f"/v1/appStoreVersions/{version_id}", jwt)
-            print(f"  已删除版本 {version_id}")
-            time.sleep(10)
-        except urllib.error.HTTPError as del_e:
-            print(f"  删除版本失败: HTTP {del_e.code}")
-            raise
-        # 创建新版本 (使用 tag 版本号)
-        jwt = jwt_factory()
-        version_id, state = create_version(app_id, jwt, platform, version_string)
-        # 重新关联构建
-        associate_build(version_id, build_id, build_version, jwt)
-        # 提交审核
-        submit_for_review(version_id, jwt)
+    # 6. 提交审核 (reviewSubmissions 新流程, 内部已带 409 时序重试)
+    submit_for_review(app_id, version_id, jwt)
 
     print("\n✅ 完成! 请到 App Store Connect 查看审核状态")
     print(f"   https://appstoreconnect.apple.com/apps/{app_id}/appstore/{platform.lower()}/versions/submission")

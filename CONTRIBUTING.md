@@ -211,3 +211,30 @@ CI 原顺序是「先生成图标、后 `ios init`」→ init 用默认图标重
 **代价须知**：supersede = developer reject，丢排队位置；频繁撤审可能引起苹果额外关注。仅当"旧在审版本确实不该上架"时合理（如 1.5.52 带默认图标那次）。
 
 **重跑注意**：GitHub re-run 失败 job 用的是 **tag commit 上的旧 workflow/脚本**。脚本修复后必须**删远程 tag 重打**（`git push origin :refs/tags/vX.Y.Z` → `git tag vX.Y.Z` → `git push origin vX.Y.Z`）才会用新代码。
+
+### 6.10 🔴 appStoreVersionSubmissions 已废弃：撤审后重提必 403（reviewSubmissions 新流程）
+
+**症状**（v1.5.54）：supersede 撤审后复用版本位，提审时报 `HTTP 403: The resource 'appStoreVersionSubmissions' does not allow 'CREATE'. Allowed operation is: DELETE`。同时：
+
+- GET `/v1/appStoreVersions/{id}/appStoreVersionSubmission` 返回 404，且错误信息里**拿 version id 冒充 submission id**（`no appStoreVersionSubmissions with id '<version_id>'`），永远查不到真实 submission id，DELETE 无从下手；
+- 兜底 DELETE 版本必 409（Apple 不允许删除已上传 build 的版本、非首版本等）。
+
+**根因**：`appStoreVersionSubmissions`（POST/DELETE/相关关系端点）自 ASC API 1.7 起整体**废弃**，Apple 迁移到 `reviewSubmissions` 三步流程。废弃端点在"撤审后重提"场景下状态机已坏：GET 查不到、POST 被 403 拒绝。
+
+**修复**（v1.5.54，`submit-appstore-review.py` 重写提审）：
+
+1. **提审走新流程**：`find_review_submission` 通过 `GET /v1/reviewSubmissions?filter[app]=` + 各 submission 的 items 找到本版本关联的 submission → 无则 `POST /v1/reviewSubmissions` 建容器 + `POST /v1/reviewSubmissionItems` 挂版本 → `PATCH /v1/reviewSubmissions/{id} {submitted:true}` 送审（409 "not ready yet" 是 Apple 内部传播时序问题，脚本带 6 次递增等待重试）。驳回后重提（`UNRESOLVED_ISSUES` 状态）直接复用现有 submission PATCH submitted，不新建。
+2. **撤审走新流程**：supersede 改用 `PATCH /v1/reviewSubmissions/{id} {canceled:true}`，不再碰废弃端点。
+3. **复用版本位时同步版本号**：可编辑状态复用分支补 PATCH `versionString` 为本次构建号——否则撤审复用的版本会滞留旧号（1.5.52 的版本位挂着 1.5.54 的 build）。
+4. **删除"删版本重试"兜底**：Apple 禁删有 build 的版本，该分支永远 409，只留崩溃栈。
+
+### 6.11 🔴 出口合规：别创建 appEncryptionDeclarations（5 个上限 + 检查端点 404）
+
+**症状**（v1.5.54）：`HTTP 409 STATE_ERROR.APP_ENCRYPTION_DECLARATIONS_LIMIT_REACHED: There are already 5 appEncryptionDeclarations in review`。
+
+**根因（两个叠加）**：
+
+- `appStoreVersion` 资源**没有** `appEncryptionDeclaration` 关系，`GET /v1/appStoreVersions/{id}/appEncryptionDeclaration` 必 404 PATH_ERROR。旧脚本据此误判"缺少加密声明"，**每次 CI 都新建一个声明**，攒满单 App 上限 5 个。
+- 出口合规的正确 API 是 **build 属性**而非声明资源：`PATCH /v1/builds/{build_id} {attributes: {usesNonExemptEncryption: false}}`。已设置过的 build 再 PATCH 会 409（attribute already set），属预期，忽略即可。每个新 build 都要设置一次。
+
+**修复**（v1.5.54）：`ensure_export_compliance` 改为 PATCH build 属性；preflight 的合规检查改查 `GET /v1/builds/{id}` 的 `usesNonExemptEncryption` 是否为 null。**永远不要再 POST /v1/appEncryptionDeclarations**。
