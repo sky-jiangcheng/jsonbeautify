@@ -180,3 +180,18 @@ HTTP 409: {"code":"ENTITY_ERROR.RELATIONSHIP.INVALID",
 **根因**：`submit-appstore-review.py` 旧逻辑用 `APP_VERSION`（**构建号**，如 `1.5.11`）去查 App Store `versionString`，而商店版本是 **marketing version**（如 `1.0`）→ 永远查不到 → 每次都 POST 创建新版本 → 永远 409（见 §6.5）。
 
 **修复**（commit `34ebef5`）：`get_submission_version` 按 **marketing version** 查找/自动选当前可编辑版本（排除已上架，取最大），支持可选 `APP_STORE_VERSION` 精确指定；`wait_for_build` 按**构建号**精确匹配 VALID build。**概念必须分清：构建号 ≠ 商店版本号。**
+
+### 6.8 🔴 iOS 上线默认图标（多轮修复无效的根因：CI 步骤顺序）
+
+**症状**：App Store 上架的 iOS 包始终是 Tauri 默认图标，改 `bundle.icon`、补 1024px 图标、`removeAlpha` 等多轮修复全部无效。
+
+**根因**：图标进入 Xcode 工程的**唯一入口**是 `gen/apple/Assets.xcassets/AppIcon.appiconset/`，而：
+
+- `tauri ios init` 生成 Xcode 工程时用**模板内嵌的默认 Tauri 图标**填充 appiconset，`bundle.icon` 对 iOS Xcode 资产目录**不生效**；
+- `tauri icon` 只有在 `gen/apple/.../AppIcon.appiconset` **已存在**（即已跑过 `ios init`）时才把 iOS 图标写进去，否则**回退写到 `src-tauri/icons/ios/`** —— 而 Xcode 构建根本不读这个目录。
+
+CI 原顺序是「先生成图标、后 `ios init`」→ init 用默认图标重建 gen/apple，把之前的图标产物全部冲掉 → 每次构建都带默认图标上线。**之前的修复都在优化一个构建不读取的目录，方向性错误。**
+
+**修复**（v1.5.53，commit `f95470b`）：调换顺序为「`ios init` → `tauri icon`（此时直接写 appiconset，含 18 个文件与 iPad `@2x-1` 变体）→ `icons:generate` 的 removeAlpha 版本 `cp` 覆盖」，并加**熔断校验**：appiconset 内 `AppIcon-512@2x.png` 小于 1MB（默认 Tauri 图标特征；本项目 1024px 亚麻纹理约 1.9MB）直接 fail，图标链路再断会在 CI 立刻暴露而不是带着默认图标上线。
+
+**排查手法备忘**：`strings` 提取 `@tauri-apps/cli` 二进制确认内嵌 appiconset 模板与 `ios_out.exists()` 回退分支；对照 tauri 源码 `crates/tauri-cli/src/icon.rs` 证实；本地 `tauri icon` 实测 gen/apple 不存在时确实只写 `icons/ios/`。
