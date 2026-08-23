@@ -17,6 +17,7 @@
     lang: localStorage.getItem('appLang') || 'en',
     theme: localStorage.getItem('theme') || 'light',
     selectedIds: [],
+    loadedHistoryId: null, // id of the history record currently loaded into the editor; save overwrites it
     compareOrder: [0, 1],
     listSelectedIndex: 0,
     lastDetailContent: '',

@@ -66,6 +66,7 @@
       statusReady: '就绪',
       statusShortcuts: 'Ctrl+Enter 格式化 · Ctrl+S 保存 · Ctrl+D 下载 · Ctrl+F 搜索',
       saveModalTitle: '保存到历史记录', saveNamePlaceholder: '输入记录名称（可选）',
+      saveAsNew: '另存为新记录', historyUpdated: '已更新：{name}',
       cancel: '取消',
       compareTitle: 'JSON 对比', compareLoading: '正在比对…',
       themeTitle: '切换暗色/亮色模式',
@@ -136,6 +137,7 @@
       statusReady: 'Ready',
       statusShortcuts: 'Ctrl+Enter Format · Ctrl+S Save · Ctrl+D Download · Ctrl+F Search',
       saveModalTitle: 'Save to History', saveNamePlaceholder: 'Enter name (optional)',
+      saveAsNew: 'Save as a new entry', historyUpdated: 'Updated: {name}',
       cancel: 'Cancel',
       compareTitle: 'JSON Compare', compareLoading: 'Comparing…',
       themeTitle: 'Toggle dark/light mode',
@@ -411,6 +413,7 @@
           input.dispatchEvent(new Event('input'));
         }
         if (render.formatFromInput) render.formatFromInput();
+        if (window.__store) window.__store.setState({ loadedHistoryId: id });
         if (window.__router && window.__router.isMobileDevice()) render.toggleSidebar();
         var toast = document.getElementById('toast');
         if (toast) {

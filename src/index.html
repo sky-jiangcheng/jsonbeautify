@@ -385,6 +385,10 @@
         <div class="modal">
             <h3 id="save-modal-title" data-i18n="saveModalTitle">保存到历史记录</h3>
             <input type="text" id="save-name-input" name="save-name" data-i18n-placeholder="saveNamePlaceholder" placeholder="输入记录名称（可选）…" autocomplete="off" aria-label="记录名称">
+            <label class="save-as-new" id="save-as-new-wrap" for="save-as-new-checkbox" style="display:none">
+                <input type="checkbox" id="save-as-new-checkbox">
+                <span data-i18n="saveAsNew">另存为新记录</span>
+            </label>
             <div class="modal-actions">
                 <button class="btn" data-action="close-save-modal" data-i18n="cancel">取消</button>
                 <button class="btn btn-primary" data-action="confirm-save" data-i18n="save">保存</button>

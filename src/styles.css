@@ -1273,6 +1273,18 @@
             margin-top: 18px;
         }
 
+        .save-as-new {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+        }
+        .save-as-new input[type="checkbox"] { accent-color: var(--accent); }
+
         .modal-actions .btn { height: 32px; padding: 6px 14px; }
 
         [data-device="mobile"] .modal {
