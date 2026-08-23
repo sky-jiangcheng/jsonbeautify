@@ -1858,14 +1858,13 @@
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
             /*
-              v10/v11 底部留白统一单源：
-              - mob-toolbar 是 position:fixed bottom:0, 高度约为
-                (6px padding-top + 40px min-height + 6px padding-bottom + safe-area-inset-bottom)
-                = 52px + safe. 保守估计 60px 足够 iPhone 全系列.
-              - 之前这里和另一处 v11 代码叠算两次, 导致竖屏"按钮上方明显空白".
-              - 横屏 landscape media 里已经 padding-bottom:0 !important, 不影响横屏.
+              v13 底部 toolbar 覆盖式（与横屏一致）：
+              - 不再为 fixed mob-toolbar 预留 padding-bottom，
+                输出面板延伸到屏幕底，toolbar 覆盖在内容上方。
+              - 滚动容器（#input / .output-content 等）内部加
+                padding-bottom，保证最后一行能滚出 toolbar 遮挡区。
             */
-            padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: 0;
         }
         [data-device="mobile"] .editor-area {
             width: 100%;
@@ -1904,6 +1903,19 @@
             word-break: break-all !important;
             max-width: 100%;
         }
+
+        /* v13: toolbar 改覆盖式后，滚动容器内部给最后一行留出滚动余量
+           （toolbar 高度约 52px + safe-area，取 60px 留呼吸空间） */
+        [data-device="mobile"] #input,
+        [data-device="mobile"] .output-content,
+        [data-device="mobile"] .output-placeholder,
+        [data-device="mobile"] .error-display {
+            padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+        }
+
+        /* v13: 桌面 statusbar 在 mobile 上被 fixed toolbar 整体遮挡（z-1 < z-50），
+           却仍占据 24px 布局位 → 隐藏，让面板延伸到屏幕底 */
+        [data-device="mobile"] .statusbar { display: none; }
         [data-device="mobile"] .output-content code {
             white-space: pre-wrap !important;
             word-break: break-all !important;
