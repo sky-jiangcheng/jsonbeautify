@@ -2011,6 +2011,42 @@
             outline-offset: -2px;
         }
 
+        /* ========== 竖屏输出面板贴内容（v12）==========
+           1.5.52 修复后短 JSON 底部仍有大片空白：
+           .output-wrap 是 absolute inset:0 + bg-primary，把整个 panel 填满，
+           内容短时剩余区域全是面板背景（~170pt）。
+           方案：滚动职责从 .output-content 上移到 .panel-body，
+           .output-wrap 按内容自然高度，面板背景只铺到最后一行；
+           搜索栏 sticky 固定在滚动容器顶部。
+           仅竖屏生效，横屏/桌面保持原有内部滚动结构。 */
+        @media (orientation: portrait) {
+            [data-device="mobile"] .panel-right .panel-body {
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            [data-device="mobile"] .output-wrap {
+                position: static;
+                overflow: visible;
+            }
+            [data-device="mobile"] .output-content-area {
+                flex: 0 0 auto;
+            }
+            [data-device="mobile"] .output-search-bar {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+            }
+            /* 空态/错误视图兜底高度，避免贴内容后塌缩 */
+            [data-device="mobile"] .output-placeholder,
+            [data-device="mobile"] .error-display {
+                min-height: 40vh;
+            }
+            /* 列表详情视图内部双栏滚动，需要固定高度 */
+            [data-device="mobile"] .list-detail {
+                height: 60vh;
+            }
+        }
+
         /* 3. 历史侧栏全屏抽屉 */
         [data-device="mobile"] .sidebar {
             position: fixed;
