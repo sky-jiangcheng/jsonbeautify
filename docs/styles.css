@@ -1857,12 +1857,22 @@
             box-sizing: border-box;
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
-            padding-bottom: calc(var(--toolbar-height) + env(safe-area-inset-bottom, 0px));
+            /*
+              v10/v11 底部留白统一单源：
+              - mob-toolbar 是 position:fixed bottom:0, 高度约为
+                (6px padding-top + 40px min-height + 6px padding-bottom + safe-area-inset-bottom)
+                = 52px + safe. 保守估计 60px 足够 iPhone 全系列.
+              - 之前这里和另一处 v11 代码叠算两次, 导致竖屏"按钮上方明显空白".
+              - 横屏 landscape media 里已经 padding-bottom:0 !important, 不影响横屏.
+            */
+            padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
         }
         [data-device="mobile"] .editor-area {
             width: 100%;
             max-width: 100vw;
-            height: 100%;
+            /* height:100% 会让 flex:1 的"收缩"失效, 导致 main-layout 被 editor 撑破
+               → 底部出现白色 dead space. 改用 flex 高度自适应. */
+            flex: 1 1 auto;
             min-height: 0;
             overflow: hidden;
             -webkit-overflow-scrolling: auto;
@@ -2209,6 +2219,32 @@
                 white-space: var(--code-white-space);
                 word-break: var(--code-word-break);
             }
+
+            /* 8. 横屏两侧空白修复：
+                  - .main-layout / bg-image-layer / watermark 都要尊重 safe-area-inset-{left,right} 的反向补偿：
+                    横屏下 WebView 会把两侧刘海空出来, 但我们希望背景图和水印都一直平铺到屏幕边缘.
+                  - 所以对 .bg-image-layer / .watermark-layer 使用负 margin + 对应更大的
+                    padding/width 来让视觉覆盖到安全区外. 另一种更稳妥的写法是让这些层
+                    直接 viewport-fill=cover, 但 iOS WKWebView 不稳定, 所以使用 CSS 补偿： */
+            [data-device="mobile"] .main-layout {
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+            [data-device="mobile"] .bg-image-layer,
+            [data-device="mobile"] .watermark-layer {
+                left: calc(-1 * env(safe-area-inset-left, 0px));
+                right: calc(-1 * env(safe-area-inset-right, 0px));
+                top: calc(-1 * env(safe-area-inset-top, 0px));
+                bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+                width: auto;
+                background-size: cover;
+                background-origin: border-box;
+                background-repeat: no-repeat;
+            }
+            [data-device="mobile"] .watermark-layer {
+                background-repeat: repeat;
+                background-size: auto;
+            }
         }
 
         /* ========== Background Image Layer ========== */
@@ -2244,9 +2280,18 @@
             z-index: 950;
             pointer-events: none;
             background-repeat: repeat;
+            background-size: auto;
+            background-position: 0 0;
+            /* 横屏刘海屏：安全区内也能铺满而不是两边留白 */
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            background-origin: content-box;
             opacity: 0;
             transition: opacity var(--transition);
             will-change: opacity;
+            box-sizing: border-box;
         }
         .watermark-layer.active {
             opacity: var(--watermark-opacity, 0.15);

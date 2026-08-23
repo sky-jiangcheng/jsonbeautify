@@ -154,26 +154,79 @@
     });
   }
 
+  function normalizeHistoryItem(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    var id = String(raw.id || raw._id || '');
+    if (!id) id = 'legacy-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+    var name = String(raw.name || raw.title || raw.label || '');
+    if (!name) name = 'untitled';
+    var content = '';
+    // 跨版本字段兼容：历史上可能用过 content / json / text / data / value 等字段存内容
+    if (typeof raw.content === 'string') content = raw.content;
+    else if (typeof raw.json === 'string') content = raw.json;
+    else if (typeof raw.text === 'string') content = raw.text;
+    else if (typeof raw.data === 'string') content = raw.data;
+    else if (typeof raw.value === 'string') content = raw.value;
+    // 老版本 {id, entries:[...]} 这种容器对象也尝试兜底取出第一个字符串
+    else if (raw && typeof raw === 'object') {
+      for (var k in raw) {
+        var v = raw[k];
+        if (typeof v === 'string' && v.length > 0 && /[{["\d\-tfnsu]/.test(v.charAt(0) === ' ' ? v.trimLeft().charAt(0) : v.charAt(0))) {
+          content = v;
+          break;
+        }
+      }
+    }
+    // 如果字符串本身是 stringify 过的一层 shell ("\"...\"") 就解一次
+    if (content && content.length > 2 && content.charCodeAt(0) === 34 && content.charCodeAt(content.length - 1) === 34) {
+      try { content = JSON.parse(content); } catch (_) {}
+    }
+    // 单条超大记录的降级提示：不丢弃数据，但后续调用方可以根据 size 决定 UI 提示
+    var sizeBytes = content.length;
+    return { id: id, name: name, content: String(content || ''), _legacy: true, _size: sizeBytes };
+  }
+
   function getHistory() {
+    var raw = null;
     try {
-      return JSON.parse(localStorage.getItem('jsonHistory') || '[]');
+      raw = JSON.parse(localStorage.getItem('jsonHistory') || '[]');
     } catch (e) {
       try { localStorage.removeItem('jsonHistory'); } catch (_) {}
       return [];
     }
+    if (!Array.isArray(raw)) return [];
+    var out = [];
+    for (var i = 0; i < raw.length; i++) {
+      var n = normalizeHistoryItem(raw[i]);
+      if (n) out.push(n);
+    }
+    return out;
   }
 
   function setHistory(arr) {
     try {
       // 裁剪上限,避免超大历史撑爆 localStorage 配额
-      if (Array.isArray(arr)) arr = arr.slice(0, 100);
+      if (Array.isArray(arr)) {
+        var normalized = [];
+        for (var i = 0; i < Math.min(arr.length, 100); i++) {
+          var n = normalizeHistoryItem(arr[i]);
+          if (n) normalized.push({ id: n.id, name: n.name, content: n.content });
+        }
+        arr = normalized;
+      }
       localStorage.setItem('jsonHistory', JSON.stringify(arr));
     } catch (e) {
       // 配额满/序列化失败时静默降级: 尝试只保留最近的 20 条再写一次
       console.warn('[actions] setHistory failed, trimming:', e);
       try {
-        if (Array.isArray(arr)) arr = arr.slice(0, 20);
-        localStorage.setItem('jsonHistory', JSON.stringify(arr));
+        if (Array.isArray(arr)) {
+          var trimmed = [];
+          for (var j = 0; j < Math.min(arr.length, 20); j++) {
+            var m = normalizeHistoryItem(arr[j]);
+            if (m) trimmed.push({ id: m.id, name: m.name, content: m.content });
+          }
+          localStorage.setItem('jsonHistory', JSON.stringify(trimmed));
+        }
       } catch (e2) {
         try { localStorage.removeItem('jsonHistory'); } catch (_) {}
       }
@@ -1048,17 +1101,22 @@
     }
 
     var html = history.map(function (item) {
-      var snippet = item.content.replace(/\s+/g, '').slice(0, 50);
-      var checked = selectedIds.indexOf(item.id) >= 0 ? 'checked' : '';
-      var selected = selectedIds.indexOf(item.id) >= 0 ? 'selected' : '';
+      // 跨版本安全: 旧 item 可能无 content / 字段名不一致, getHistory 已经 normalize, 这里再兜底
+      var rawContent = (item && typeof item.content === 'string') ? item.content : '';
+      var snippet = rawContent.replace(/\s+/g, '').slice(0, 50);
+      if (!snippet) snippet = _i18n.t('legacyEmptySnippet') || '[empty entry]';
+      var name = item && item.name ? item.name : (_i18n.t('untitled') || 'untitled');
+      var id = item && item.id ? item.id : '';
+      var checked = id && selectedIds.indexOf(id) >= 0 ? 'checked' : '';
+      var selected = id && selectedIds.indexOf(id) >= 0 ? 'selected' : '';
       return (
         '<div class="history-item ' + selected + '">' +
-        '  <input type="checkbox" class="history-checkbox" data-select-id="' + item.id + '" ' + checked + ' title="' + _i18n.t('selectForCompare') + '" aria-label="' + _i18n.t('selectForCompare') + '" />' +
-        '  <button type="button" class="history-info" data-load-id="' + item.id + '" aria-label="加载历史：' + _actions.escapeHtml(item.name) + '">' +
-        '    <div class="history-name">' + _actions.escapeHtml(item.name) + '</div>' +
+        '  <input type="checkbox" class="history-checkbox" data-select-id="' + id + '" ' + checked + ' title="' + _i18n.t('selectForCompare') + '" aria-label="' + _i18n.t('selectForCompare') + '" />' +
+        '  <button type="button" class="history-info" data-load-id="' + id + '" aria-label="加载历史：' + _actions.escapeHtml(name) + '">' +
+        '    <div class="history-name">' + _actions.escapeHtml(name) + '</div>' +
         '    <div class="history-snippet">' + _actions.escapeHtml(snippet) + '</div>' +
         '  </button>' +
-        '  <button type="button" class="history-delete" data-delete-id="' + item.id + '" title="' + _i18n.t('deleteItem') + '" aria-label="' + _i18n.t('deleteItem') + '">&times;</button>' +
+        '  <button type="button" class="history-delete" data-delete-id="' + id + '" title="' + _i18n.t('deleteItem') + '" aria-label="' + _i18n.t('deleteItem') + '">&times;</button>' +
         '</div>'
       );
     }).join('');
@@ -1673,7 +1731,7 @@
       var hid = infoBtn.dataset.loadId;
       var hist = _actions.getHistory();
       var loaded = _actions.loadHistory(hist, hid);
-      if (loaded) {
+      if (loaded && typeof loaded.content === 'string' && loaded.content.length > 0) {
         var input = document.getElementById('input');
         if (input) input.value = loaded.content;
         if (input) input.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
@@ -1690,6 +1748,10 @@
         if (_router.isMobileDevice()) toggleSidebar();
         showToast(_i18n.t('loaded', { name: loaded.name }), 2000, 'icon-file-text');
         _store.setState({ _platform: Platform.getPlatform() });
+      } else {
+        // 老版本记录字段不兼容 / 内容为空 → 友好提示不静默失败
+        var name = loaded && loaded.name ? loaded.name : (_i18n.t('untitled') || 'untitled');
+        showToast(_i18n.t('legacyHistoryUnavailable', { name: name }) || ('Cannot load "' + name + '" (legacy format unavailable). You can delete it after backing up.'), 3000, 'icon-alert-triangle');
       }
       return true;
     }
