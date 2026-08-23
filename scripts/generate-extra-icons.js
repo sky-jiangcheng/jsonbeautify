@@ -67,7 +67,6 @@ async function main() {
     const abs = path.join(ROOT, relPath);
     await fs.promises.mkdir(path.dirname(abs), { recursive: true });
     await sharp(SOURCE)
-      .removeAlpha()
       .resize(size, size, { kernel: sharp.kernel.lanczos3 })
       .png({ compressionLevel: 9 })
       .toFile(abs);

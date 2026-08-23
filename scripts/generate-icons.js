@@ -67,7 +67,6 @@ async function generateIcons() {
     }
 
     await sharp(sourcePath)
-      .removeAlpha()
       .resize(size, size, { kernel: sharp.kernel.lanczos3 })
       .png({ compressionLevel: 9 })
       .toFile(outputPath);
