@@ -248,6 +248,58 @@ def create_version(app_id, jwt, platform, version_string):
         sys.exit(1)
 
 
+def supersede_version(app_id, jwt, platform, version_id, old_ver, new_ver):
+    """撤下正在审核中的旧版本 (developer reject), 把唯一可编辑位让给新版本。
+
+    Apple 规则: 同平台同时只能有一个"可编辑/在审"版本, 在审版本会阻塞新版本创建 (409)。
+    流程: 删除 appStoreVersionSubmission 撤审 -> 等状态脱离审核队列 ->
+    优先 PATCH versionString 复用版本位 (保留已填的元数据);
+    改号失败则 DELETE 旧版本重建 (元数据丢失, 但 versionString 干净)。
+    """
+    print(f"\n=== 版本 {old_ver} 审核中, 撤审并由 {new_ver} 取代 (supersede) ===")
+    delete_submission(version_id, jwt)
+
+    # 等待状态脱离审核队列 (WAITING_FOR_REVIEW -> DEVELOPER_REJECTED)
+    state = ""
+    for _ in range(10):
+        try:
+            resp = api_request("GET", f"/v1/appStoreVersions/{version_id}", jwt)
+            state = (
+                resp.get("data", {}).get("attributes", {}).get("appStoreState", "")
+            )
+        except urllib.error.HTTPError:
+            pass
+        if state and state not in ("WAITING_FOR_REVIEW", "IN_REVIEW"):
+            break
+        time.sleep(3)
+    print(f"  版本 {old_ver} 当前状态: {state}")
+
+    # 优先复用版本位: 改 versionString, 保留该版本上已填的元数据
+    patch_body = {
+        "data": {
+            "type": "appStoreVersions",
+            "id": version_id,
+            "attributes": {"versionString": new_ver},
+        }
+    }
+    try:
+        api_request("PATCH", f"/v1/appStoreVersions/{version_id}", jwt, patch_body)
+        print(f"  已复用版本位并改号为 {new_ver}")
+        return version_id, state
+    except urllib.error.HTTPError as e:
+        print(f"  改号失败 (HTTP {e.code}), 删除旧版本重建...")
+
+    try:
+        api_request("DELETE", f"/v1/appStoreVersions/{version_id}", jwt)
+        print("  已删除旧版本, 等待 15s 供 Apple API 传播...")
+        time.sleep(15)
+    except urllib.error.HTTPError as e:
+        print(f"  删除旧版本失败 (HTTP {e.code}), "
+              f"退回复用旧版本位 (商店版本号将保持 {old_ver})")
+        return version_id, state
+    return create_version(app_id, jwt, platform, new_ver)
+
+
 def get_submission_version(app_id, jwt, platform, app_store_version, build_version):
     """找到当前可提交的 App Store 版本 (marketing version, 如 '1.0'), 而非 build version。
 
@@ -257,6 +309,9 @@ def get_submission_version(app_id, jwt, platform, app_store_version, build_versi
       2) 否则自动选择当前可编辑/可提交的版本 (排除已上架, 取 versionString 最大者)。
     REJECTED / DEVELOPER_REJECTED / PREPARE_FOR_SUBMISSION 等状态下会落入此路径,
     关联 build 后重新提交即可 (这正是被驳回后重新送审的标准流程)。
+    若旧版本正在审核中 (WAITING_FOR_REVIEW / IN_REVIEW):
+      - 版本号 == 本次构建号 -> 已在审核, 幂等退出;
+      - 版本号更旧 -> supersede: 撤审腾出可编辑位, 由新版本取代 (developer reject)。
     """
     print(f"\n=== 查找 {platform} 当前可提交版本 ===")
     resp = api_request(
@@ -283,7 +338,6 @@ def get_submission_version(app_id, jwt, platform, app_store_version, build_versi
         return create_version(app_id, jwt, platform, app_store_version)
 
     # 2) 自动选择当前可编辑/可提交版本 (排除已上架)
-    #    额外检查: 跳过有残留 submission 的版本 (会导致 403 "only DELETE")
     def vkey(v):
         s = v.get("attributes", {}).get("versionString", "0")
         try:
@@ -297,29 +351,28 @@ def get_submission_version(app_id, jwt, platform, app_store_version, build_versi
     # 按 versionString 降序排列, 优先选最新版本
     candidates = sorted(candidates, key=vkey, reverse=True)
 
+    # 审核队列中的状态: 此期间 Apple 不允许创建新版本 (会 409)
+    IN_REVIEW_STATES = ("WAITING_FOR_REVIEW", "IN_REVIEW")
+
     for chosen in candidates:
         vid = chosen.get("id")
         st = chosen.get("attributes", {}).get("appStoreState", "")
         ver = chosen.get("attributes", {}).get("versionString")
-        # 检查是否有残留 submission
-        has_submission = False
-        try:
-            sub_resp = api_request(
-                "GET", f"/v1/appStoreVersions/{vid}/appStoreVersionSubmission", jwt
+        if st in IN_REVIEW_STATES:
+            if ver == build_version:
+                print(f"  版本 {ver} 已在审核中, 无需重复提交")
+                sys.exit(0)
+            # 旧版本在审: 撤审腾位, 由新版本取代 (developer reject)
+            return supersede_version(
+                app_id, jwt, platform, vid, ver, build_version
             )
-            if sub_resp.get("data"):
-                has_submission = True
-        except urllib.error.HTTPError as e:
-            if e.code != 404:
-                has_submission = True  # 出错时保守跳过
-        if has_submission:
-            print(f"  跳过版本 {ver} (id={vid}, state={st}): 有残留 submission")
-            continue
+        # 可编辑状态 (PREPARE_FOR_SUBMISSION / REJECTED / DEVELOPER_REJECTED 等):
+        # 直接复用, 版本上残留的旧 submission 由 submit_for_review 阶段的
+        # delete_submission 清理 (跳过它反而会掉进"创建新版本 -> 409"的坑)
         print(f"  自动选择当前版本 {ver} (id={vid}, state={st})")
         return vid, st
 
-    # 所有可编辑版本都有残留 submission, 创建新版本
-    print("  所有可编辑版本都有残留 submission, 创建新版本...")
+    print("  没有可复用的版本, 创建新版本...")
     return create_version(app_id, jwt, platform, build_version)
 
 

@@ -195,3 +195,19 @@ CI 原顺序是「先生成图标、后 `ios init`」→ init 用默认图标重
 **修复**（v1.5.53，commit `f95470b`）：调换顺序为「`ios init` → `tauri icon`（此时直接写 appiconset，含 18 个文件与 iPad `@2x-1` 变体）→ `icons:generate` 的 removeAlpha 版本 `cp` 覆盖」，并加**熔断校验**：appiconset 内 `AppIcon-512@2x.png` 小于 1MB（默认 Tauri 图标特征；本项目 1024px 亚麻纹理约 1.9MB）直接 fail，图标链路再断会在 CI 立刻暴露而不是带着默认图标上线。
 
 **排查手法备忘**：`strings` 提取 `@tauri-apps/cli` 二进制确认内嵌 appiconset 模板与 `ios_out.exists()` 回退分支；对照 tauri 源码 `crates/tauri-cli/src/icon.rs` 证实；本地 `tauri icon` 实测 gen/apple 不存在时确实只写 `icons/ios/`。
+
+### 6.9 🔴 旧版本在审中导致新版本创建 409（supersede 自动撤审）
+
+**症状**：新 tag 的 `ios` job 在「查找当前可提交版本」阶段报 `HTTP 409 ENTITY_ERROR.RELATIONSHIP.INVALID: You cannot create a new version of the App in the current state`，并列出某版本 `state=WAITING_FOR_REVIEW`。
+
+**根因**：Apple 规则——同平台**同时只能有一个"可编辑/在审"版本**。上一个 tag 提交的版本还在审核队列里时，创建新版本必 409。旧脚本把"在审的 submission"误判为"残留 submission"而跳过该版本、硬闯创建，正好撞上这条规则。
+
+**修复**（v1.5.53，`submit-appstore-review.py` 新增 `supersede_version`）：自动选择版本时按状态分流——
+
+- `WAITING_FOR_REVIEW / IN_REVIEW` 且版本号 == 本次构建号 → 已在审，幂等退出（exit 0）；
+- `WAITING_FOR_REVIEW / IN_REVIEW` 且版本号更旧 → **自动撤审**（复用 `delete_submission` 删 `appStoreVersionSubmission`，即 developer reject）→ 等状态脱离审核队列 → PATCH `versionString` 复用版本位（保留已填元数据）；改号失败则 DELETE 版本重建；
+- 可编辑状态（`REJECTED / DEVELOPER_REJECTED / PREPARE_FOR_SUBMISSION`）→ **直接复用**，不再因残留 submission 跳过（残留由 `submit_for_review` 阶段的 `delete_submission` 清理——跳过反而掉进"创建新版本 → 409"的坑）。
+
+**代价须知**：supersede = developer reject，丢排队位置；频繁撤审可能引起苹果额外关注。仅当"旧在审版本确实不该上架"时合理（如 1.5.52 带默认图标那次）。
+
+**重跑注意**：GitHub re-run 失败 job 用的是 **tag commit 上的旧 workflow/脚本**。脚本修复后必须**删远程 tag 重打**（`git push origin :refs/tags/vX.Y.Z` → `git tag vX.Y.Z` → `git push origin vX.Y.Z`）才会用新代码。
