@@ -1119,6 +1119,7 @@
             height: 14px;
             cursor: pointer;
             flex-shrink: 0;
+            touch-action: manipulation;
         }
 
         .history-info {
