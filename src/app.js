@@ -29,7 +29,7 @@
       // Tauri mobile detection
       var isTauriMobile = typeof window !== 'undefined' && 
                            window.__TAURI__ && 
-                           window.__TAURI__?.platform === 'mobile';
+                           window.__TAURI__.platform === 'mobile';
       
       this._cached = !!(isIOS || isAndroid || isTauriMobile);
       return this._cached;

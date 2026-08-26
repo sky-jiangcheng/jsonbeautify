@@ -148,7 +148,7 @@
 
   function tryFixJson(str) {
     var s = str.trim();
-    var lc = 0, rc = 0, ls = 0, rs = 0;
+    var stack = [];
     var inString = false, escape = false;
     for (var i = 0; i < s.length; i++) {
       var ch = s[i];
@@ -159,14 +159,18 @@
         continue;
       }
       if (ch === '"') { inString = true; continue; }
-      if (ch === '{') lc++;
-      else if (ch === '}') rc++;
-      else if (ch === '[') ls++;
-      else if (ch === ']') rs++;
+      if (ch === '{') stack.push('}');
+      else if (ch === '[') stack.push(']');
+      else if (ch === '}' || ch === ']') {
+        if (stack.length > 0 && stack[stack.length - 1] === ch) {
+          stack.pop();
+        }
+      }
     }
-    var fixed = s, ok = false;
-    while (lc > rc) { fixed += '}'; rc++; ok = true; }
-    while (ls > rs) { fixed += ']'; rs++; ok = true; }
+    var fixed = s, ok = stack.length > 0;
+    while (stack.length > 0) {
+      fixed += stack.pop();
+    }
     return { success: ok, json: fixed };
   }
 
@@ -189,8 +193,18 @@
           fixMsg = 'autoQuoteId';
         } catch (e2) {}
       }
+      if (!jsonObj && uq !== v) {
+        var fixUqResult = tryFixJson(uq);
+        if (fixUqResult.success) {
+          try {
+            jsonObj = JSON.parse(fixUqResult.json);
+            fixed = true;
+            fixMsg = 'autoQuoteId';
+          } catch (e3) {}
+        }
+      }
       if (!jsonObj) {
-        const fixResult = tryFixJson(v);
+        var fixResult = tryFixJson(v);
         if (fixResult.success) {
           try {
             jsonObj = JSON.parse(fixResult.json);

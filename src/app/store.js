@@ -58,6 +58,10 @@
     _subscribers.push(fn);
     // Immediately call with current state so renderer can do one-shot render
     fn(_state);
+    return function unsubscribe() {
+      var idx = _subscribers.indexOf(fn);
+      if (idx !== -1) _subscribers.splice(idx, 1);
+    };
   }
 
   // Persistence helpers

@@ -1250,12 +1250,7 @@
     
     // Unified click/touch handler for all platforms
     function handleEvent(e) {
-      var handled = handleHistoryClick(e);
-      if (!handled) {
-        document.getElementById('output-content-area')?.querySelector('.jt-toggle')?.forEach(function(t) {
-          if (e.target.closest('[data-jt-toggle]')) toggleJsonNode(e.target.closest('[data-jt-toggle]'));
-        });
-      }
+      handleHistoryClick(e);
     }
     
     historyList.addEventListener('click', handleEvent);
