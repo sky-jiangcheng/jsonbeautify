@@ -112,11 +112,14 @@
         .svg-icon-lg { width: 20px; height: 20px; }
 
         /* ========== Scrollbar ========== */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; min-height: 40px; min-width: 40px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
         ::-webkit-scrollbar-corner { background: transparent; }
+
+        /* macOS: prevent window drag from eating clicks on header/toolbar/scrollable areas */
+        header, .toolbar, .toolbar .btn, .panel, .panel-body, #input, .output-wrap, .output-content, .sidebar, .history-list, .statusbar, .modal-backdrop, .modal, .compare-container, .toast { -webkit-app-region: no-drag; }
 
         /* ========== Header ========== */
         header {
