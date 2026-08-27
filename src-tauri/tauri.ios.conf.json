@@ -1,6 +1,11 @@
 {
   "identifier": "com.jsonbeautify.desktop.appstore.ios",
   "bundle": {
+    "ios": {
+      "infoPlist": {
+        "NSCameraUsageDescription": "Camera access is required to take a photo for the background image."
+      }
+    },
     "icon": [
       "icons/ios/AppIcon-20x20@1x.png",
       "icons/ios/AppIcon-20x20@2x.png",
