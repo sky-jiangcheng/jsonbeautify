@@ -511,7 +511,9 @@ jobs:
           echo "PROFILE_NAME=$PROFILE_NAME" >> $GITHUB_ENV
 
       - name: Initialize iOS project
-        run: npx tauri ios init --ci --config src-tauri/tauri.ios.conf.json
+        run: |
+          npx tauri ios init --ci --config src-tauri/tauri.ios.conf.json
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'Camera access is required to take a photo for the background image." src-tauri/gen/apple/Info.plist
 
       # 必须在 ios init 之后跑：tauri icon 只有检测到
       # gen/apple/Assets.xcassets/AppIcon.appiconset 已存在才会把 iOS 图标
