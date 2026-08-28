@@ -840,8 +840,8 @@
 
   function formatBytes(bytes) {
     if (bytes === 0) return '0 B';
-    var k = 1024, sizes = ['B', 'KB', 'MB'];
-    var i = Math.floor(Math.log(bytes) / Math.log(k));
+    var k = 1024, sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    var i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 
@@ -1126,16 +1126,19 @@
       if (!snippet) snippet = _i18n.t('legacyEmptySnippet') || '[empty entry]';
       var name = item && item.name ? item.name : (_i18n.t('untitled') || 'untitled');
       var id = item && item.id ? item.id : '';
+      // id 可能来自旧版本 localStorage 的任意字符串, 属性注入前必须转义
+      // (dataset 读取时 HTML 实体会被解码, 因此转义不影响事件委托的匹配)
+      var safeId = _actions.escapeHtml(String(id));
       var checked = id && selectedIds.indexOf(id) >= 0 ? 'checked' : '';
       var selected = id && selectedIds.indexOf(id) >= 0 ? 'selected' : '';
       return (
         '<div class="history-item ' + selected + '">' +
-        '  <input type="checkbox" class="history-checkbox" data-select-id="' + id + '" ' + checked + ' title="' + _i18n.t('selectForCompare') + '" aria-label="' + _i18n.t('selectForCompare') + '" />' +
-        '  <button type="button" class="history-info" data-load-id="' + id + '" aria-label="加载历史：' + _actions.escapeHtml(name) + '">' +
+        '  <input type="checkbox" class="history-checkbox" data-select-id="' + safeId + '" ' + checked + ' title="' + _i18n.t('selectForCompare') + '" aria-label="' + _i18n.t('selectForCompare') + '" />' +
+        '  <button type="button" class="history-info" data-load-id="' + safeId + '" aria-label="加载历史：' + _actions.escapeHtml(name) + '">' +
         '    <div class="history-name">' + _actions.escapeHtml(name) + '</div>' +
         '    <div class="history-snippet">' + _actions.escapeHtml(snippet) + '</div>' +
         '  </button>' +
-        '  <button type="button" class="history-delete" data-delete-id="' + id + '" title="' + _i18n.t('deleteItem') + '" aria-label="' + _i18n.t('deleteItem') + '">&times;</button>' +
+        '  <button type="button" class="history-delete" data-delete-id="' + safeId + '" title="' + _i18n.t('deleteItem') + '" aria-label="' + _i18n.t('deleteItem') + '">&times;</button>' +
         '</div>'
       );
     }).join('');
@@ -2650,6 +2653,8 @@
       unnamed: '未命名', noHistory: '暂无历史记录', noHistoryHint: '格式化后保存即可',
       selectForCompare: '选中用于对比', deleteItem: '删除',
       historyTooLarge: '记录过大，无法保存（上限 500KB）',
+      legacyEmptySnippet: '[空记录]',
+      legacyHistoryUnavailable: '无法加载“{name}”（旧版格式不兼容）。可先备份内容后删除该记录。',
       autoQuoteId: '（已自动为标识符添加引号）',
       autoBracket: '（已自动补全括号）',
       autoBracketNotification: '原始 JSON 缺失部分括号，已自动补全',
@@ -2721,6 +2726,8 @@
       unnamed: 'Untitled', noHistory: 'No history yet', noHistoryHint: 'Format and save to see history',
       selectForCompare: 'Select to compare', deleteItem: 'Delete',
       historyTooLarge: 'Entry too large to save (max 500KB)',
+      legacyEmptySnippet: '[empty entry]',
+      legacyHistoryUnavailable: 'Cannot load "{name}" (legacy format unavailable). Back up the content, then delete it.',
       autoQuoteId: ' (auto-quoted identifier)',
       autoBracket: ' (auto-closed brackets)',
       autoBracketNotification: 'Some brackets were missing and have been auto-closed',
@@ -2753,10 +2760,13 @@
   var i18n = {
     _lang: (window.__store && window.__store.getStateForKey('lang')) || localStorage.getItem('appLang') || 'en',
     t: function (key, vars) {
-      var s = I18N[this._lang][key] || I18N['en'][key] || key;
+      // 未知语言(如 localStorage 被写入非法值)时回退到英文, 避免整个 i18n 崩溃
+      var dict = I18N[this._lang] || I18N['en'];
+      var s = dict[key] || I18N['en'][key] || key;
       if (vars) {
         Object.entries(vars).forEach(function (entry) {
-          s = s.replace(new RegExp('\\{' + entry[0] + '\\}', 'g'), entry[1]);
+          // 用函数形式替换: 值中的 $&/$' 等会被 replace 当作替换模式展开
+          s = s.replace(new RegExp('\\{' + entry[0] + '\\}', 'g'), function () { return entry[1]; });
         });
       }
       return s;

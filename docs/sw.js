@@ -1,4 +1,4 @@
-const CACHE_NAME = 'json-formatter-v1.5.58';
+const CACHE_NAME = 'json-formatter-v1.5.59';
 const urlsToCache = [
   './',
   './index.html',
@@ -19,9 +19,8 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(urlsToCache.map(u => new Request(u, { cache: 'reload' })));
-    })
+    }).then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
@@ -30,9 +29,8 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.filter(name => name !== CACHE_NAME).map(name => caches.delete(name))
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
