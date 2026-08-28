@@ -301,8 +301,8 @@
 
   function formatBytes(bytes) {
     if (bytes === 0) return '0 B';
-    var k = 1024, sizes = ['B', 'KB', 'MB'];
-    var i = Math.floor(Math.log(bytes) / Math.log(k));
+    var k = 1024, sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    var i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 
@@ -587,16 +587,19 @@
       if (!snippet) snippet = _i18n.t('legacyEmptySnippet') || '[empty entry]';
       var name = item && item.name ? item.name : (_i18n.t('untitled') || 'untitled');
       var id = item && item.id ? item.id : '';
+      // id 可能来自旧版本 localStorage 的任意字符串, 属性注入前必须转义
+      // (dataset 读取时 HTML 实体会被解码, 因此转义不影响事件委托的匹配)
+      var safeId = _actions.escapeHtml(String(id));
       var checked = id && selectedIds.indexOf(id) >= 0 ? 'checked' : '';
       var selected = id && selectedIds.indexOf(id) >= 0 ? 'selected' : '';
       return (
         '<div class="history-item ' + selected + '">' +
-        '  <input type="checkbox" class="history-checkbox" data-select-id="' + id + '" ' + checked + ' title="' + _i18n.t('selectForCompare') + '" aria-label="' + _i18n.t('selectForCompare') + '" />' +
-        '  <button type="button" class="history-info" data-load-id="' + id + '" aria-label="加载历史：' + _actions.escapeHtml(name) + '">' +
+        '  <input type="checkbox" class="history-checkbox" data-select-id="' + safeId + '" ' + checked + ' title="' + _i18n.t('selectForCompare') + '" aria-label="' + _i18n.t('selectForCompare') + '" />' +
+        '  <button type="button" class="history-info" data-load-id="' + safeId + '" aria-label="加载历史：' + _actions.escapeHtml(name) + '">' +
         '    <div class="history-name">' + _actions.escapeHtml(name) + '</div>' +
         '    <div class="history-snippet">' + _actions.escapeHtml(snippet) + '</div>' +
         '  </button>' +
-        '  <button type="button" class="history-delete" data-delete-id="' + id + '" title="' + _i18n.t('deleteItem') + '" aria-label="' + _i18n.t('deleteItem') + '">&times;</button>' +
+        '  <button type="button" class="history-delete" data-delete-id="' + safeId + '" title="' + _i18n.t('deleteItem') + '" aria-label="' + _i18n.t('deleteItem') + '">&times;</button>' +
         '</div>'
       );
     }).join('');

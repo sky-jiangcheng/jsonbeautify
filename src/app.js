@@ -97,6 +97,8 @@
       unnamed: '未命名', noHistory: '暂无历史记录', noHistoryHint: '格式化后保存即可',
       selectForCompare: '选中用于对比', deleteItem: '删除',
       historyTooLarge: '记录过大，无法保存（上限 500KB）',
+      legacyEmptySnippet: '[空记录]',
+      legacyHistoryUnavailable: '无法加载“{name}”（旧版格式不兼容）。可先备份内容后删除该记录。',
       autoQuoteId: '（已自动为标识符添加引号）',
       autoBracket: '（已自动补全括号）',
       autoBracketNotification: '原始 JSON 缺失部分括号，已自动补全',
@@ -168,6 +170,8 @@
       unnamed: 'Untitled', noHistory: 'No history yet', noHistoryHint: 'Format and save to see history',
       selectForCompare: 'Select to compare', deleteItem: 'Delete',
       historyTooLarge: 'Entry too large to save (max 500KB)',
+      legacyEmptySnippet: '[empty entry]',
+      legacyHistoryUnavailable: 'Cannot load "{name}" (legacy format unavailable). Back up the content, then delete it.',
       autoQuoteId: ' (auto-quoted identifier)',
       autoBracket: ' (auto-closed brackets)',
       autoBracketNotification: 'Some brackets were missing and have been auto-closed',
@@ -200,10 +204,13 @@
   var i18n = {
     _lang: (window.__store && window.__store.getStateForKey('lang')) || localStorage.getItem('appLang') || 'en',
     t: function (key, vars) {
-      var s = I18N[this._lang][key] || I18N['en'][key] || key;
+      // 未知语言(如 localStorage 被写入非法值)时回退到英文, 避免整个 i18n 崩溃
+      var dict = I18N[this._lang] || I18N['en'];
+      var s = dict[key] || I18N['en'][key] || key;
       if (vars) {
         Object.entries(vars).forEach(function (entry) {
-          s = s.replace(new RegExp('\\{' + entry[0] + '\\}', 'g'), entry[1]);
+          // 用函数形式替换: 值中的 $&/$' 等会被 replace 当作替换模式展开
+          s = s.replace(new RegExp('\\{' + entry[0] + '\\}', 'g'), function () { return entry[1]; });
         });
       }
       return s;
