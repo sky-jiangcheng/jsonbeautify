@@ -1547,7 +1547,8 @@
   function applyBackgroundImage() {
     var layer = document.getElementById('bg-image-layer');
     if (!layer) return;
-    if (_settings.bgImageData) {
+    var hasImage = !!_settings.bgImageData;
+    if (hasImage) {
       layer.style.backgroundImage = 'url("' + _settings.bgImageData + '")';
       layer.style.setProperty('--bg-image-opacity', String(_settings.bgImageOpacity));
       layer.classList.add('has-image');
@@ -1555,6 +1556,7 @@
       layer.style.backgroundImage = '';
       layer.classList.remove('has-image');
     }
+    document.body.classList.toggle('has-bg-image', hasImage);
     computeBgLuminance();
   }
 

@@ -7,6 +7,8 @@
             --bg-elevated: #1a2028;
             --bg-hover: #1c2633;
             --bg-input: #0d1117;
+            --bg-input-translucent: rgba(13, 17, 23, 0.82);
+            --bg-secondary-translucent: rgba(11, 15, 20, 0.82);
             --border: #3a424d;
             --border-light: #2b313a;
             --border-focus: #58a6ff;
@@ -47,6 +49,8 @@
             --bg-elevated: #ffffff;
             --bg-hover: #e1e5ea;
             --bg-input: #ffffff;
+            --bg-input-translucent: rgba(255, 255, 255, 0.82);
+            --bg-secondary-translucent: rgba(238, 241, 245, 0.82);
             --border: #b3bcc5;
             --border-light: #c5cdd6;
             --border-focus: #0969da;
@@ -403,7 +407,7 @@
             padding: 12px 16px;
             border: none;
             outline: none;
-            background: var(--bg-primary);
+            background: var(--bg-input);
             color: var(--text-primary);
             font-family: var(--font-mono);
             font-size: 13px;
@@ -435,7 +439,7 @@
             width: auto;
             height: auto;
             overflow: hidden;
-            background: var(--bg-primary);
+            background: var(--bg-input);
             display: flex;
             flex-direction: column;
         }
@@ -2288,6 +2292,18 @@
         }
         .bg-image-layer.has-image {
             opacity: var(--bg-image-opacity, 0.25);
+        }
+        /* When background image is active, make editor panels translucent so bg shows through */
+        body.has-bg-image #input,
+        body.has-bg-image .output-wrap {
+            background: var(--bg-input-translucent);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+        }
+        body.has-bg-image .output-linenos {
+            background: var(--bg-secondary-translucent);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
         }
         /* Ensure app content sits above the background image.
            Only target elements that don't already have position set. */
