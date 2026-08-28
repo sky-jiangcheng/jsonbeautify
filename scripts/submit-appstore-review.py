@@ -180,20 +180,25 @@ def wait_for_build(app_id, jwt_factory, platform, target_version, max_wait_minut
         time.sleep(15)
         check_count += 1
 
-    # 兜底: 超时未匹配到目标版本时, 选最新的 VALID build 并警告 (避免硬失败)
+    # 超时未匹配到目标版本: 直接失败, 绝不退而使用旧 build 提审。
+    # 旧 build 提审要么必然 409 (1.5.58 的失败根因), 要么会把缺少
+    # NSCameraUsageDescription 的陈旧包送审上架。
     if not build_id:
+        print(f"\nERROR: {max_wait} 分钟内未出现版本为 {target_version} 的 VALID 构建")
+        print("常见原因: Apple 摄取延迟 (可稍后手动提审) 或构建未通过摄取 (查 ASC 通知邮件)")
         try:
             resp = api_request("GET", f"/v1/apps/{app_id}/builds?limit=10", jwt)
+            print("ASC 当前最新构建:")
             for b in resp.get("data", []):
                 attrs = b.get("attributes", {})
-                if attrs.get("processingState") == "VALID":
-                    build_id = b.get("id")
-                    build_version = attrs.get("version")
-                    print(f"  ⚠️ 未找到目标版本 {target_version} 的 VALID build，"
-                          f"退而使用最新 VALID build {build_version}（请确认是否正确）")
-                    break
+                print(
+                    f"    - version={attrs.get('version')} "
+                    f"processing={attrs.get('processingState')} "
+                    f"uploaded={attrs.get('uploadedDate', '')[:19]}"
+                )
         except urllib.error.HTTPError:
-            pass
+            print("  (构建列表查询失败, 请到 App Store Connect 手动确认)")
+        return None, None, jwt
 
     return build_id, build_version, jwt
 

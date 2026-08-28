@@ -513,7 +513,40 @@ jobs:
       - name: Initialize iOS project
         run: |
           npx tauri ios init --ci --config src-tauri/tauri.ios.conf.json
-          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'Camera access is required to take a photo for the background image." src-tauri/gen/apple/Info.plist
+          # 权限声明来自 src-tauri/Info.ios.plist —— Tauri 会自动查找与 tauri.conf.json
+          # 同目录的 Info.plist / Info.ios.plist（后者仅 iOS），并与模板 Info.plist 合并。
+          # 踩过的两个坑：
+          #   1) bundle.ios.infoPlist / bundle.iOS.infoPlist 写成键值字典 → schema 里
+          #      infoPlist 是「文件路径字符串」，字典类型无效，v1.5.56/57 因此静默失效。
+          #   2) 真正被 Xcode 编译的 plist 是 gen/apple/<app>_iOS/Info.plist，
+          #      不是 gen/apple/Info.plist。v1.5.58 用 PlistBuddy 写到后者，日志打印
+          #      "Parse Error: Unclosed Quotes / File Doesn't Exist, Will Create" 却仍 exit 0，
+          #      权限声明进了一个没人读的幽灵文件 → Take Photo 依旧闪退。
+          # 因此这里遍历真实 plist 校验，缺失才兜底注入；判定一律用 PlistBuddy Print 的
+          # 退出码（解析失败也会 exit 0，绝不能只 grep 某个固定路径）。
+          PLIST_COUNT=0
+          while IFS= read -r -d '' PLIST; do
+            PLIST_COUNT=$((PLIST_COUNT + 1))
+            if /usr/libexec/PlistBuddy -c "Print :NSCameraUsageDescription" "$PLIST" >/dev/null 2>&1; then
+              echo "OK: $PLIST 已含 NSCameraUsageDescription"
+              continue
+            fi
+            echo "WARN: $PLIST 缺失，执行兜底注入"
+            /usr/libexec/PlistBuddy -c "Delete :NSCameraUsageDescription" "$PLIST" 2>/dev/null || true
+            # 整段 -c 参数用双引号，值本身不再包引号（包了就是 v1.5.58 的未闭合引号事故）
+            /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string Camera access is required to take a photo for the background image." "$PLIST"
+            # 复验：Add 失败时 PlistBuddy 也可能 exit 0
+            if ! /usr/libexec/PlistBuddy -c "Print :NSCameraUsageDescription" "$PLIST" >/dev/null 2>&1; then
+              echo "::error::兜底注入后 $PLIST 仍无 NSCameraUsageDescription"
+              exit 1
+            fi
+            echo "OK: $PLIST 兜底注入并复验通过"
+          done < <(find src-tauri/gen/apple -maxdepth 2 -name Info.plist -not -path "*/build/*" -print0)
+          if [ "$PLIST_COUNT" -eq 0 ]; then
+            echo "::error::未找到 Xcode 工程的 Info.plist，无从校验权限声明"
+            exit 1
+          fi
+          echo "校验完成：$PLIST_COUNT 个 Info.plist"
 
       # 必须在 ios init 之后跑：tauri icon 只有检测到
       # gen/apple/Assets.xcassets/AppIcon.appiconset 已存在才会把 iOS 图标
@@ -661,6 +694,24 @@ jobs:
             --config src-tauri/tauri.ios.conf.json \
             --ci \
             --archive-only
+          # 熔断：校验真正要上架的产物（archive 内 .app 的 Info.plist），
+          # 而不是仓库里某个 plist 源文件 —— v1.5.58 就是因为校验了没人读的
+          # gen/apple/Info.plist 才一路假绿灯到 TestFlight，装机后 Take Photo 崩溃。
+          ARCHIVE=$(find src-tauri/gen/apple/build -name "*.xcarchive" -type d | head -1)
+          if [ -z "$ARCHIVE" ]; then
+            echo "::error::未找到 xcarchive，无法校验权限声明"
+            exit 1
+          fi
+          APP_PLIST=$(find "$ARCHIVE/Products/Applications" -maxdepth 2 -name Info.plist | head -1)
+          echo "Archive app Info.plist: $APP_PLIST"
+          if [ -z "$APP_PLIST" ]; then
+            echo "::error::archive 内未找到 .app/Info.plist"
+            exit 1
+          fi
+          if ! /usr/libexec/PlistBuddy -c "Print :NSCameraUsageDescription" "$APP_PLIST"; then
+            echo "::error::归档产物缺少 NSCameraUsageDescription，Take Photo 必崩，中止上传"
+            exit 1
+          fi
 
       - name: Export IPA
         env:
@@ -712,7 +763,8 @@ jobs:
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
           APP_STORE_CONNECT_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID_IOS }}
           APP_VERSION: ${{ github.ref_name }}
-          MAX_WAIT_MINUTES: "25"
+          # Apple 摄取延迟常见 30+ 分钟, 25 不够 (1.5.58 即因此超时)
+          MAX_WAIT_MINUTES: "40"
         run: |
           # 写入 API Key 并设置路径供 Python 脚本使用
           mkdir -p ~/private_keys
