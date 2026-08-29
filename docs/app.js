@@ -13,14 +13,18 @@
   function detect() {
     try {
       var ua = navigator.userAgent || '';
-      var isMobileUA = /Mobi/i.test(ua);
+      var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
 
       // Tauri desktop WebView: 初始化时 innerWidth 可能短暂 ≤900，
       // 但 UA 不含 mobile 标识。直接强制 desktop，避免误判为 mobile。
+      // 门槛带 hover + fine-pointer 条件：iPadOS WKWebView 的 UA 可能是
+      // 桌面风格（无 Mobi），但主指针是触摸（无 hover），不能被强制成
+      // desktop，否则 iPad 竖屏会丢失移动端布局与安全区处理。
       var isTauri = typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
-      if (isTauri && !isMobileUA) return 'desktop';
+      var fineHover = typeof window.matchMedia === 'function' &&
+                      window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      if (isTauri && !isMobileUA && fineHover) return 'desktop';
 
-      isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
       var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
       var narrow = window.innerWidth <= 900;
       return (isMobileUA || (isTouch && narrow) || narrow) ? 'mobile' : 'desktop';
