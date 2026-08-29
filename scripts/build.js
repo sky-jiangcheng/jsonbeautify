@@ -28,6 +28,7 @@ const STATIC_ASSETS = [
 // 源文件：从 src/ 复制（拆分后的 CSS/JS）
 const SRC_ASSETS = [
     'styles.css',
+    'styles.mobile.css',
     'app.js',
     'head.js',   // 同步设置 data-device 的外部脚本（Tauri CSP 无 unsafe-inline 时也允许）
 ];
@@ -77,6 +78,10 @@ function bundleApp() {
 }
 
 console.log('Building dist/ from src/...\n');
+
+// 版本单源化: version.json → package.json / Cargo.* / tauri*.conf.json / sw.js。
+// 构建前同步保证 CI 产物、tag 门禁与文件永远一致, 发版只改 version.json。
+require('./sync-versions.js');
 
 // Clean dist/ (keep icons/, .well-known/)
 ensureDir(DIST);
