@@ -1581,6 +1581,10 @@
 
         /* ========== Responsive ========== */
         @media (max-width: 900px) {
+            /* 设备层保持 desktop 的窄窗口布局 (v1.5.62 起):
+               输入/输出纵向堆叠, 历史侧栏变底部区域(可折叠), 状态栏常驻贴底。
+               main-layout 必须一起转纵向, 否则 100% 宽的 sidebar 会把编辑区挤碎。 */
+            .main-layout { flex-direction: column; }
             .editor-area { flex-direction: column; }
             .panel-left { border-right: none; border-bottom: 2px solid var(--border); }
             .sidebar {
@@ -1589,7 +1593,7 @@
                 border-top: 1px solid var(--border);
                 max-height: 260px;
             }
-            .sidebar.collapsed { max-height: 0; }
+            .sidebar.collapsed { max-height: 0; width: 100%; }
             .btn .shortcut { display: none; }
             .btn { padding: 4px 8px; font-size: 11px; }
             header { padding: 0 12px; }
