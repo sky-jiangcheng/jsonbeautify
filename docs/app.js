@@ -1,16 +1,17 @@
 /**
  * src/app/router.js
- * Device class detection — single source of truth for mobile/desktop.
+ * Device class & UI layer detection — single source of truth.
  *
- * 架构约定（设备类别 vs 视口适配）:
- *   - 设备类别 data-device: 只由"稳定信号"决定 —— UA / 指针精度(hover+pointer)。
- *     会话期内不变，决定"渲染哪套 UI 层"（桌面三栏+状态栏 vs 移动头/工具条/Tab）。
- *   - 视口适配: 完全交给 styles.css / styles.mobile.css 里的 @media 查询，
- *     决定布局随窗口宽度如何收缩。
- *   刻意不读 innerWidth 判定设备类别:
- *     1) Tauri 桌面壳初始化瞬间 innerWidth 可能 ≤900 → 曾导致 PC 上整个
- *        切进 mobile UI、状态栏消失（v1.5.55~v1.5.59，v1.5.60 首次修复）;
- *     2) 桌面浏览器缩窄窗口会话中途翻转设备层，三栏/移动两套 JS 行为互相污染。
+ * 架构约定 (v1.5.64):
+ *   - 设备类别 deviceClass: 稳定信号判定 (UA / 指针精度), 会话期内不变。
+ *     真触屏设备 (手机/平板) 恒为 mobile, 不受窗口尺寸影响。
+ *   - UI 层 uiLayer: data-device 属性的实际取值, 决定渲染哪套界面。
+ *       mobile = 设备类别是 mobile, 或 (桌面浏览器 且 视口 ≤900px)
+ *       desktop = 其余 (含所有 Tauri 桌面壳)
+ *   - Tauri 桌面壳锁定 desktop 层: 壳内 WebView 初始化阶段 innerWidth
+ *     可能短暂失真且不随窗口恢复 (v1.5.55~v1.5.59 状态栏消失事故),
+ *     宽度在壳内不可作为分层依据。壳内窄窗口使用桌面层堆叠布局
+ *     (styles.css @media ≤900px)。
  */
 
 (function () {
@@ -18,7 +19,12 @@
 
   var RE_MOBILE_UA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i;
 
-  function detect() {
+  function isTauriShell() {
+    return typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
+  }
+
+  // 稳定设备类别: 会话期内不变, 不读视口宽度。
+  function deviceClass() {
     try {
       // 1) UA 明确的移动设备（含 Android 平板：UA 含 "Android" 无 "Mobi" 也命中）
       if (RE_MOBILE_UA.test(navigator.userAgent || '')) return 'mobile';
@@ -30,16 +36,24 @@
                       window.matchMedia('(hover: hover) and (pointer: fine)').matches;
       if (!fineHover) return 'mobile';
 
-      // 3) 其余（桌面浏览器 / Tauri 桌面壳）→ desktop。
-      //    不需要 Tauri 特判：v1.5.60 的 isTauri 强制 desktop 是为 innerWidth
-      //    误判打的补丁，设备类别不再读宽度后桌面壳天然落在 desktop。
       return 'desktop';
     } catch (e) {
       return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') ? 'mobile' : 'desktop';
     }
   }
 
-  // 设备类别由稳定信号决定，结果恒定；保留实时调用接口兼容现有调用点。
+  // UI 层 = 设备类别 + 视口（仅桌面浏览器引入宽度维度）。
+  function detect() {
+    if (deviceClass() === 'mobile') return 'mobile';
+    if (isTauriShell()) return 'desktop';
+    try {
+      return window.innerWidth <= 900 ? 'mobile' : 'desktop';
+    } catch (e) {
+      return 'desktop';
+    }
+  }
+
+  // 实时取层（resize 时浏览器在两套布局间正常切换, 与 v1.5.61 前行为一致）。
   function getDevice() {
     return detect();
   }
@@ -54,6 +68,10 @@
 
   function init() {
     syncDeviceToDOM();
+    window.addEventListener('resize', syncDeviceToDOM);
+    window.addEventListener('orientationchange', function () {
+      setTimeout(syncDeviceToDOM, 100);
+    });
   }
 
   window.__router = { getDevice: getDevice, isMobileDevice: isMobileDevice, init: init };
