@@ -112,14 +112,20 @@
             display: inline-block;
             vertical-align: middle;
         }
+
         .svg-icon-sm { width: 13px; height: 13px; }
+
         .svg-icon-lg { width: 20px; height: 20px; }
 
         /* ========== Scrollbar ========== */
         ::-webkit-scrollbar { width: 10px; height: 10px; }
+
         ::-webkit-scrollbar-track { background: transparent; }
+
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; min-height: 40px; min-width: 40px; }
+
         ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
         ::-webkit-scrollbar-corner { background: transparent; }
 
         /* macOS: prevent window drag from eating clicks on header/toolbar/scrollable areas */
@@ -283,21 +289,26 @@
             border-radius: 3px;
             margin-left: 4px;
         }
+
         .validation-indicator.valid {
             color: var(--green);
         }
+
         .validation-indicator.invalid {
             color: var(--red);
         }
+
         .validation-indicator .dot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
             display: inline-block;
         }
+
         .validation-indicator.valid .dot {
             background: var(--green);
         }
+
         .validation-indicator.invalid .dot {
             background: var(--red);
         }
@@ -376,14 +387,17 @@
             flex-shrink: 0;
             transition: color var(--transition-fast), background var(--transition-fast);
         }
+
         .panel-icon-btn:hover {
             color: var(--text-primary);
             background: var(--bg-hover);
         }
+
         .panel-icon-btn:focus-visible {
             outline: 2px solid var(--border-focus);
             outline-offset: 1px;
         }
+
         .panel-icon-btn.active {
             color: var(--accent);
         }
@@ -532,9 +546,11 @@
             flex-shrink: 0;
             overflow-y: auto;
         }
+
         .output-notifications:empty {
             display: none;
         }
+
         .output-notification {
             padding: 6px 14px;
             font-size: 12px;
@@ -542,11 +558,13 @@
             border-bottom: 1px solid rgba(255,255,255,0.04);
             font-family: var(--font-sans);
         }
+
         .output-notification.error {
             background: var(--red-bg);
             color: var(--red);
             border-left: 3px solid var(--red);
         }
+
         .output-notification.warning {
             background: var(--yellow-bg);
             color: var(--yellow);
@@ -561,18 +579,21 @@
             flex-direction: column;
             gap: 16px;
         }
+
         .error-display .error-title {
             font-size: 14px;
             font-weight: 600;
             color: var(--red);
             font-family: var(--font-sans);
         }
+
         .error-display .error-msg {
             font-size: 13px;
             line-height: 1.7;
             color: var(--text-secondary);
             font-family: var(--font-sans);
         }
+
         .error-display .error-snippet {
             background: var(--bg-secondary);
             border-radius: 8px;
@@ -584,10 +605,12 @@
             white-space: pre-wrap;
             word-break: break-all;
         }
+
         .error-display .error-marker {
             color: var(--red);
             font-weight: bold;
         }
+
         .error-display .error-hint {
             font-size: 12px;
             color: var(--text-muted);
@@ -614,15 +637,18 @@
             background: var(--bg-surface);
             border-bottom: 1px solid var(--border-light);
         }
+
         .output-search-bar.open {
             display: flex;
         }
+
         .output-search-bar .search-icon {
             width: 14px;
             height: 14px;
             color: var(--text-muted);
             flex-shrink: 0;
         }
+
         .output-search-bar input {
             flex: 1;
             min-width: 0;
@@ -637,13 +663,16 @@
             outline: none;
             transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
         }
+
         .output-search-bar input::placeholder {
             color: var(--text-muted);
         }
+
         .output-search-bar input:focus {
             border-color: var(--border-focus);
             box-shadow: 0 0 0 1px var(--border-focus);
         }
+
         .search-count {
             font-size: 12px;
             font-family: var(--font-mono);
@@ -653,9 +682,11 @@
             text-align: center;
             user-select: none;
         }
+
         .search-count.no-match {
             color: var(--red);
         }
+
         .search-nav-btn,
         .search-close-btn {
             display: inline-flex;
@@ -671,11 +702,13 @@
             flex-shrink: 0;
             transition: color var(--transition-fast), background var(--transition-fast);
         }
+
         .search-nav-btn:hover,
         .search-close-btn:hover {
             color: var(--text-primary);
             background: var(--bg-hover);
         }
+
         .search-nav-btn:focus-visible,
         .search-close-btn:focus-visible {
             outline: 2px solid var(--border-focus);
@@ -690,6 +723,7 @@
             min-width: 0;
             position: relative;
         }
+
         .list-panel {
             width: 240px;
             min-width: 160px;
@@ -701,11 +735,13 @@
             flex-direction: column;
             transition: width var(--transition), min-width var(--transition), border-color var(--transition);
         }
+
         .list-panel.collapsed {
             width: 0;
             min-width: 0;
             border-right-color: transparent;
         }
+
         .list-panel-header {
             display: flex;
             align-items: center;
@@ -715,6 +751,7 @@
             border-bottom: 1px solid var(--border-light);
             flex-shrink: 0;
         }
+
         .list-panel-header .list-title {
             font-size: 11px;
             font-weight: 600;
@@ -723,6 +760,7 @@
             letter-spacing: 0.5px;
             white-space: nowrap;
         }
+
         .list-panel-toggle {
             width: 22px;
             height: 22px;
@@ -743,14 +781,17 @@
             outline: 2px solid var(--border-focus);
             outline-offset: 1px;
         }
+
         .list-panel-toggle:hover {
             color: var(--text-primary);
             background: var(--bg-hover);
         }
+
         .list-panel-body {
             flex: 1;
             overflow-y: auto;
         }
+
         .list-panel.collapsed .list-panel-header,
         .list-panel.collapsed .list-panel-body {
             display: none;
@@ -767,21 +808,26 @@
             border-right: 1px solid var(--border);
             touch-action: manipulation;
         }
+
         .list-expand-tab:focus-visible {
             outline: 2px solid var(--border-focus);
             outline-offset: -2px;
         }
+
         .list-expand-tab:hover {
             background: var(--bg-hover);
         }
+
         .list-expand-tab svg {
             width: 12px;
             height: 12px;
             color: var(--text-secondary);
         }
+
         .list-view.list-collapsed .list-expand-tab {
             display: flex;
         }
+
         .list-item {
             display: flex;
             flex-direction: column;
@@ -797,13 +843,16 @@
             outline: 2px solid var(--border-focus);
             outline-offset: -2px;
         }
+
         .list-item:hover {
             background: var(--bg-hover);
         }
+
         .list-item.active {
             background: var(--accent-subtle);
             border-left-color: var(--accent);
         }
+
         .list-item-index {
             font-family: var(--font-mono);
             font-size: 11px;
@@ -811,6 +860,7 @@
             color: var(--accent);
             margin-bottom: 2px;
         }
+
         .list-item-preview {
             font-family: var(--font-mono);
             font-size: 11px;
@@ -827,6 +877,7 @@
             background: var(--bg-primary);
             display: flex;
         }
+
         .list-detail-linenos {
             flex-shrink: 0;
             padding: 12px 0;
@@ -841,21 +892,25 @@
             color: var(--text-muted);
             min-width: 48px;
         }
+
         .list-detail-linenos span {
             display: block;
             padding: 0 12px 0 8px;
         }
+
         .list-detail-content {
             flex: 1;
             min-width: 0;
             min-height: 0;
             overflow: auto;
         }
+
         .list-detail-content pre {
             margin: 0;
             padding: 12px 16px;
             background: transparent !important;
         }
+
         .list-detail-content code {
             font-family: var(--font-mono) !important;
             font-size: 13px !important;
@@ -872,32 +927,41 @@
             white-space: pre-wrap;
             word-break: break-all;
         }
+
         .jt-line {
             display: block;
             min-height: 21px;
         }
+
         .jt-key {
             color: #79c0ff;
         }
+
         .jt-string {
             color: #a5d6ff;
         }
+
         .jt-number {
             color: #79c0ff;
         }
+
         .jt-bool {
             color: #ff7b72;
         }
+
         .jt-null {
             color: #8b949e;
             font-style: italic;
         }
+
         .jt-bracket {
             color: #c9d1d9;
         }
+
         .jt-comma {
             color: #c9d1d9;
         }
+
         .jt-toggle {
             display: inline-block;
             width: 16px;
@@ -915,26 +979,32 @@
             outline-offset: 1px;
             border-radius: 2px;
         }
+
         .jt-toggle:hover {
             color: var(--text-primary);
         }
+
         .jt-children {
             padding-left: 20px;
             border-left: 1px solid rgba(48, 54, 61, 0.5);
             margin-left: 8px;
         }
+
         .jt-collapsed-summary {
             display: none;
             color: var(--text-muted);
             font-style: italic;
         }
+
         .jt-group.collapsed .jt-collapsed-summary {
             display: inline;
         }
+
         .jt-group.collapsed .jt-children,
         .jt-group.collapsed .jt-closing {
             display: none;
         }
+
         .jt-group.collapsed .jt-toggle {
             transform: none;
         }
@@ -946,14 +1016,17 @@
             border-radius: 2px;
             padding: 0 1px;
         }
+
         mark.jt-match.active {
             background: #ffb300;
             color: #1f2328;
             box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
         }
+
         mark.jt-match.active.jt-key {
             color: #1f2328;
         }
+
         /* 列表视图中命中项行高亮（搜索提示） */
         .list-item.has-match {
             background: var(--accent-subtle);
@@ -963,6 +1036,7 @@
         @media (max-width: 900px) {
             .list-panel { width: 40%; min-width: 120px; }
         }
+
         @media (max-width: 600px) {
             .list-panel { width: 45%; min-width: 100px; }
             .list-item { padding: 5px 8px; }
@@ -1194,6 +1268,7 @@
         }
 
         .history-item:hover .history-delete { opacity: 1; }
+
         .history-delete:hover { color: var(--red); background: var(--red-bg); }
 
         .sidebar-footer {
@@ -1249,6 +1324,7 @@
             letter-spacing: -0.2px;
             text-wrap: balance;
         }
+
         .sidebar-header h2 {
             text-wrap: balance;
         }
@@ -1290,16 +1366,10 @@
             cursor: pointer;
             user-select: none;
         }
+
         .save-as-new input[type="checkbox"] { accent-color: var(--accent); }
 
         .modal-actions .btn { height: 32px; padding: 6px 14px; }
-
-        [data-device="mobile"] .modal {
-            width: calc(100vw - 32px);
-            max-width: 340px;
-            padding: 20px;
-        }
-        [data-device="mobile"] .modal-actions .btn { flex: 1; }
 
         /* ========== Compare View ========== */
         .compare-container {
@@ -1394,28 +1464,34 @@
         .jt-diff-added.jt-line {
             background: rgba(63, 185, 80, 0.12);
         }
+
         .jt-diff-removed > .jt-line:first-child,
         .jt-diff-removed > .jt-line.jt-closing,
         .jt-diff-removed.jt-line {
             background: rgba(248, 81, 73, 0.12);
         }
+
         .jt-diff-changed > .jt-line:first-child,
         .jt-diff-changed > .jt-line.jt-closing,
         .jt-diff-changed.jt-line {
             background: rgba(210, 153, 34, 0.12);
         }
+
         .jt-diff-removed > .jt-line:first-child,
         .jt-diff-removed.jt-line {
             background: rgba(248, 81, 73, 0.12);
         }
+
         .jt-diff-changed > .jt-line:first-child,
         .jt-diff-changed.jt-line {
             background: rgba(210, 153, 34, 0.12);
         }
+
         .jt-diff-placeholder {
             color: var(--text-muted);
             font-style: italic;
         }
+
         .diff-empty {
             opacity: 0.35;
         }
@@ -1517,766 +1593,14 @@
             .btn .shortcut { display: none; }
             .btn { padding: 4px 8px; font-size: 11px; }
             header { padding: 0 12px; }
+            /* 设备层保持 desktop 的窄窗口 (v1.5.62 起): 顶栏按钮过多时允许
+               横向滚动, 避免尾部按钮 (Escape/设置) 被截断不可达 */
+            header .toolbar { overflow-x: auto; min-width: 0; }
         }
 
-        /* ========== 设备布局（UA 同步检测驱动） ========== */
-        [data-device="mobile"] .mobile-hide { display: none !important; }
         [data-device="desktop"] .mobile-only { display: none !important; }
-        [data-device="mobile"] .desktop-only { display: none !important; }
-        [data-device="mobile"] {
-            --editor-direction: column;
-            --code-white-space: pre-wrap;
-            --code-word-break: break-all;
-            --toolbar-height: 60px;
-            --header-padding-top: 8px;
-            --header-min-height: 44px;
-            --toolbar-padding-bottom: 6px;
-        }
-        [data-device="mobile"] .list-panel { width: 40%; min-width: 120px; }
-        [data-device="mobile"] .mobile-select {
-            -webkit-appearance: none; appearance: none;
-            padding: 6px 20px 6px 10px;
-            background: var(--bg-surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            color: var(--text-primary);
-            font-size: 13px;
-            min-height: 32px;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath fill='%2399a4af' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 6px center;
-            padding-right: 24px;
-        }
 
-/* ========== 移动端 v9 — 现代原生风 ========== */
-        /* --- Base container --- */
-        [data-device="mobile"] #mobile-input-actions {
-            display: flex;
-            flex-direction: column;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: var(--bg-primary);
-        }
-
-        /* --- Header --- */
-        [data-device="mobile"] .mob-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: var(--header-padding-top) 14px;
-            padding-top: calc(var(--header-padding-top) + env(safe-area-inset-top, 0px));
-            min-height: calc(var(--header-min-height) + env(safe-area-inset-top, 0px));
-            border-bottom: 1px solid var(--border);
-            background: var(--bg-primary);
-        }
-        [data-device="mobile"] .mob-header-left {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 1;
-            min-width: 0;
-        }
-        [data-device="mobile"] .mob-logo-icon {
-            width: 18px;
-            height: 18px;
-            flex-shrink: 0;
-            border-radius: 4px;
-            box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.15);
-            object-fit: contain;
-            display: block;
-        }
-        [data-device="mobile"] .mob-title {
-            font-size: clamp(14px, 3.5vw, 17px);
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        [data-device="mobile"] .mob-header-right {
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            flex-shrink: 0;
-        }
-        [data-device="mobile"] .mob-icon-btn {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            padding: 6px 10px;
-            cursor: pointer;
-            font-size: 13px;
-            border-radius: 8px;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            transition: background 0.15s;
-        }
-
-        [data-device="mobile"] .mob-icon-btn:active {
-            background: var(--bg-hover, rgba(128,128,128,0.1));
-        }
-
-        [data-device="mobile"] .mob-icon-btn:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: -2px;
-        }
-        [data-device="mobile"] .mob-lang-text {
-            font-weight: 600;
-            font-size: 13px;
-        }
-
-        /* --- Toolbar --- */
-        [data-device="mobile"] .mob-toolbar {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 50;
-            width: 100%;
-            max-width: 100vw;
-            overflow-x: auto;
-            overflow-y: hidden;
-            overscroll-behavior-x: contain;
-            padding: 6px 6px;
-            padding-left: calc(6px + env(safe-area-inset-left, 0px));
-            padding-right: calc(6px + env(safe-area-inset-right, 0px));
-            padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
-            background: var(--bg-primary);
-            border-top: 1px solid var(--border);
-            box-sizing: border-box;
-        }
-        [data-device="mobile"] .mob-toolbar-scroll {
-            display: flex;
-            gap: 3px;
-            width: 100%;
-        }
-
-        [data-device="mobile"] .mob-btn {
-            flex: 1;
-            min-width: 0;
-            justify-content: center;
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            padding: 6px 6px;
-            box-sizing: border-box;
-            background: var(--bg-surface, var(--bg-secondary));
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: clamp(12px, 3vw, 14px);
-            font-weight: 500;
-            cursor: pointer;
-            white-space: nowrap;
-            -webkit-tap-highlight-color: transparent;
-            transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-            touch-action: manipulation;
-            min-height: 40px;
-            transform-origin: center;
-        }
-        [data-device="mobile"] .mob-btn:active {
-            transform: scale(0.95);
-            background: var(--bg-hover, rgba(128,128,128,0.1));
-        }
-        [data-device="mobile"] .mob-btn:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: -2px;
-        }
-        [data-device="mobile"] .mob-btn svg {
-            flex-shrink: 0;
-        }
-
-        [data-device="mobile"] .mob-btn-primary {
-            flex: 1;
-            min-width: 0;
-            justify-content: center;
-            background: var(--accent-color, #3b82f6);
-            color: #fff;
-            border-color: var(--accent-color, #3b82f6);
-            font-weight: 600;
-            padding: 6px;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
-            transform-origin: center;
-        }
-        [data-device="mobile"] .mob-btn-primary:active {
-            background: var(--accent-hover, #2563eb);
-            box-shadow: 0 1px 4px rgba(59, 130, 246, 0.15);
-        }
-        [data-device="mobile"] .mob-btn span {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        [data-device="mobile"] .mob-more-btn {
-            background: var(--bg-surface, var(--bg-secondary));
-        }
-
-        /* --- Bottom Sheet --- */
-        [data-device="mobile"] .mob-sheet-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            z-index: 200;
-        }
-        [data-device="mobile"] .mob-sheet-overlay.open { display: block; -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
-
-        [data-device="mobile"] .mob-sheet {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 201;
-            background: var(--bg-primary);
-            border-radius: 16px 16px 0 0;
-            padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
-            box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
-            transform: translateY(100%);
-            transition: transform 0.4s cubic-bezier(0.32, 1.2, 0, 1);
-            overscroll-behavior: contain;
-            max-height: 85vh;
-            overflow-y: auto;
-            touch-action: pan-y;
-            will-change: transform;
-        }
-        [data-device="mobile"] .mob-sheet.open {
-            display: block;
-            transform: translateY(0);
-        }
-
-        [data-device="mobile"] .mob-sheet-handle {
-            width: 36px;
-            height: 4px;
-            border-radius: 2px;
-            background: var(--border);
-            margin: 0 auto 12px;
-        }
-        [data-device="mobile"] .mob-sheet-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 12px;
-            text-align: center;
-        }
-        [data-device="mobile"] .mob-sheet-items {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            margin-bottom: 8px;
-        }
-        [data-device="mobile"] .mob-sheet-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 14px;
-            background: none;
-            border: none;
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 15px;
-            cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            transition: background 0.15s;
-            width: 100%;
-            text-align: left;
-        }
-        [data-device="mobile"] .mob-sheet-item:active {
-            background: var(--bg-hover, rgba(128,128,128,0.08));
-        }
-        [data-device="mobile"] .mob-sheet-item:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: -2px;
-        }
-        [data-device="mobile"] .mob-sheet-item svg {
-            color: var(--text-secondary);
-            flex-shrink: 0;
-        }
-        [data-device="mobile"] .mob-sheet-close {
-            width: 100%;
-            padding: 12px;
-            background: var(--bg-surface, var(--bg-secondary));
-            border: none;
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-        }
-        [data-device="mobile"] .mob-sheet-close:active {
-            background: var(--bg-hover, rgba(128,128,128,0.1));
-        }
-        [data-device="mobile"] .mob-sheet-close:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: -2px;
-        }
-
-        /* --- Editor Area (mobile auto-adapt) --- */
-        [data-device="mobile"] .editor-area {
-            flex-direction: var(--editor-direction);
-        }
-        [data-device="mobile"] .panel-left {
-            border-right: none;
-            border-bottom: 1px solid var(--border);
-        }
-        [data-device="mobile"] .panel-header {
-            padding: 6px 12px;
-            font-size: 11px;
-        }
-        [data-device="mobile"] .panel-icon-btn {
-            width: 30px;
-            height: 30px;
-        }
-        [data-device="mobile"] .output-search-bar {
-            padding: 8px 10px;
-        }
-        [data-device="mobile"] .output-search-bar input {
-            height: 34px;
-            font-size: 15px;
-        }
-        [data-device="mobile"] .search-nav-btn,
-        [data-device="mobile"] .search-close-btn {
-            width: 32px;
-            height: 32px;
-        }
-        [data-device="mobile"] .panel-body {
-            padding: 8px 10px;
-            font-size: clamp(12px, 2.8vw, 14px);
-        }
-        [data-device="mobile"] #input {
-            padding: 10px 12px;
-            font-size: clamp(13px, 3vw, 15px);
-            min-height: 80px;
-        }
-
-        /* --- Sidebar (mobile) --- */
-        [data-device="mobile"] .sidebar {
-            width: 100%;
-            border-left: none;
-        }
-        [data-device="mobile"] .sidebar.collapsed { max-height: 0; padding: 0; overflow: hidden; }
-        [data-device="mobile"] .main-layout { flex-direction: column; }
-        /* --- Overflow protection (v10) --- */
-        html[data-device="mobile"],
-        [data-device="mobile"] body {
-            overflow-x: hidden;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        [data-device="mobile"] #mobile-input-actions {
-            padding-left: env(safe-area-inset-left, 0px);
-            padding-right: env(safe-area-inset-right, 0px);
-        }
-        [data-device="mobile"] .main-layout {
-            width: 100%;
-            box-sizing: border-box;
-            padding-left: env(safe-area-inset-left, 0px);
-            padding-right: env(safe-area-inset-right, 0px);
-            /*
-              v13 底部 toolbar 覆盖式（与横屏一致）：
-              - 不再为 fixed mob-toolbar 预留 padding-bottom，
-                输出面板延伸到屏幕底，toolbar 覆盖在内容上方。
-              - 滚动容器（#input / .output-content 等）内部加
-                padding-bottom，保证最后一行能滚出 toolbar 遮挡区。
-            */
-            padding-bottom: 0;
-        }
-        [data-device="mobile"] .editor-area {
-            width: 100%;
-            max-width: 100vw;
-            /* height:100% 会让 flex:1 的"收缩"失效, 导致 main-layout 被 editor 撑破
-               → 底部出现白色 dead space. 改用 flex 高度自适应. */
-            flex: 1 1 auto;
-            min-height: 0;
-            overflow: hidden;
-            -webkit-overflow-scrolling: auto;
-        }
-        [data-device="mobile"] .panel {
-            min-width: 0;
-            max-width: 100%;
-            overflow: hidden;
-        }
-        [data-device="mobile"] .panel-body {
-            word-break: break-all;
-            overflow-wrap: break-word;
-            max-width: 100%;
-            -webkit-overflow-scrolling: touch;
-        }
-        [data-device="mobile"] .panel-body pre {
-            white-space: pre-wrap;
-            word-break: break-all;
-            max-width: 100%;
-        }
-        [data-device="mobile"] #input {
-            max-width: 100%;
-            white-space: pre-wrap;
-            word-break: break-all;
-            -webkit-overflow-scrolling: touch;
-        }
-        [data-device="mobile"] .output-content pre {
-            white-space: pre-wrap !important;
-            word-break: break-all !important;
-            max-width: 100%;
-        }
-
-        /* v13: toolbar 改覆盖式后，滚动容器内部给最后一行留出滚动余量
-           （toolbar 高度约 52px + safe-area，取 60px 留呼吸空间） */
-        [data-device="mobile"] #input,
-        [data-device="mobile"] .output-content,
-        [data-device="mobile"] .output-placeholder,
-        [data-device="mobile"] .error-display {
-            padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-        }
-
-        /* v13: 桌面 statusbar 在 mobile 上被 fixed toolbar 整体遮挡（z-1 < z-50），
-           却仍占据 24px 布局位 → 隐藏，让面板延伸到屏幕底 */
-        [data-device="mobile"] .statusbar { display: none; }
-        [data-device="mobile"] .output-content code {
-            white-space: pre-wrap !important;
-            word-break: break-all !important;
-        }
-        [data-device="mobile"] .output-content {
-            -webkit-overflow-scrolling: touch;
-        }
-        [data-device="mobile"] .output-content-area,
-        [data-device="mobile"] .output-wrap {
-            -webkit-overflow-scrolling: touch;
-        }
-        /* --- Compact header title (v10) --- */
-        [data-device="mobile"] .mob-title {
-            max-width: calc(100vw - 140px);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        /* --- Smaller buttons on small screens --- */
-        @media (max-width: 400px) {
-            [data-device="mobile"] .mob-btn {
-                padding: 6px 4px;
-                font-size: clamp(11px, 2.6vw, 13px);
-                gap: 2px;
-                min-width: 0;
-            }
-            [data-device="mobile"] .mob-btn-primary {
-                padding: 6px 4px;
-                gap: 2px;
-                min-width: 0;
-            }
-        }
-        /* --- Sidebar hidden by default on mobile --- */
-        [data-device="mobile"] .sidebar:not(.active) {
-            display: none;
-        }
-
-        /* ========== 移动端 UX 重构（v11）==========
-           1. main-layout 底部留白，避免被 fixed mob-toolbar 遮挡
-           2. 输入/输出 Tab 切换（全屏切换，不再上下挤压）
-           3. 历史侧栏改为全屏抽屉（从右侧滑入） */
-
-        /* 底部留白已在 v10 块统一处理（见上）*/
-
-        /* 2. Tab 切换：滑动过渡效果 */
-        [data-device="mobile"] .editor-area {
-            position: relative;
-            overflow: hidden;
-        }
-        [data-device="mobile"] .editor-area .panel-left,
-        [data-device="mobile"] .editor-area .panel-right {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.2s ease;
-            will-change: transform, opacity;
-        }
-        [data-device="mobile"] .editor-area .panel-left {
-            transform: translateX(0);
-            opacity: 1;
-            border-bottom: none;
-        }
-        [data-device="mobile"] .editor-area .panel-right {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        [data-device="mobile"] .editor-area .panel-left:not(.is-active) {
-            transform: translateX(-30%);
-            opacity: 0;
-        }
-        [data-device="mobile"] .editor-area .panel-right.is-active {
-            transform: translateX(0);
-            opacity: 1;
-        }
-
-        /* 移动端 Tab 栏（输入/输出切换） */
-        [data-device="mobile"] .mob-tabs {
-            display: flex;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
-        }
-        [data-device="mobile"] .mob-tab {
-            flex: 1;
-            padding: 10px 12px;
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            text-align: center;
-            border-bottom: 2px solid transparent;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            transition: color 0.15s, border-color 0.15s;
-        }
-        [data-device="mobile"] .mob-tab.is-active {
-            color: var(--accent);
-            border-bottom-color: var(--accent);
-            font-weight: 600;
-        }
-        [data-device="mobile"] .mob-tab:focus-visible {
-            outline: 2px solid var(--border-focus);
-            outline-offset: -2px;
-        }
-
-        /* 3. 历史侧栏全屏抽屉 */
-        [data-device="mobile"] .sidebar {
-            position: fixed;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            max-width: 100vw;
-            max-height: 100dvh;
-            height: 100dvh;
-            z-index: 300;
-            background: var(--bg-primary);
-            border-left: 1px solid var(--border);
-            transform: translateX(100%);
-            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-            display: flex;
-            flex-direction: column;
-            padding-left: env(safe-area-inset-left, 0px);
-            padding-right: env(safe-area-inset-right, 0px);
-            padding-top: env(safe-area-inset-top, 0px);
-            /* 底部 safe-area 由 .sidebar-footer 自己处理, 这里不加避免双重留白 */
-            overscroll-behavior: contain;
-            touch-action: pan-y;
-        }
-        [data-device="mobile"] .sidebar.active {
-            transform: translateX(0);
-            display: flex;
-        }
-        [data-device="mobile"] .sidebar-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            z-index: 250;
-        }
-        [data-device="mobile"] .sidebar-overlay.active {
-            display: block;
-            -webkit-backdrop-filter: blur(2px);
-            backdrop-filter: blur(2px);
-        }
         [data-device="desktop"] .sidebar-overlay { display: none; }
-        [data-device="mobile"] .sidebar-header {
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-shrink: 0;
-            /* Add safe-area top padding for notch devices */
-            padding-top: calc(12px + env(safe-area-inset-top, 0px));
-            min-height: calc(48px + env(safe-area-inset-top, 0px));
-        }
-        /* Larger touch target for sidebar close button on mobile */
-        [data-device="mobile"] .sidebar-toggle {
-            width: 40px;
-            height: 40px;
-            font-size: 16px;
-        }
-        [data-device="mobile"] .history-list {
-            flex: 1;
-            overflow-y: auto;
-        }
-        [data-device="mobile"] .sidebar-footer {
-            flex-shrink: 0;
-            padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
-            border-top: 1px solid var(--border);
-        }
-
-        /* 移动端隐藏桌面端的 sidebar-toggle 浮动按钮（用抽屉替代） */
-        [data-device="mobile"] #sidebar-open-btn {
-            display: none !important;
-        }
-
-        /* ========== 横屏专属适配（v12）==========
-           横屏核心策略：双面板并排 + 隐藏 Tab 栏 + 缩减 header/toolbar
-           覆盖 v11 的 display:none 和竖屏 max-height 限制
-           阈值 500px：区分手机横屏（矮视口）与平板横屏（高视口） */
-
-        @media (orientation: landscape) and (max-height: 500px) {
-            /* 0. 锁定页面滚动，内容填满视口 */
-            [data-device="mobile"] html {
-                height: 100%;
-                overflow: hidden !important;
-            }
-            [data-device="mobile"] body {
-                height: 100dvh;
-                overflow: hidden !important;
-                display: flex;
-                flex-direction: column;
-            }
-            [data-device="mobile"] .main-layout {
-                flex: 1;
-                overflow: hidden !important;
-                min-height: 0;
-                padding-bottom: 0 !important;
-            }
-
-            [data-device="mobile"] {
-                --editor-direction: row;
-                --code-white-space: pre;
-                --code-word-break: normal;
-                --toolbar-height: 44px;
-                --header-padding-top: 4px;
-                --header-min-height: 36px;
-                --toolbar-padding-bottom: 4px;
-            }
-            /* 1. editor-area 改为左右布局 */
-            [data-device="mobile"] .editor-area {
-                position: static;
-                flex-direction: row;
-                overflow: hidden;
-                touch-action: pan-y;
-            }
-
-            /* 2. 覆盖竖屏的 absolute 定位 — 横屏下两个面板都显示 */
-            [data-device="mobile"] .editor-area .panel-left,
-            [data-device="mobile"] .editor-area .panel-right {
-                position: static;
-                display: flex !important;
-                flex: 1 1 50%;
-                min-width: 160px;
-                max-width: 50%;
-                max-height: none;
-                min-height: 0;
-                transform: none !important;
-                opacity: 1 !important;
-                transition: none !important;
-                touch-action: auto;
-            }
-            [data-device="mobile"] .editor-area .panel-left {
-                border-right: 1px solid var(--border) !important;
-                border-bottom: none !important;
-            }
-
-            /* 3. 只允许 textarea 和输出区域内部滚动 */
-            [data-device="mobile"] .editor-area #input,
-            [data-device="mobile"] .editor-area .output-content-area,
-            [data-device="mobile"] .editor-area .output-wrap {
-                touch-action: pan-y;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            /* 3. 隐藏 Tab 栏（横屏双面板不需要切换） */
-            [data-device="mobile"] .mob-tabs {
-                display: none;
-            }
-
-            /* 4. 缩减 header 高度，腾出内容空间 */
-            [data-device="mobile"] .mob-header {
-                padding: 4px 14px;
-                padding-top: calc(4px + env(safe-area-inset-top, 0px));
-                min-height: calc(36px + env(safe-area-inset-top, 0px));
-            }
-            [data-device="mobile"] .mob-title {
-                font-size: 13px;
-            }
-            [data-device="mobile"] .mob-icon-btn {
-                padding: 4px 8px;
-            }
-
-            /* 5. 底部 toolbar：图标+小字横向均分，保证最小 44px 触摸目标 */
-            [data-device="mobile"] .mob-toolbar {
-                padding: var(--toolbar-padding-bottom) 6px;
-                padding-left: calc(6px + env(safe-area-inset-left, 0px));
-                padding-right: calc(6px + env(safe-area-inset-right, 0px));
-                padding-bottom: calc(var(--toolbar-padding-bottom) + env(safe-area-inset-bottom, 0px));
-            }
-            [data-device="mobile"] .mob-toolbar-scroll {
-                gap: 6px;
-            }
-            [data-device="mobile"] .mob-btn {
-                min-height: 44px;
-                padding: 4px 6px;
-                font-size: 11px;
-                flex-direction: column;
-                gap: 2px;
-                border-radius: 8px;
-            }
-            [data-device="mobile"] .mob-btn svg {
-                width: 18px;
-                height: 18px;
-            }
-            [data-device="mobile"] .mob-btn span {
-                font-size: 10px;
-            }
-
-            /* 6. panel-header 更紧凑 */
-            [data-device="mobile"] .panel-header {
-                padding: 4px 10px;
-                height: 28px;
-                font-size: 10px;
-            }
-
-            /* 7. 横屏不需要强制换行（左右分栏宽度足够水平滚动） */
-            [data-device="mobile"] .json-tree {
-                white-space: var(--code-white-space);
-                word-break: var(--code-word-break);
-            }
-            [data-device="mobile"] .output-content pre,
-            [data-device="mobile"] .output-content code {
-                white-space: var(--code-white-space) !important;
-                word-break: var(--code-word-break) !important;
-            }
-            [data-device="mobile"] #input {
-                white-space: var(--code-white-space);
-                word-break: var(--code-word-break);
-            }
-
-            /* 8. 横屏两侧空白修复：
-                  - .main-layout / bg-image-layer / watermark 都要尊重 safe-area-inset-{left,right} 的反向补偿：
-                    横屏下 WebView 会把两侧刘海空出来, 但我们希望背景图和水印都一直平铺到屏幕边缘.
-                  - 所以对 .bg-image-layer / .watermark-layer 使用负 margin + 对应更大的
-                    padding/width 来让视觉覆盖到安全区外. 另一种更稳妥的写法是让这些层
-                    直接 viewport-fill=cover, 但 iOS WKWebView 不稳定, 所以使用 CSS 补偿： */
-            [data-device="mobile"] .main-layout {
-                padding-left: 0 !important;
-                padding-right: 0 !important;
-            }
-            [data-device="mobile"] .bg-image-layer,
-            [data-device="mobile"] .watermark-layer {
-                left: calc(-1 * env(safe-area-inset-left, 0px));
-                right: calc(-1 * env(safe-area-inset-right, 0px));
-                top: calc(-1 * env(safe-area-inset-top, 0px));
-                bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
-                width: auto;
-                background-size: cover;
-                background-origin: border-box;
-                background-repeat: no-repeat;
-            }
-            [data-device="mobile"] .watermark-layer {
-                background-repeat: repeat;
-                background-size: auto;
-            }
-        }
 
         /* ========== Background Image Layer ========== */
         .bg-image-layer {
@@ -2290,9 +1614,11 @@
             opacity: 0;
             transition: opacity var(--transition);
         }
+
         .bg-image-layer.has-image {
             opacity: var(--bg-image-opacity, 0.25);
         }
+
         /* When background image is active, make editor panels translucent so bg shows through */
         body.has-bg-image #input,
         body.has-bg-image .output-wrap {
@@ -2300,17 +1626,20 @@
             backdrop-filter: blur(2px);
             -webkit-backdrop-filter: blur(2px);
         }
+
         body.has-bg-image .output-linenos {
             background: var(--bg-secondary-translucent);
             backdrop-filter: blur(2px);
             -webkit-backdrop-filter: blur(2px);
         }
+
         /* Ensure app content sits above the background image.
            Only target elements that don't already have position set. */
         header, .mobile-only, .main-layout, .statusbar {
             position: relative;
             z-index: 1;
         }
+
         /* compare-container (.900), modal-backdrop (.1000), toast (.2000)
            already use position: fixed and higher z-index — left untouched. */
 
@@ -2336,6 +1665,7 @@
             will-change: opacity;
             box-sizing: border-box;
         }
+
         .watermark-layer.active {
             opacity: var(--watermark-opacity, 0.15);
         }
@@ -2346,6 +1676,7 @@
             max-height: calc(100dvh - 48px);
             overflow-y: auto;
         }
+
         .settings-section {
             padding: 12px 0;
             border-bottom: 1px solid var(--border-light);
@@ -2353,7 +1684,9 @@
             flex-direction: column;
             gap: 10px;
         }
+
         .settings-section:last-of-type { border-bottom: none; }
+
         .settings-row {
             display: flex;
             align-items: center;
@@ -2361,40 +1694,44 @@
             gap: 12px;
             margin: 0;
         }
+
         .settings-label {
             font-size: 12px;
             font-weight: 500;
             color: var(--text-secondary);
             flex-shrink: 0;
         }
+
         .settings-hint {
             font-size: 11px;
             color: var(--text-muted);
         }
+
         .settings-row input[type="text"] {
             flex: 1;
             min-width: 0;
         }
+
         .settings-row input[type="range"] {
             flex: 1;
             min-width: 0;
             accent-color: var(--accent);
             cursor: pointer;
         }
+
         .bg-image-row {
             justify-content: flex-start;
         }
+
         .bg-image-row .btn {
             flex: 0 0 auto;
         }
+
         .settings-modal .modal-actions {
             justify-content: flex-end;
             gap: 8px;
         }
-        [data-device="mobile"] .settings-modal {
-            width: calc(100vw - 32px);
-            max-width: 360px;
-        }
+
         /* Range input theming for cross-browser consistency */
         input[type="range"] {
             height: 4px;
