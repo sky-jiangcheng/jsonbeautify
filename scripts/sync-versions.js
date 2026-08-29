@@ -61,7 +61,7 @@ function main() {
     // Cargo.lock: 只改 json-formatter 包自己的 version 行（其他依赖不动）
     const lockPath = 'src-tauri/Cargo.lock';
     const lock = read(lockPath);
-    const pkgRe = /(\[\[package\]\]\nname = "json-formatter"\nversion = ")(\d+\.\d+\.\d+)(")/;
+    const pkgRe = /(\[\[package\]\]\r?\nname = "json-formatter"\r?\nversion = ")(\d+\.\d+\.\d+)(")/;
     if (!pkgRe.test(lock)) throw new Error('Cargo.lock: json-formatter package entry not found');
     write(lockPath, lock.replace(pkgRe, (m, p1, p2, p3) => p1 + version + p3), version);
 
