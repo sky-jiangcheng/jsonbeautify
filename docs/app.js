@@ -1,41 +1,45 @@
 /**
  * src/app/router.js
- * Device detection abstraction — single source of truth for mobile/desktop.
- * Replaces all scattered `document.documentElement.getAttribute('data-device')` calls.
+ * Device class detection — single source of truth for mobile/desktop.
+ *
+ * 架构约定（设备类别 vs 视口适配）:
+ *   - 设备类别 data-device: 只由"稳定信号"决定 —— UA / 指针精度(hover+pointer)。
+ *     会话期内不变，决定"渲染哪套 UI 层"（桌面三栏+状态栏 vs 移动头/工具条/Tab）。
+ *   - 视口适配: 完全交给 styles.css / styles.mobile.css 里的 @media 查询，
+ *     决定布局随窗口宽度如何收缩。
+ *   刻意不读 innerWidth 判定设备类别:
+ *     1) Tauri 桌面壳初始化瞬间 innerWidth 可能 ≤900 → 曾导致 PC 上整个
+ *        切进 mobile UI、状态栏消失（v1.5.55~v1.5.59，v1.5.60 首次修复）;
+ *     2) 桌面浏览器缩窄窗口会话中途翻转设备层，三栏/移动两套 JS 行为互相污染。
  */
 
 (function () {
   'use strict';
 
-  var _device = null;
-  var _listeners = [];
+  var RE_MOBILE_UA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i;
 
   function detect() {
     try {
-      var ua = navigator.userAgent || '';
-      var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+      // 1) UA 明确的移动设备（含 Android 平板：UA 含 "Android" 无 "Mobi" 也命中）
+      if (RE_MOBILE_UA.test(navigator.userAgent || '')) return 'mobile';
 
-      // Tauri desktop WebView: 初始化时 innerWidth 可能短暂 ≤900，
-      // 但 UA 不含 mobile 标识。直接强制 desktop，避免误判为 mobile。
-      // 门槛带 hover + fine-pointer 条件：iPadOS WKWebView 的 UA 可能是
-      // 桌面风格（无 Mobi），但主指针是触摸（无 hover），不能被强制成
-      // desktop，否则 iPad 竖屏会丢失移动端布局与安全区处理。
-      var isTauri = typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
+      // 2) 主指针为触摸且无 hover → 触屏设备。
+      //    iPadOS WKWebView 常上报桌面风格 UA（无 Mobi/iPad），靠这一层兜住。
+      //    matchMedia 不可用的老环境按桌面处理（false→mobile 只该发生在真触屏上）。
       var fineHover = typeof window.matchMedia === 'function' &&
                       window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-      if (isTauri && !isMobileUA && fineHover) return 'desktop';
+      if (!fineHover) return 'mobile';
 
-      var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
-      var narrow = window.innerWidth <= 900;
-      return (isMobileUA || (isTouch && narrow) || narrow) ? 'mobile' : 'desktop';
+      // 3) 其余（桌面浏览器 / Tauri 桌面壳）→ desktop。
+      //    不需要 Tauri 特判：v1.5.60 的 isTauri 强制 desktop 是为 innerWidth
+      //    误判打的补丁，设备类别不再读宽度后桌面壳天然落在 desktop。
+      return 'desktop';
     } catch (e) {
       return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') ? 'mobile' : 'desktop';
     }
   }
 
-  // 每次实时检测 (不缓存): 供 resize/orientationchange 时重新判定设备。
-  // 之前用 getDevice() 缓存过一次就永远不变, 导致桌面窗口缩到手机宽度时
-  // 仍然 data-device="desktop", 移动端控件完全不出现 / 点不动。
+  // 设备类别由稳定信号决定，结果恒定；保留实时调用接口兼容现有调用点。
   function getDevice() {
     return detect();
   }
@@ -45,26 +49,11 @@
   }
 
   function syncDeviceToDOM() {
-    var d = document.documentElement;
-    var current = d.getAttribute('data-device');
-    var detected = detect();
-    if (current !== detected) {
-      d.setAttribute('data-device', detected);
-      _device = detected;
-      for (var i = 0; i < _listeners.length; i++) _listeners[i](detected);
-    }
-  }
-
-  function onDeviceChange(fn) {
-    _listeners.push(fn);
+    document.documentElement.setAttribute('data-device', getDevice());
   }
 
   function init() {
     syncDeviceToDOM();
-    window.addEventListener('resize', syncDeviceToDOM);
-    window.addEventListener('orientationchange', function () {
-      setTimeout(syncDeviceToDOM, 100);
-    });
   }
 
   window.__router = { getDevice: getDevice, isMobileDevice: isMobileDevice, init: init };
