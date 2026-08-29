@@ -2,10 +2,14 @@
 /* ==============================================================
    Layout smoke tests — 跨端布局回归的自动防线。
 
+   UI 层规则 (v1.5.64):
+     mobile 层 = 真触屏设备(UA/指针) 或 桌面浏览器视口 ≤900px
+     desktop 层 = 其余; Tauri 桌面壳锁定 desktop (壳内宽度不可信)
+
    覆盖本仓库历史上真实出过的事故类别：
      - Tauri 桌面壳误入 mobile UI → 状态栏消失 (v1.5.55~v1.5.59)
      - iPad 桌面风格 UA 被强制 desktop (v1.5.61 修复)
-     - 桌面窄窗口设备层抖动 / 混合形态
+     - 窄窗桌面层布局挤碎 / History 占屏 1/3 (v1.5.62~63)
      - 长文本滚动到底不可达
 
    运行: node scripts/build.js && node tests/layout.spec.mjs
@@ -41,8 +45,6 @@ const server = createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': MIME[extname(file)] || 'application/octet-stream' });
   res.end(readFileSync(file));
 });
-
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 let passed = 0, failed = 0;
 function check(name, cond, detail) {
@@ -82,70 +84,60 @@ async function main() {
     })),
   });
 
-  await scenario('桌面 1280×800：三栏 + 状态栏', async () => {
+  await scenario('桌面浏览器 1280×800：desktop 层 + 状态栏', async () => {
     const { context, page } = await newPage(browser, { viewport: { width: 1280, height: 800 } });
     check('data-device=desktop', await page.getAttribute('html', 'data-device') === 'desktop');
     const sb = await page.locator('.statusbar').boundingBox();
     check('状态栏可见且贴底', !!sb && sb.height === 24 && Math.abs(sb.y + sb.height - 800) < 2,
       sb ? JSON.stringify(sb) : 'null');
     check('桌面顶栏可见', await page.locator('header.desktop-only').isVisible());
-    check('移动工具条无高度', await page.evaluate(() => document.getElementById('mob-toolbar').getBoundingClientRect().height === 0));
     check('无横向溢出', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
     await context.close();
   });
 
-  await scenario('桌面窄窗 860×800：保持桌面层 + CSS 堆叠，状态栏不丢', async () => {
+  await scenario('桌面浏览器窄窗 860×800：回退 mobile 层（移动设计完整）', async () => {
     const { context, page } = await newPage(browser, { viewport: { width: 860, height: 800 } });
-    check('data-device=desktop（不随宽度翻转）', await page.getAttribute('html', 'data-device') === 'desktop');
+    check('data-device=mobile', await page.getAttribute('html', 'data-device') === 'mobile');
+    check('更多按钮可见', await page.locator('#mob-more-btn').isVisible());
+    check('底部工具条可见', await page.locator('#mob-toolbar').isVisible());
+    check('状态栏按设计隐藏', await page.evaluate(() =>
+      getComputedStyle(document.querySelector('.statusbar')).display === 'none'));
+    check('历史侧栏隐藏(走抽屉)', await page.evaluate(() =>
+      getComputedStyle(document.querySelector('.sidebar')).display === 'none'));
+    check('无横向溢出', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+    await context.close();
+  });
+
+  await scenario('桌面浏览器极窄 390×800：mobile 层完整可用', async () => {
+    const { context, page } = await newPage(browser, { viewport: { width: 390, height: 800 } });
+    check('data-device=mobile', await page.getAttribute('html', 'data-device') === 'mobile');
+    check('更多按钮可见', await page.locator('#mob-more-btn').isVisible());
+    check('状态栏按设计隐藏', await page.evaluate(() =>
+      getComputedStyle(document.querySelector('.statusbar')).display === 'none'));
+    check('无页面级横向溢出', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+    await context.close();
+  });
+
+  await scenario('Tauri 桌面壳 860×800：锁定 desktop 层，状态栏必须在（v1.5.55~59 事故回归）', async () => {
+    const { context, page } = await newPage(browser, { viewport: { width: 860, height: 800 }, tauri: true });
+    check('data-device=desktop（壳内不随宽度切换）', await page.getAttribute('html', 'data-device') === 'desktop');
     const sb = await page.locator('.statusbar').boundingBox();
     check('状态栏可见且贴底', !!sb && sb.height === 24 && Math.abs(sb.y + sb.height - 800) < 2, sb ? JSON.stringify(sb) : 'null');
-    check('编辑区已按宽度堆叠(@media)', await page.evaluate(() =>
-      getComputedStyle(document.querySelector('.editor-area')).flexDirection === 'column'));
+    check('移动 Tab 栏隐藏', await page.locator('#mob-tabs').isHidden());
+    // 壳内窄窗使用桌面层堆叠布局, 结构完整性必须保证 (v1.5.63 修复回归)
+    check('main-layout 已转纵向(@media)', await page.evaluate(() =>
+      getComputedStyle(document.querySelector('.main-layout')).flexDirection === 'column'));
     check('输入面板有实际高度(不被侧栏挤碎)', await page.evaluate(() =>
       document.getElementById('input-panel').getBoundingClientRect().height > 100));
     await context.close();
   });
 
-  await scenario('桌面极窄 390×800：桌面层可用，顶栏可横向滚动，无页面级溢出', async () => {
-    const { context, page } = await newPage(browser, { viewport: { width: 390, height: 800 } });
-    check('data-device=desktop', await page.getAttribute('html', 'data-device') === 'desktop');
-    const sb = await page.locator('.statusbar').boundingBox();
-    check('状态栏可见且贴底', !!sb && sb.height === 24 && Math.abs(sb.y + sb.height - 800) < 2, sb ? JSON.stringify(sb) : 'null');
-    check('顶栏按钮横向可达(工具条可滚动)', await page.evaluate(() => {
-      const tb = document.querySelector('header.desktop-only .toolbar');
-      return tb.scrollWidth >= tb.clientWidth - 1;
-    }));
-    check('无页面级横向溢出', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
-    // 堆叠结构完整性: 输入在上、输出在中、侧栏在底部区域(≤260px), 全部有实际高度
-    const stack = await page.evaluate(`(() => {
-      const ip = document.getElementById('input-panel').getBoundingClientRect();
-      const oc = document.querySelector('.output-wrap, .output-content-area')?.getBoundingClientRect();
-      const sd = document.querySelector('.sidebar').getBoundingClientRect();
-      return { inputH: ip.height, outputTop: oc ? Math.round(oc.top) : null,
-               inputBottom: Math.round(ip.bottom), sidebarH: sd.height, sidebarTop: Math.round(sd.top) };
-    })()`);
-    check('输入面板高度正常', stack.inputH > 100, JSON.stringify(stack));
-    check('输出区在输入面板下方', stack.outputTop !== null && stack.outputTop >= stack.inputBottom,
-      JSON.stringify(stack));
-    check('历史侧栏高度受限(底部区域)', stack.sidebarH <= 262, JSON.stringify(stack));
-    await context.close();
-  });
-
-  await scenario('Tauri 桌面壳 860×800（v1.5.55~59 事故回归）：状态栏必须在', async () => {
-    const { context, page } = await newPage(browser, { viewport: { width: 860, height: 800 }, tauri: true });
-    check('data-device=desktop', await page.getAttribute('html', 'data-device') === 'desktop');
-    const sb = await page.locator('.statusbar').boundingBox();
-    check('状态栏可见且贴底', !!sb && sb.height === 24 && Math.abs(sb.y + sb.height - 800) < 2, sb ? JSON.stringify(sb) : 'null');
-    check('移动 Tab 栏隐藏', await page.locator('#mob-tabs').isHidden());
-    await context.close();
-  });
-
-  await scenario('手机 390×844：移动 UI + 长文本可滚到底', async () => {
+  await scenario('手机 390×844：mobile UI + 长文本可滚到底', async () => {
     const { context, page } = await newPage(browser, { deviceDescriptor: devices['iPhone 13'] });
     check('data-device=mobile', await page.getAttribute('html', 'data-device') === 'mobile');
     check('状态栏按设计隐藏', await page.evaluate(() =>
       getComputedStyle(document.querySelector('.statusbar')).display === 'none'));
-    check('移动工具条可见', await page.locator('#mob-toolbar').isVisible());
+    check('更多按钮可见', await page.locator('#mob-more-btn').isVisible());
 
     // 长文本: 填入 → 格式化 → 输出能滚到底
     await page.fill('#input', LONG_JSON);
@@ -154,14 +146,13 @@ async function main() {
     const scrolled = await page.evaluate(() => {
       const oc = document.querySelector('.output-content');
       if (!oc) return { ok: false, why: 'no .output-content' };
-      const before = oc.scrollTop;
       oc.scrollTop = oc.scrollHeight;
       const maxScroll = oc.scrollHeight - oc.clientHeight;
       const lastRect = oc.querySelector('pre, code, .json-tree')?.getBoundingClientRect();
       const toolbar = document.getElementById('mob-toolbar').getBoundingClientRect();
       const lastVisible = !lastRect || lastRect.bottom <= toolbar.top + 2 || lastRect.bottom <= window.innerHeight;
       return { ok: Math.abs(oc.scrollTop - maxScroll) < 2 && maxScroll > 500 && lastVisible,
-               scrollTop: oc.scrollTop, maxScroll, before };
+               scrollTop: oc.scrollTop, maxScroll };
     });
     check('长 JSON 输出可滚动到底且末行可见', scrolled.ok, JSON.stringify(scrolled));
     check('无横向溢出', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
