@@ -13,7 +13,14 @@
   function detect() {
     try {
       var ua = navigator.userAgent || '';
-      var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+      var isMobileUA = /Mobi/i.test(ua);
+
+      // Tauri desktop WebView: 初始化时 innerWidth 可能短暂 ≤900，
+      // 但 UA 不含 mobile 标识。直接强制 desktop，避免误判为 mobile。
+      var isTauri = typeof window !== 'undefined' && !!(window.__TAURI__ && window.__TAURI__.core);
+      if (isTauri && !isMobileUA) return 'desktop';
+
+      isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
       var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
       var narrow = window.innerWidth <= 900;
       return (isMobileUA || (isTouch && narrow) || narrow) ? 'mobile' : 'desktop';
