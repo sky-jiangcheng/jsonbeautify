@@ -1,0 +1,32 @@
+name: Layout Smoke Tests
+
+# 跨端布局回归防线: 桌面/窄窗/Tauri 壳/手机/iPad 五类场景 + 长文本滚动。
+# 历史上 v1.5.55~v1.5.61 的状态栏消失、iPad 强制 desktop 等事故均在此覆盖内。
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  layout-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build dist/
+        run: node scripts/build.js
+
+      # ubuntu-latest 预装 Google Chrome (stable), playwright-core 走 channel:'chrome'
+      - name: Run layout smoke tests
+        run: node tests/layout.spec.mjs
