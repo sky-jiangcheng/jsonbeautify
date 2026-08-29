@@ -101,6 +101,8 @@ async function main() {
     check('状态栏可见且贴底', !!sb && sb.height === 24 && Math.abs(sb.y + sb.height - 800) < 2, sb ? JSON.stringify(sb) : 'null');
     check('编辑区已按宽度堆叠(@media)', await page.evaluate(() =>
       getComputedStyle(document.querySelector('.editor-area')).flexDirection === 'column'));
+    check('输入面板有实际高度(不被侧栏挤碎)', await page.evaluate(() =>
+      document.getElementById('input-panel').getBoundingClientRect().height > 100));
     await context.close();
   });
 
@@ -114,6 +116,18 @@ async function main() {
       return tb.scrollWidth >= tb.clientWidth - 1;
     }));
     check('无页面级横向溢出', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+    // 堆叠结构完整性: 输入在上、输出在中、侧栏在底部区域(≤260px), 全部有实际高度
+    const stack = await page.evaluate(`(() => {
+      const ip = document.getElementById('input-panel').getBoundingClientRect();
+      const oc = document.querySelector('.output-wrap, .output-content-area')?.getBoundingClientRect();
+      const sd = document.querySelector('.sidebar').getBoundingClientRect();
+      return { inputH: ip.height, outputTop: oc ? Math.round(oc.top) : null,
+               inputBottom: Math.round(ip.bottom), sidebarH: sd.height, sidebarTop: Math.round(sd.top) };
+    })()`);
+    check('输入面板高度正常', stack.inputH > 100, JSON.stringify(stack));
+    check('输出区在输入面板下方', stack.outputTop !== null && stack.outputTop >= stack.inputBottom,
+      JSON.stringify(stack));
+    check('历史侧栏高度受限(底部区域)', stack.sidebarH <= 262, JSON.stringify(stack));
     await context.close();
   });
 
