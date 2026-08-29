@@ -1,9 +1,16 @@
 # 推送 v* tag 前，本地校验 tag 版本号是否等于四处文件版本
 # 复用 CI 同一套 check-versions.js，把错误 tag 拦在本地、推不出去
+#
+# 只校验指向当前 HEAD 的 tag（即本次发布的新 tag）。
+# 历史 tag 指向旧提交，文件版本自然不同，跳过避免误报。
 while read -r local_ref local_sha remote_ref remote_sha; do
   case "$remote_ref" in
     refs/tags/v*)
       tag_ver="${remote_ref#refs/tags/v}"
+      tag_commit=$(git rev-parse "$local_ref^{commit}" 2>/dev/null)
+      if [ "$tag_commit" != "$(git rev-parse HEAD)" ]; then
+        continue
+      fi
       echo "[pre-push] 校验 tag v$tag_ver 与版本文件一致性…"
       if ! node scripts/check-versions.js tag "$tag_ver"; then
         echo ""
