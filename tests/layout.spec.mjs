@@ -132,6 +132,23 @@ async function main() {
     await context.close();
   });
 
+  await scenario('Tauri v2 IPC bridge 单独存在（__TAURI_INTERNALS__）也锁定 desktop，修复 App Store 状态栏消失', async () => {
+    const context = await browser.newContext({ viewport: { width: 860, height: 800 } });
+    await context.addInitScript(() => {
+      // 模拟 App Store 构建中 __TAURI__ 全局不可用、只有内部 IPC 桥的场景
+      window.__TAURI_INTERNALS__ = { invoke: function () {}, transformCallback: function () {} };
+    });
+    const page = await context.newPage();
+    await page.goto(BASE + '/');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(300);
+    check('data-device=desktop', await page.getAttribute('html', 'data-device') === 'desktop');
+    const sb = await page.locator('.statusbar').boundingBox();
+    check('状态栏可见且贴底', !!sb && sb.height === 24 && Math.abs(sb.y + sb.height - 800) < 2, sb ? JSON.stringify(sb) : 'null');
+    check('移动 Tab 栏隐藏', await page.locator('#mob-tabs').isHidden());
+    await context.close();
+  });
+
   await scenario('手机 390×844：mobile UI + 长文本可滚到底', async () => {
     const { context, page } = await newPage(browser, { deviceDescriptor: devices['iPhone 13'] });
     check('data-device=mobile', await page.getAttribute('html', 'data-device') === 'mobile');
@@ -156,6 +173,28 @@ async function main() {
     });
     check('长 JSON 输出可滚动到底且末行可见', scrolled.ok, JSON.stringify(scrolled));
     check('无横向溢出', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+    await context.close();
+  });
+
+  await scenario('Tauri 桌面壳粘贴超长 JSON：顶栏与面板标题不能滚出视口', async () => {
+    const { context, page } = await newPage(browser, { viewport: { width: 1200, height: 800 }, tauri: true });
+    check('data-device=desktop', await page.getAttribute('html', 'data-device') === 'desktop');
+    const longJson = JSON.stringify({
+      eventType: 'CONTACTS',
+      residentialAddress: 'ROOM 314, BLOCK C, XIONGQIAO GARDEN, NO. 48 XUANZHEN ROAD, TAIHE TOWN, QINGXIN DISTRICT, QINGYUAN CITY, GUANGDONG PROVINCE, CHINA, 511873',
+      residentialAddressCn: '中国广东省清远市清新区太和镇玄真路48号雄侨花园C幢之一1座314房',
+      notes: 'x'.repeat(2000),
+    });
+    await page.fill('#input', longJson);
+    await page.waitForTimeout(300);
+    const headerBox = await page.locator('header.desktop-only').boundingBox();
+    const panelHeaderBox = await page.locator('#input-panel .panel-header').boundingBox();
+    check('桌面顶栏可见且贴顶', !!headerBox && headerBox.y === 0 && headerBox.height === 44,
+      headerBox ? JSON.stringify(headerBox) : 'null');
+    check('输入面板标题可见', !!panelHeaderBox && panelHeaderBox.y === 44 && panelHeaderBox.height === 32,
+      panelHeaderBox ? JSON.stringify(panelHeaderBox) : 'null');
+    check('页面无纵向滚动', await page.evaluate(() => window.scrollY === 0));
+    check('html 无纵向滚动', await page.evaluate(() => document.documentElement.scrollTop === 0));
     await context.close();
   });
 
