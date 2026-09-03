@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicedoc/nicedoc/master/web.json",
   "productName": "JSON 格式化工具",
-  "version": "1.5.67",
+  "version": "1.5.68",
   "identifier": "com.jsonbeautify.desktop",
   "build": {
     "frontendDist": "../dist",
@@ -45,7 +45,8 @@
       "icons/64x64.png",
       "icons/256x256.png",
       "icons/512x512.png",
-      "icons/512x512@2x.png"
+      "icons/512x512@2x.png",
+      "icons/icon.icns"
     ],
     "createUpdaterArtifacts": false,
     "category": "Developer Tools",
