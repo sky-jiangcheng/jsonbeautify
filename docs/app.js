@@ -2778,11 +2778,249 @@
       bgImageTooLarge: 'Image too large, choose ≤ 2MB',
       settingsSaveFailed: 'Failed to save settings, storage may be full',
       bgImageUnsupported: 'Image cannot be displayed, format not supported by this browser',
+    },
+    es: {
+      title: 'JSON Formatter', logoText: 'JSON Formatter', mobTitle: 'Herramienta JSON',
+      more: 'Más', format: 'Formatear', minify: 'Minimizar', escape: 'Escapar',
+      copy: 'Copiar', download: 'Descargar', downloadFile: 'Descargar',
+      upload: 'Subir', save: 'Guardar', openFile: 'Abrir archivo',
+      clear: 'Limpiar', clearContent: 'Limpiar', input: 'Entrada', output: 'Salida',
+      dropHint: 'Suelta para cargar archivo',
+      outputPlaceholder: 'El JSON formateado aparecerá aquí',
+      history: 'Historial', compare: 'Comparar', swap: 'Intercambiar', close: 'Cerrar',
+      moreOps: 'Más acciones', cancelMore: 'Cancelar',
+      statusReady: 'Listo',
+      statusShortcuts: 'Ctrl+Enter Formatear · Ctrl+S Guardar · Ctrl+D Descargar · Ctrl+F Buscar',
+      saveModalTitle: 'Guardar en el historial', saveNamePlaceholder: 'Introduce un nombre (opcional)',
+      saveAsNew: 'Guardar como entrada nueva', historyUpdated: 'Actualizado: {name}',
+      cancel: 'Cancelar',
+      compareTitle: 'Comparar JSON', compareLoading: 'Comparando…',
+      themeTitle: 'Alternar modo claro/oscuro',
+      formatTitle: 'Formatear JSON (Ctrl+Enter)', minifyTitle: 'Minimizar JSON',
+      escapeTitle: 'Escapar JSON', copyTitle: 'Copiar resultado',
+      downloadTitle: 'Descargar archivo JSON (Ctrl+D)', uploadTitle: 'Subir archivo JSON',
+      saveTitle: 'Guardar en el historial (Ctrl+S)', clearTitle: 'Limpiar',
+      searchTitle: 'Buscar en la salida (Ctrl+F)',
+      searchPlaceholder: 'Buscar…', searchPrev: 'Anterior (Shift+Enter)',
+      searchNext: 'Siguiente (Enter)', searchClose: 'Cerrar búsqueda',
+      collapseSidebar: 'Contraer barra lateral', clearAllTitle: 'Borrar todo el historial',
+      expandSidebar: 'Expandir barra lateral',
+      inputPlaceholder: 'Pega el texto JSON aquí',
+      listTitle: 'Lista ({count})', collapseList: 'Contraer lista', expandList: 'Expandir lista',
+      emptyArray: 'Arreglo vacío',
+      items: '{count} elementos', keys: '{count} claves',
+      loadingFile: 'Cargado {name}', saved: 'Guardado: {name}',
+      copied: 'Copiado al portapapeles', copyFailed: 'Error al copiar, inténtalo de nuevo',
+      nothingToCopy: 'Nada que copiar',
+      nothingToDownload: 'Nada que descargar',
+      downloaded: 'Archivo JSON descargado', downloadFailed: 'Error al descargar, inténtalo de nuevo',
+      inputEmpty: 'La entrada está vacía', inputEmptyToast: 'Introduce JSON primero',
+      formatSuccess: 'Formateado correctamente', minifySuccess: 'Minimizado correctamente',
+      escapeSuccess: 'JSON escapado correctamente',
+      jsonError: 'Formato JSON no válido', cleared: 'Limpiado', historyCleared: 'Historial borrado',
+      loaded: 'Cargado: {name}', jsonOnly: 'Suelta solo archivos .json',
+      needFormatFirst: 'Formatea primero un JSON válido',
+      unnamed: 'Sin título', noHistory: 'Aún no hay historial', noHistoryHint: 'Formatea y guarda para ver el historial',
+      selectForCompare: 'Selecciona para comparar', deleteItem: 'Eliminar',
+      historyTooLarge: 'Entrada demasiado grande para guardar (máx 500KB)',
+      legacyEmptySnippet: '[entrada vacía]',
+      legacyHistoryUnavailable: 'No se puede cargar "{name}" (formato antiguo no disponible). Haz una copia de seguridad y luego bórralo.',
+      autoQuoteId: ' (identificador entre comillas automáticamente)',
+      autoBracket: ' (corchetes cerrados automáticamente)',
+      autoBracketNotification: 'Faltaban algunos corchetes y se han cerrado automáticamente',
+      unquotedIdHint: 'Las claves y los valores de cadena deben ir entre comillas dobles',
+      jsonIncomplete: 'JSON incompleto, faltan corchetes, comas o valores de cierre',
+      jsonSyntaxError: 'Error de sintaxis JSON: {msg}',
+      stringMisplaced: 'Cadena JSON en posición incorrecta, comprueba comas o corchetes faltantes',
+      numberError: 'Error de formato de número o número mal colocado',
+      unquotedIdDetected: 'Se detectó un identificador sin comillas "{id}"',
+      errorTitle: 'JSON no válido', nearLine: 'Cerca de la línea {line}',
+      jsonRules: 'Reglas de sintaxis JSON:',
+      ruleKeys: 'Las claves y los valores de cadena deben ir entre comillas dobles (")',
+      ruleComma: 'Sin coma final tras el último elemento en objetos/arreglos',
+      ruleBool: 'Los valores booleanos deben ser true o false (minúsculas)',
+      ruleNull: 'null debe estar en minúsculas',
+      ruleBracket: 'Los corchetes y las llaves deben estar emparejados',
+      valid: 'Válido', invalid: 'No válido', lineCount: 'líneas',
+      settings: 'Ajustes', settingsTitle: 'Ajustes de interfaz',
+      watermarkLabel: 'Texto de marca de agua', watermarkPlaceholder: 'Introduce el texto de marca de agua (vacío para desactivar)',
+      watermarkOpacity: 'Opacidad de marca de agua', watermarkEnabled: 'Activar marca de agua',
+      bgImageLabel: 'Imagen de fondo', bgImageHint: 'Formatos de imagen comunes admitidos (JPG/PNG/WebP/HEIC, etc.)',
+      bgImageUpload: 'Elegir imagen', bgImageClear: 'Quitar imagen',
+      bgImageOpacity: 'Opacidad de fondo', settingsSaved: 'Ajustes guardados', resetSettings: 'Restablecer',
+      bgImageTooLarge: 'Imagen demasiado grande, elige ≤ 2MB',
+      settingsSaveFailed: 'Error al guardar los ajustes, es posible que el almacenamiento esté lleno',
+      bgImageUnsupported: 'La imagen no se puede mostrar, formato no admitido por este navegador',
+    },
+    de: {
+      title: 'JSON Formatter', logoText: 'JSON Formatter', mobTitle: 'JSON-Tool',
+      more: 'Mehr', format: 'Formatieren', minify: 'Minimieren', escape: 'Escapen',
+      copy: 'Kopieren', download: 'Herunterladen', downloadFile: 'Herunterladen',
+      upload: 'Hochladen', save: 'Speichern', openFile: 'Datei öffnen',
+      clear: 'Leeren', clearContent: 'Leeren', input: 'Eingabe', output: 'Ausgabe',
+      dropHint: 'Zum Laden loslassen',
+      outputPlaceholder: 'Formatiertes JSON wird hier angezeigt',
+      history: 'Verlauf', compare: 'Vergleichen', swap: 'Tauschen', close: 'Schließen',
+      moreOps: 'Weitere Aktionen', cancelMore: 'Abbrechen',
+      statusReady: 'Bereit',
+      statusShortcuts: 'Strg+Eingabe Formatieren · Strg+S Speichern · Strg+D Herunterladen · Strg+F Suchen',
+      saveModalTitle: 'Im Verlauf speichern', saveNamePlaceholder: 'Name eingeben (optional)',
+      saveAsNew: 'Als neuen Eintrag speichern', historyUpdated: 'Aktualisiert: {name}',
+      cancel: 'Abbrechen',
+      compareTitle: 'JSON-Vergleich', compareLoading: 'Vergleichen…',
+      themeTitle: 'Hell-/Dunkelmodus umschalten',
+      formatTitle: 'JSON formatieren (Strg+Eingabe)', minifyTitle: 'JSON minimieren',
+      escapeTitle: 'JSON escapen', copyTitle: 'Ergebnis kopieren',
+      downloadTitle: 'JSON-Datei herunterladen (Strg+D)', uploadTitle: 'JSON-Datei hochladen',
+      saveTitle: 'Im Verlauf speichern (Strg+S)', clearTitle: 'Leeren',
+      searchTitle: 'In Ausgabe suchen (Strg+F)',
+      searchPlaceholder: 'Suchen…', searchPrev: 'Zurück (Umschalt+Eingabe)',
+      searchNext: 'Weiter (Eingabe)', searchClose: 'Suche schließen',
+      collapseSidebar: 'Seitenleiste einklappen', clearAllTitle: 'Gesamten Verlauf löschen',
+      expandSidebar: 'Seitenleiste ausklappen',
+      inputPlaceholder: 'JSON-Text hier einfügen',
+      listTitle: 'Liste ({count})', collapseList: 'Liste einklappen', expandList: 'Liste ausklappen',
+      emptyArray: 'Leeres Array',
+      items: '{count} Elemente', keys: '{count} Schlüssel',
+      loadingFile: '{name} geladen', saved: 'Gespeichert: {name}',
+      copied: 'In Zwischenablage kopiert', copyFailed: 'Kopieren fehlgeschlagen, bitte erneut versuchen',
+      nothingToCopy: 'Nichts zu kopieren',
+      nothingToDownload: 'Nichts zum Herunterladen',
+      downloaded: 'JSON-Datei heruntergeladen', downloadFailed: 'Download fehlgeschlagen, bitte erneut versuchen',
+      inputEmpty: 'Eingabe ist leer', inputEmptyToast: 'Bitte zuerst JSON eingeben',
+      formatSuccess: 'Erfolgreich formatiert', minifySuccess: 'Erfolgreich minimiert',
+      escapeSuccess: 'JSON erfolgreich escapert',
+      jsonError: 'Ungültiges JSON-Format', cleared: 'Geleert', historyCleared: 'Verlauf gelöscht',
+      loaded: 'Geladen: {name}', jsonOnly: 'Bitte nur .json-Dateien ablegen',
+      needFormatFirst: 'Bitte zuerst gültiges JSON formatieren',
+      unnamed: 'Unbenannt', noHistory: 'Noch kein Verlauf', noHistoryHint: 'Formatieren und speichern, um Verlauf zu sehen',
+      selectForCompare: 'Zum Vergleichen auswählen', deleteItem: 'Löschen',
+      historyTooLarge: 'Eintrag zu groß zum Speichern (max. 500 KB)',
+      legacyEmptySnippet: '[leerer Eintrag]',
+      legacyHistoryUnavailable: '"{name}" kann nicht geladen werden (altes Format nicht verfügbar). Sichere den Inhalt und lösche ihn dann.',
+      autoQuoteId: ' (Bezeichner automatisch in Anführungszeichen gesetzt)',
+      autoBracket: ' (Klammern automatisch geschlossen)',
+      autoBracketNotification: 'Einige Klammern fehlten und wurden automatisch geschlossen',
+      unquotedIdHint: 'JSON-Schlüssel und Zeichenfolgenwerte müssen in doppelte Anführungszeichen gesetzt werden',
+      jsonIncomplete: 'JSON unvollständig, möglicherweise fehlen schließende Klammern, Kommas oder Werte',
+      jsonSyntaxError: 'JSON-Syntaxfehler: {msg}',
+      stringMisplaced: 'JSON-Zeichenfolge an falscher Stelle, prüfe auf fehlende Kommas oder Klammern',
+      numberError: 'Zahlenformatfehler oder falsch platziert',
+      unquotedIdDetected: 'Nicht in Anführungszeichen gesetzter Bezeichner "{id}" erkannt',
+      errorTitle: 'Ungültiges JSON', nearLine: 'In der Nähe von Zeile {line}',
+      jsonRules: 'JSON-Syntaxregeln:',
+      ruleKeys: 'Schlüssel und Zeichenfolgenwerte müssen in doppelte Anführungszeichen (") gesetzt werden',
+      ruleComma: 'Kein nachgestelltes Komma nach dem letzten Element in Objekten/Arrays',
+      ruleBool: 'Boolesche Werte müssen true oder false sein (Kleinbuchstaben)',
+      ruleNull: 'null muss kleingeschrieben sein',
+      ruleBracket: 'Klammern und geschweifte Klammern müssen paarweise sein',
+      valid: 'Gültig', invalid: 'Ungültig', lineCount: 'Zeilen',
+      settings: 'Einstellungen', settingsTitle: 'Oberflächeneinstellungen',
+      watermarkLabel: 'Wasserzeichen-Text', watermarkPlaceholder: 'Wasserzeichen-Text eingeben (leer zum Deaktivieren)',
+      watermarkOpacity: 'Wasserzeichen-Deckkraft', watermarkEnabled: 'Wasserzeichen aktivieren',
+      bgImageLabel: 'Hintergrundbild', bgImageHint: 'Gängige Bildformate unterstützt (JPG/PNG/WebP/HEIC usw.)',
+      bgImageUpload: 'Bild auswählen', bgImageClear: 'Bild entfernen',
+      bgImageOpacity: 'Hintergrund-Deckkraft', settingsSaved: 'Einstellungen gespeichert', resetSettings: 'Auf Standard zurücksetzen',
+      bgImageTooLarge: 'Bild zu groß, wähle ≤ 2 MB',
+      settingsSaveFailed: 'Einstellungen konnten nicht gespeichert werden, Speicher ist möglicherweise voll',
+      bgImageUnsupported: 'Bild kann nicht angezeigt werden, Format wird von diesem Browser nicht unterstützt',
+    },
+    ja: {
+      title: 'JSON Formatter', logoText: 'JSON Formatter', mobTitle: 'JSONツール',
+      more: 'その他', format: '整形', minify: '最小化', escape: 'エスケープ',
+      copy: 'コピー', download: 'ダウンロード', downloadFile: 'ダウンロード',
+      upload: 'アップロード', save: '保存', openFile: 'ファイルを開く',
+      clear: 'クリア', clearContent: 'クリア', input: '入力', output: '出力',
+      dropHint: 'ドロップしてファイルを読み込み',
+      outputPlaceholder: '整形されたJSONがここに表示されます',
+      history: '履歴', compare: '比較', swap: '入れ替え', close: '閉じる',
+      moreOps: 'その他の操作', cancelMore: 'キャンセル',
+      statusReady: '準備完了',
+      statusShortcuts: 'Ctrl+Enter 整形 · Ctrl+S 保存 · Ctrl+D ダウンロード · Ctrl+F 検索',
+      saveModalTitle: '履歴に保存', saveNamePlaceholder: '名前を入力（任意）',
+      saveAsNew: '新しい項目として保存', historyUpdated: '更新しました: {name}',
+      cancel: 'キャンセル',
+      compareTitle: 'JSON比較', compareLoading: '比較中…',
+      themeTitle: 'ダーク/ライトモード切替',
+      formatTitle: 'JSONを整形 (Ctrl+Enter)', minifyTitle: 'JSONを最小化',
+      escapeTitle: 'JSONをエスケープ', copyTitle: '結果をコピー',
+      downloadTitle: 'JSONファイルをダウンロード (Ctrl+D)', uploadTitle: 'JSONファイルをアップロード',
+      saveTitle: '履歴に保存 (Ctrl+S)', clearTitle: 'クリア',
+      searchTitle: '出力内を検索 (Ctrl+F)',
+      searchPlaceholder: '検索…', searchPrev: '前へ (Shift+Enter)',
+      searchNext: '次へ (Enter)', searchClose: '検索を閉じる',
+      collapseSidebar: 'サイドバーを折りたたむ', clearAllTitle: 'すべての履歴を削除',
+      expandSidebar: 'サイドバーを展開',
+      inputPlaceholder: 'ここにJSONテキストを貼り付け',
+      listTitle: 'リスト ({count})', collapseList: 'リストを折りたたむ', expandList: 'リストを展開',
+      emptyArray: '空の配列',
+      items: '{count} 項目', keys: '{count} キー',
+      loadingFile: '{name} を読み込みました', saved: '保存しました: {name}',
+      copied: 'クリップボードにコピーしました', copyFailed: 'コピーに失敗しました。もう一度お試しください',
+      nothingToCopy: 'コピーするものがありません',
+      nothingToDownload: 'ダウンロードするものがありません',
+      downloaded: 'JSONファイルをダウンロードしました', downloadFailed: 'ダウンロードに失敗しました。もう一度お試しください',
+      inputEmpty: '入力が空です', inputEmptyToast: 'まずJSONを入力してください',
+      formatSuccess: '整形しました', minifySuccess: '最小化しました',
+      escapeSuccess: 'JSONをエスケープしました',
+      jsonError: 'JSON形式が無効です', cleared: 'クリアしました', historyCleared: '履歴を削除しました',
+      loaded: '読み込みました: {name}', jsonOnly: '.jsonファイルのみドロップしてください',
+      needFormatFirst: 'まず有効なJSONを整形してください',
+      unnamed: '名称未設定', noHistory: '履歴はまだありません', noHistoryHint: '整形して保存すると履歴が表示されます',
+      selectForCompare: '比較用に選択', deleteItem: '削除',
+      historyTooLarge: '項目が大きすぎて保存できません（最大500KB）',
+      legacyEmptySnippet: '[空の項目]',
+      legacyHistoryUnavailable: '"{name}"を読み込めません（旧形式は利用できません）。内容をバックアップしてから削除してください。',
+      autoQuoteId: '（識別子に自動で引用符を付与）',
+      autoBracket: '（括弧を自動で閉じました）',
+      autoBracketNotification: '欠落していた括弧を自動で閉じました',
+      unquotedIdHint: 'JSONのキーと文字列値は二重引用符で囲む必要があります',
+      jsonIncomplete: 'JSONが不完全です。閉じ括弧、カンマ、または値が欠けている可能性があります',
+      jsonSyntaxError: 'JSON構文エラー: {msg}',
+      stringMisplaced: 'JSON文字列の位置が正しくありません。欠落しているカンマや括弧がないか確認してください',
+      numberError: '数値の形式エラー、または位置が正しくありません',
+      unquotedIdDetected: '引用符のない識別子 "{id}" を検出しました',
+      errorTitle: '無効なJSON', nearLine: '行 {line} 付近',
+      jsonRules: 'JSON構文ルール:',
+      ruleKeys: 'キーと文字列値は二重引用符 (") で囲む必要があります',
+      ruleComma: 'オブジェクト/配列の最後の要素の後にカンマを付けてはいけません',
+      ruleBool: 'ブール値は true または false（小文字）でなければなりません',
+      ruleNull: 'null は小文字でなければなりません',
+      ruleBracket: '括弧と波括弧は対応している必要があります',
+      valid: '有効', invalid: '無効', lineCount: '行',
+      settings: '設定', settingsTitle: 'インターフェース設定',
+      watermarkLabel: '透かしテキスト', watermarkPlaceholder: '透かしテキストを入力（空で無効化）',
+      watermarkOpacity: '透かしの不透明度', watermarkEnabled: '透かしを有効にする',
+      bgImageLabel: '背景画像', bgImageHint: '一般的な画像形式に対応（JPG/PNG/WebP/HEIC など）',
+      bgImageUpload: '画像を選択', bgImageClear: '画像を削除',
+      bgImageOpacity: '背景の不透明度', settingsSaved: '設定を保存しました', resetSettings: 'デフォルトに戻す',
+      bgImageTooLarge: '画像が大きすぎます。2MB以下を選択してください',
+      settingsSaveFailed: '設定の保存に失敗しました。ストレージがいっぱいの可能性があります',
+      bgImageUnsupported: '画像を表示できません。このブラウザは形式に対応していません',
     }
   };
 
+  // Supported languages (label shown in the switcher). Order = display order.
+  var LANGUAGES = [
+    { code: 'zh', label: '中文' },
+    { code: 'en', label: 'English' },
+    { code: 'es', label: 'Español' },
+    { code: 'de', label: 'Deutsch' },
+    { code: 'ja', label: '日本語' }
+  ];
+  var SUPPORTED_LANGS = LANGUAGES.map(function (l) { return l.code; });
+
+  // Initial language: explicit saved choice (localStorage) → system language → English.
+  // NOTE: store 的 lang 默认是 'en', 不能作为"用户偏好"依据, 否则会永远覆盖系统语言。
+  function detectInitialLang() {
+    var saved = localStorage.getItem('appLang');
+    if (saved && SUPPORTED_LANGS.indexOf(saved) >= 0) return saved;
+    var sys = (navigator.language || navigator.userLanguage || 'en').toLowerCase().split('-')[0];
+    return SUPPORTED_LANGS.indexOf(sys) >= 0 ? sys : 'en';
+  }
+
   var i18n = {
-    _lang: (window.__store && window.__store.getStateForKey('lang')) || localStorage.getItem('appLang') || 'en',
+    _lang: detectInitialLang(),
     t: function (key, vars) {
       // 未知语言(如 localStorage 被写入非法值)时回退到英文, 避免整个 i18n 崩溃
       var dict = I18N[this._lang] || I18N['en'];
@@ -2803,6 +3041,8 @@
     },
     get lang() { return this._lang; }
   };
+  // 让 store 内部 lang 与检测到的语言一致(避免与 i18n._lang 不同步)
+  if (window.__store) window.__store.setState({ lang: i18n._lang });
   window.i18n = i18n;
 
   function applyAllTranslations() {
@@ -2833,15 +3073,76 @@
       var key = el.getAttribute('data-i18n-html');
       if (key) el.innerHTML = i18n.t(key);
     });
+    var curLang = LANGUAGES.filter(function (l) { return l.code === i18n._lang; })[0] || LANGUAGES[1];
     var langBtn = document.getElementById('lang-btn');
-    if (langBtn) langBtn.textContent = i18n._lang === 'zh' ? 'EN' : '中';
-    var mobLangBtn = document.getElementById('mobile-lang-btn');
-    if (mobLangBtn) mobLangBtn.textContent = i18n._lang === 'zh' ? 'EN' : '中';
+    if (langBtn) { langBtn.textContent = curLang.label; langBtn.setAttribute('data-lang', curLang.code); }
     var mobLangLabel = document.getElementById('mobile-lang-label');
-    if (mobLangLabel) mobLangLabel.textContent = i18n._lang === 'zh' ? '中' : 'EN';
+    if (mobLangLabel) { mobLangLabel.textContent = curLang.label; mobLangLabel.setAttribute('data-lang', curLang.code); }
     if (window.__render && window.__render.rerenderDynamicContent) {
       window.__render.rerenderDynamicContent();
     }
+  }
+
+  /* ==============================================================
+     Language switcher popup (replaces the old zh/en toggle)
+  ============================================================== */
+  function ensureLangMenu() {
+    var menu = document.getElementById('lang-menu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'lang-menu';
+      menu.className = 'lang-menu';
+      menu.setAttribute('role', 'menu');
+      document.body.appendChild(menu);
+    }
+    return menu;
+  }
+  function renderLangMenu() {
+    var menu = ensureLangMenu();
+    menu.innerHTML = '';
+    LANGUAGES.forEach(function (L) {
+      var item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'lang-menu-item' + (L.code === i18n._lang ? ' active' : '');
+      item.setAttribute('role', 'menuitemradio');
+      item.setAttribute('aria-checked', L.code === i18n._lang ? 'true' : 'false');
+      item.setAttribute('data-lang', L.code);
+      item.textContent = L.label;
+      item.addEventListener('click', function (e) {
+        e.stopPropagation();
+        i18n.setLang(L.code);
+        closeLangMenu();
+      });
+      menu.appendChild(item);
+    });
+  }
+  function openLangMenu(anchor) {
+    renderLangMenu();
+    var menu = ensureLangMenu();
+    menu.style.display = 'block';
+    var mw = menu.offsetWidth, mh = menu.offsetHeight;
+    var r = anchor.getBoundingClientRect();
+    var left = r.right - mw;
+    if (left < 8) left = 8;
+    if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+    menu.style.left = left + 'px';
+    menu.style.top = (r.bottom + 6) + 'px';
+    setTimeout(function () {
+      document.addEventListener('click', outsideCloseLangMenu, { once: true, capture: true });
+    }, 0);
+  }
+  function closeLangMenu() {
+    var menu = document.getElementById('lang-menu');
+    if (menu) menu.style.display = 'none';
+  }
+  function outsideCloseLangMenu(e) {
+    if (e.target.closest && (e.target.closest('#lang-menu') || e.target.closest('#lang-btn') || e.target.closest('#mobile-lang-btn'))) return;
+    closeLangMenu();
+  }
+  function toggleLangMenu(anchor) {
+    var menu = document.getElementById('lang-menu');
+    if (menu && menu.style.display === 'block') { closeLangMenu(); return; }
+    openLangMenu(anchor);
   }
 
   /* ==============================================================
@@ -2930,13 +3231,9 @@
     });
 
     var langBtn = document.getElementById('lang-btn');
-    if (langBtn) langBtn.addEventListener('click', function () {
-      i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh');
-    });
+    if (langBtn) langBtn.addEventListener('click', function (e) { e.stopPropagation(); toggleLangMenu(langBtn); });
     var mobLangBtn = document.getElementById('mobile-lang-btn');
-    if (mobLangBtn) mobLangBtn.addEventListener('click', function () {
-      i18n.setLang(i18n._lang === 'zh' ? 'en' : 'zh');
-    });
+    if (mobLangBtn) mobLangBtn.addEventListener('click', function (e) { e.stopPropagation(); toggleLangMenu(mobLangBtn); });
 
     // Settings modal live preview
     var wmText = document.getElementById('watermark-text-input');
@@ -3125,7 +3422,10 @@
       themeIconUse.setAttribute('href', t === 'light' ? '#icon-moon' : '#icon-sun');
     }
     var langLabel = document.getElementById('mobile-lang-label');
-    if (langLabel) langLabel.textContent = i18n._lang === 'zh' ? '中' : 'EN';
+    if (langLabel) {
+      var ll = LANGUAGES.filter(function (l) { return l.code === i18n._lang; })[0] || LANGUAGES[1];
+      langLabel.textContent = ll.label;
+    }
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {

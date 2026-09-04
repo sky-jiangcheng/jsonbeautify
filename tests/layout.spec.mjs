@@ -52,9 +52,10 @@ function check(name, cond, detail) {
   else { failed++; console.error(`  ✗ ${name}${detail ? ' — ' + detail : ''}`); }
 }
 
-async function newPage(browser, { viewport, tauri = false, deviceDescriptor = null } = {}) {
+async function newPage(browser, { viewport, tauri = false, deviceDescriptor = null, locale = null } = {}) {
   const context = await browser.newContext({
     viewport: deviceDescriptor ? undefined : viewport,
+    locale: locale || undefined,
     ...(deviceDescriptor || {}),
   });
   if (tauri) {
@@ -206,6 +207,52 @@ async function main() {
     const tauri = await newPage(browser, { deviceDescriptor: devices['iPad Pro 11'], tauri: true });
     check('Tauri 壳 + 桌面风格 UA 也不强制 desktop', await tauri.page.getAttribute('html', 'data-device') === 'mobile');
     await tauri.context.close();
+  });
+
+  await scenario('i18n：系统语言日语 → 默认日语 UI', async () => {
+    const { context, page } = await newPage(browser, { viewport: { width: 1280, height: 800 }, locale: 'ja-JP' });
+    check('lang-btn data-lang=ja', await page.getAttribute('#lang-btn', 'data-lang') === 'ja');
+    check('格式化按钮显示「整形」', (await page.locator('[data-i18n="format"]').first().textContent()) === '整形');
+    check('标题为 JSON Formatter', (await page.title()) === 'JSON Formatter');
+    await context.close();
+  });
+
+  await scenario('i18n：系统语言西班牙语 → 默认西班牙语 UI', async () => {
+    const { context, page } = await newPage(browser, { viewport: { width: 1280, height: 800 }, locale: 'es-ES' });
+    check('lang-btn data-lang=es', await page.getAttribute('#lang-btn', 'data-lang') === 'es');
+    check('格式化按钮显示「Formatear」', (await page.locator('[data-i18n="format"]').first().textContent()) === 'Formatear');
+    await context.close();
+  });
+
+  await scenario('i18n：系统语言德语 → 默认德语 UI', async () => {
+    const { context, page } = await newPage(browser, { viewport: { width: 1280, height: 800 }, locale: 'de-DE' });
+    check('lang-btn data-lang=de', await page.getAttribute('#lang-btn', 'data-lang') === 'de');
+    check('格式化按钮显示「Formatieren」', (await page.locator('[data-i18n="format"]').first().textContent()) === 'Formatieren');
+    await context.close();
+  });
+
+  await scenario('i18n：不支持的语言(法语) → fallback 英语', async () => {
+    const { context, page } = await newPage(browser, { viewport: { width: 1280, height: 800 }, locale: 'fr-FR' });
+    check('lang-btn data-lang=en (fallback)', await page.getAttribute('#lang-btn', 'data-lang') === 'en');
+    check('格式化按钮显示「Format」', (await page.locator('[data-i18n="format"]').first().textContent()) === 'Format');
+    await context.close();
+  });
+
+  await scenario('i18n：语言选择器弹出 + 切换 + 持久化', async () => {
+    const { context, page } = await newPage(browser, { viewport: { width: 1280, height: 800 }, locale: 'ja-JP' });
+    await page.click('#lang-btn');
+    check('语言菜单弹出', await page.locator('#lang-menu').isVisible());
+    const items = await page.locator('.lang-menu-item').count();
+    check('含 5 种语言(中/英/西/德/日)', items === 5, 'count=' + items);
+    check('当前项高亮为日本語', (await page.locator('.lang-menu-item.active').textContent()) === '日本語');
+    await page.click('.lang-menu-item[data-lang="en"]');
+    check('切换后格式化按钮=Format', (await page.locator('[data-i18n="format"]').first().textContent()) === 'Format');
+    check('lang-btn 变为 English', (await page.getAttribute('#lang-btn', 'data-lang')) === 'en');
+    check('菜单已关闭', !(await page.locator('#lang-menu').isVisible()));
+    await page.reload();
+    await page.waitForTimeout(300);
+    check('刷新后仍保持 English(持久化)', (await page.getAttribute('#lang-btn', 'data-lang')) === 'en');
+    await context.close();
   });
 
   await browser.close();
